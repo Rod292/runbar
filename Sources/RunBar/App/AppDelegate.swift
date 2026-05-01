@@ -62,7 +62,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func setupStatusItem() {
         let item = NSStatusBar.system.statusItem(withLength: 28)
         if let button = item.button {
-            button.image = RunnerBitmap.image(for: currentState, frame: 0)
+            button.image = RunnerBitmap.image(for: currentState, subframe: 0)
             button.imagePosition = .imageOnly
             button.action = #selector(handleClick(_:))
             button.target = self
@@ -168,11 +168,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func restartFrameTimer() {
         frameTimer?.invalidate()
-        let interval = 1.0 / currentState.fps
+        // L'intervalle est divisé par tweenSteps pour rendre les sub-frames.
+        let interval = 1.0 / (currentState.fps * Double(RunnerBitmap.tweenSteps))
         let t = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }
-                self.frameIndex = (self.frameIndex + 1) % self.currentState.frames
+                let total = RunnerBitmap.totalSubframes(for: self.currentState)
+                self.frameIndex = (self.frameIndex + 1) % total
                 self.refreshIcon()
             }
         }
@@ -182,6 +184,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshIcon() {
-        statusItem?.button?.image = RunnerBitmap.image(for: currentState, frame: frameIndex)
+        statusItem?.button?.image = RunnerBitmap.image(for: currentState, subframe: frameIndex)
     }
 }

@@ -8,24 +8,22 @@ struct StaticRunnerView: View {
 
     var body: some View {
         Canvas { context, size in
-            let scale = min(size.width, size.height) / 64
+            // Le pose-space est 96×96. On scale uniformément pour remplir.
+            let scale = min(size.width, size.height) / 96
             context.scaleBy(x: scale, y: scale)
             drawRunner(pose: pose, in: &context, color: color)
         }
     }
 }
 
-/// Vue SwiftUI du coureur — pictogramme silhouette plein, inspiré Apple Fitness.
-/// Rend une `RunnerPose` dans un canvas 64×64 puis se laisse mettre à l'échelle
-/// par le parent (.frame).
+/// Vue SwiftUI animée du coureur — silhouette pleine, façon pictogramme
+/// Apple Fitness. Cycle entre les sub-frames de la `RunnerBitmap` cache.
 public struct RunnerView: View {
     public let state: RunnerState
-    /// Si fourni, force la couleur. Sinon dérive de l'état (moss/terra/gold).
     public let color: Color?
-    /// Active l'animation du cycle (timer interne). Si false, affiche frame 0.
     public let animated: Bool
 
-    @State private var frameIndex: Int = 0
+    @State private var subframeIndex: Int = 0
 
     public init(state: RunnerState, color: Color? = nil, animated: Bool = true) {
         self.state = state
@@ -34,142 +32,299 @@ public struct RunnerView: View {
     }
 
     public var body: some View {
-        let pose = RunnerFrames.pose(for: state, frame: frameIndex)
+        let totalSubframes = state.frames * RunnerBitmap.tweenSteps
+        let safe = ((subframeIndex % totalSubframes) + totalSubframes) % totalSubframes
+        let pose = RunnerFrames.tweenedPose(for: state, subframe: safe)
         let tint = color ?? RunBarColor.accent(for: state)
 
         Canvas { context, size in
-            let scale = min(size.width, size.height) / 64
+            let scale = min(size.width, size.height) / 96
             context.scaleBy(x: scale, y: scale)
             drawRunner(pose: pose, in: &context, color: tint)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear { startTimer() }
-        .id(state) // reset frame quand l'état change
+        .id(state)
     }
 
     private func startTimer() {
         guard animated else { return }
-        let frames = RunnerFrames.framesFor(state: state).count
-        let interval = 1.0 / state.fps
+        let interval = 1.0 / (state.fps * Double(RunnerBitmap.tweenSteps))
         Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-                frameIndex = (frameIndex + 1) % frames
+                subframeIndex &+= 1
             }
         }
     }
 }
 
-/// Dessine la silhouette dans un GraphicsContext (canvas 64×64).
+// MARK: - Drawing
+
+/// Dessine la silhouette dans un GraphicsContext (canvas 96×96). Approche : un
+/// seul `context.fill()` avec une `Path` qui contient tous les sous-paths
+/// (tronc + tête + 4 membres + pieds + mains). Plus de jointures stickman,
+/// pas d'overlap visible.
 @MainActor
 func drawRunner(pose: RunnerPose, in context: inout GraphicsContext, color: Color) {
-    // ─── Lignes de mouvement (sprint) ─────────────────────
+
+    // Lignes de mouvement (sprint), avant la silhouette.
     if pose.motionLines {
-        let line = Color(color).opacity(0.45)
-        for (y, w) in [(22, 10), (32, 12), (42, 10)] as [(CGFloat, CGFloat)] {
+        let line = color.opacity(0.45)
+        let configs: [(CGFloat, CGFloat)] = [(34, 14), (48, 18), (62, 14)]
+        for (y, w) in configs {
             var path = Path()
-            path.move(to: CGPoint(x: 2, y: y))
-            path.addLine(to: CGPoint(x: 2 + w, y: y))
-            context.stroke(path, with: .color(line), style: StrokeStyle(lineWidth: 2.0, lineCap: .round))
+            path.move(to: CGPoint(x: 4, y: y))
+            path.addLine(to: CGPoint(x: 4 + w, y: y))
+            context.stroke(path, with: .color(line),
+                           style: StrokeStyle(lineWidth: 2.4, lineCap: .round))
         }
     }
 
-    // Compute neck position (haut du tronc, après le lean).
-    let neck = RunnerPose.endpoint(from: pose.hip, length: pose.torsoLength, angleDeg: 360 - pose.torsoLeanDeg)
+    // ─── Compute joint positions ──────────────────────────
+    // Le tronc va de la hanche vers le haut, incliné selon torsoLeanDeg.
+    // Convention : 0° = vers le haut. Pour penché vers l'avant on utilise
+    // `360 - leanDeg` (pivote dans le sens trigonométrique inversé).
+    let neck = RunnerPose.endpoint(from: pose.hip,
+                                    length: pose.torsoLength,
+                                    angleDeg: 360 - pose.torsoLeanDeg)
+    // Le centre des épaules est légèrement au-dessus du cou physique.
     let shoulder = neck
 
-    // ─── Tronc (capsule entre hip et neck) ────────────────
-    let torsoWidth: CGFloat = 7.5
-    drawCapsule(from: pose.hip, to: neck, width: torsoWidth, color: color, in: &context)
-
-    // ─── Tête ────────────────────────────────────────────
-    let headCenter = CGPoint(x: neck.x, y: neck.y - pose.headRadius - 0.5 + pose.headOffsetY)
-    let headRect = CGRect(
-        x: headCenter.x - pose.headRadius,
-        y: headCenter.y - pose.headRadius,
-        width: pose.headRadius * 2,
-        height: pose.headRadius * 2
+    // Tête : centrée au-dessus du cou avec offset oscillant.
+    let headCenter = CGPoint(
+        x: shoulder.x + sin(CGFloat(pose.torsoLeanDeg) * .pi / 180) * (pose.neckLength + pose.headRadius - 1),
+        y: shoulder.y - cos(CGFloat(pose.torsoLeanDeg) * .pi / 180) * (pose.neckLength + pose.headRadius - 1) + pose.headOffsetY
     )
-    context.fill(Path(ellipseIn: headRect), with: .color(color))
 
-    // ─── Bras (gauche derrière, droit devant — pour un side-view) ─
-    drawLimb(
+    // ─── Build silhouette: arrière-plan d'abord (membres "loin"), avant ensuite ─
+
+    // Bras gauche (back arm — opacité réduite pour suggérer la profondeur)
+    let leftArm = limbSilhouette(
         pivot: shoulder,
         upperLength: pose.upperArmLength,
         lowerLength: pose.forearmLength,
+        widthHip: pose.upperArmWidth,
+        widthKnee: pose.upperArmWidth * 0.85,
+        widthAnkle: pose.wristWidth,
+        endRadius: pose.handRadius,
         angles: pose.armLeft,
-        width: pose.limbWidth * 0.85,
-        color: color.opacity(0.85),
-        in: &context
+        footLength: 0,
+        footWidth: 0
     )
-    drawLimb(
+    context.fill(leftArm, with: .color(color.opacity(0.7)))
+
+    // Jambe gauche
+    let leftLeg = limbSilhouette(
+        pivot: pose.hip,
+        upperLength: pose.thighLength,
+        lowerLength: pose.calfLength,
+        widthHip: pose.thighWidth,
+        widthKnee: pose.thighWidth * 0.78,
+        widthAnkle: pose.ankleWidth,
+        endRadius: 0,
+        angles: pose.legLeft,
+        footLength: pose.footLength,
+        footWidth: pose.footWidth
+    )
+    context.fill(leftLeg, with: .color(color.opacity(0.78)))
+
+    // Tronc + cou + tête en un seul path
+    let body = bodyAndHeadSilhouette(
+        hip: pose.hip,
+        shoulder: shoulder,
+        hipWidth: pose.hipWidth,
+        shoulderWidth: pose.shoulderWidth,
+        neckTop: neck,
+        neckLength: pose.neckLength,
+        neckWidth: pose.neckWidth,
+        headCenter: headCenter,
+        headRadius: pose.headRadius,
+        leanDeg: pose.torsoLeanDeg
+    )
+    context.fill(body, with: .color(color))
+
+    // Jambe droite (front)
+    let rightLeg = limbSilhouette(
+        pivot: pose.hip,
+        upperLength: pose.thighLength,
+        lowerLength: pose.calfLength,
+        widthHip: pose.thighWidth,
+        widthKnee: pose.thighWidth * 0.78,
+        widthAnkle: pose.ankleWidth,
+        endRadius: 0,
+        angles: pose.legRight,
+        footLength: pose.footLength,
+        footWidth: pose.footWidth
+    )
+    context.fill(rightLeg, with: .color(color))
+
+    // Bras droit (front)
+    let rightArm = limbSilhouette(
         pivot: shoulder,
         upperLength: pose.upperArmLength,
         lowerLength: pose.forearmLength,
+        widthHip: pose.upperArmWidth,
+        widthKnee: pose.upperArmWidth * 0.85,
+        widthAnkle: pose.wristWidth,
+        endRadius: pose.handRadius,
         angles: pose.armRight,
-        width: pose.limbWidth * 0.85,
-        color: color,
-        in: &context
+        footLength: 0,
+        footWidth: 0
     )
-
-    // ─── Jambes ──────────────────────────────────────────
-    drawLimb(
-        pivot: pose.hip,
-        upperLength: pose.thighLength,
-        lowerLength: pose.calfLength,
-        angles: pose.legLeft,
-        width: pose.limbWidth,
-        color: color.opacity(0.85),
-        in: &context
-    )
-    drawLimb(
-        pivot: pose.hip,
-        upperLength: pose.thighLength,
-        lowerLength: pose.calfLength,
-        angles: pose.legRight,
-        width: pose.limbWidth,
-        color: color,
-        in: &context
-    )
+    context.fill(rightArm, with: .color(color))
 }
 
-/// Dessine un membre à deux segments avec articulation au coude/genou.
-@MainActor
-private func drawLimb(
+// MARK: - Path builders
+
+/// Silhouette d'un membre à 2 segments avec tapering anatomique :
+/// quadrilatère taperisé épaule→coude, articulation arrondie au coude,
+/// quadrilatère coude→poignet, et pied/main optionnels au bout.
+private func limbSilhouette(
     pivot: CGPoint,
     upperLength: CGFloat,
     lowerLength: CGFloat,
+    widthHip: CGFloat,    // Largeur à l'origine (épaule/hanche).
+    widthKnee: CGFloat,   // Largeur à l'articulation (coude/genou).
+    widthAnkle: CGFloat,  // Largeur au bout (poignet/cheville).
+    endRadius: CGFloat,   // Rayon main (0 si jambe — on dessine un pied à la place).
     angles: RunnerPose.LimbAngles,
-    width: CGFloat,
-    color: Color,
-    in context: inout GraphicsContext
-) {
+    footLength: CGFloat,
+    footWidth: CGFloat
+) -> Path {
     let joint = RunnerPose.endpoint(from: pivot, length: upperLength, angleDeg: angles.upperDeg)
     let end   = RunnerPose.endpoint(from: joint, length: lowerLength, angleDeg: angles.lowerDeg)
-    drawCapsule(from: pivot, to: joint, width: width, color: color, in: &context)
-    drawCapsule(from: joint, to: end,   width: width * 0.92, color: color, in: &context)
+
+    var path = Path()
+    addTaperedSegment(&path, from: pivot, to: joint, widthA: widthHip, widthB: widthKnee)
+    // Articulation : disque à la jointure pour cacher l'angle.
+    path.addEllipse(in: CGRect(x: joint.x - widthKnee/2, y: joint.y - widthKnee/2,
+                                width: widthKnee, height: widthKnee))
+    addTaperedSegment(&path, from: joint, to: end, widthA: widthKnee, widthB: widthAnkle)
+
+    if endRadius > 0 {
+        // Main : ovale orienté.
+        path.addEllipse(in: CGRect(x: end.x - endRadius, y: end.y - endRadius,
+                                    width: endRadius * 2, height: endRadius * 2))
+    } else if footLength > 0 {
+        // Pied : ellipse orientée perpendiculairement à la jambe basse,
+        // centrée sur la cheville et avancée vers l'avant (sens horaire +90°).
+        let direction = angles.lowerDeg + 90
+        let footCenter = RunnerPose.endpoint(from: end,
+                                              length: footLength * 0.4,
+                                              angleDeg: direction)
+        let footPath = orientedEllipse(center: footCenter,
+                                        majorAxis: footLength,
+                                        minorAxis: footWidth,
+                                        angleDeg: direction)
+        path.addPath(footPath)
+    }
+
+    return path
 }
 
-/// Dessine une capsule pleine entre deux points.
-@MainActor
-private func drawCapsule(
+/// Quadrilatère à largeur variable, qui suit le segment (a→b) avec une largeur
+/// `widthA` à l'origine et `widthB` à l'extrémité. Coins arrondis légèrement
+/// par superposition d'un cercle aux extrémités.
+private func addTaperedSegment(
+    _ path: inout Path,
     from a: CGPoint,
     to b: CGPoint,
-    width: CGFloat,
-    color: Color,
-    in context: inout GraphicsContext
+    widthA: CGFloat,
+    widthB: CGFloat
 ) {
-    var path = Path()
-    path.move(to: a)
-    path.addLine(to: b)
-    context.stroke(
-        path,
-        with: .color(color),
-        style: StrokeStyle(lineWidth: width, lineCap: .round, lineJoin: .round)
-    )
+    let dx = b.x - a.x
+    let dy = b.y - a.y
+    let len = sqrt(dx*dx + dy*dy)
+    guard len > 0.001 else { return }
+    let nx = -dy / len  // perpendiculaire unité
+    let ny =  dx / len
+    let p1 = CGPoint(x: a.x + nx * widthA / 2, y: a.y + ny * widthA / 2)
+    let p2 = CGPoint(x: a.x - nx * widthA / 2, y: a.y - ny * widthA / 2)
+    let p3 = CGPoint(x: b.x - nx * widthB / 2, y: b.y - ny * widthB / 2)
+    let p4 = CGPoint(x: b.x + nx * widthB / 2, y: b.y + ny * widthB / 2)
+    path.move(to: p1)
+    path.addLine(to: p2)
+    path.addLine(to: p3)
+    path.addLine(to: p4)
+    path.closeSubpath()
 }
 
-#Preview("All states") {
+/// Tronc trapézoïdal (hip→shoulder, plus large aux épaules) + cou + tête.
+private func bodyAndHeadSilhouette(
+    hip: CGPoint,
+    shoulder: CGPoint,
+    hipWidth: CGFloat,
+    shoulderWidth: CGFloat,
+    neckTop: CGPoint,
+    neckLength: CGFloat,
+    neckWidth: CGFloat,
+    headCenter: CGPoint,
+    headRadius: CGFloat,
+    leanDeg: CGFloat
+) -> Path {
+    var path = Path()
+
+    // Tronc : trapézoïde hip→shoulder.
+    addTaperedSegment(&path, from: hip, to: shoulder,
+                      widthA: hipWidth, widthB: shoulderWidth)
+
+    // Petite ellipse de hanche pour adoucir.
+    path.addEllipse(in: CGRect(x: hip.x - hipWidth/2, y: hip.y - hipWidth/2,
+                                width: hipWidth, height: hipWidth))
+
+    // Cou : court segment du sommet du tronc vers le bas du crâne.
+    if neckLength > 0.5 {
+        // Direction du cou : suit le lean.
+        let neckEnd = RunnerPose.endpoint(from: shoulder,
+                                           length: neckLength,
+                                           angleDeg: 360 - leanDeg)
+        addTaperedSegment(&path, from: shoulder, to: neckEnd,
+                          widthA: neckWidth * 1.1, widthB: neckWidth)
+    }
+
+    // Tête : cercle plein.
+    path.addEllipse(in: CGRect(
+        x: headCenter.x - headRadius,
+        y: headCenter.y - headRadius,
+        width: headRadius * 2,
+        height: headRadius * 2
+    ))
+
+    return path
+}
+
+/// Ellipse pleine orientée selon `angleDeg` (0° = vers le haut, sens horaire).
+private func orientedEllipse(
+    center: CGPoint,
+    majorAxis: CGFloat,
+    minorAxis: CGFloat,
+    angleDeg: CGFloat
+) -> Path {
+    let unit = CGRect(x: -majorAxis / 2, y: -minorAxis / 2,
+                       width: majorAxis, height: minorAxis)
+    let radians = (angleDeg - 90) * .pi / 180
+    let transform = CGAffineTransform.identity
+        .translatedBy(x: center.x, y: center.y)
+        .rotated(by: radians)
+    return Path(unit).applying(transform)
+}
+
+#Preview("All states · 22pt") {
+    HStack(spacing: 8) {
+        ForEach(RunnerState.allCases, id: \.self) { s in
+            VStack {
+                RunnerView(state: s)
+                    .frame(width: 22, height: 22)
+                Text(s.rawValue).font(.caption2.monospaced())
+            }
+        }
+    }
+    .padding()
+    .background(RunBarColor.cream)
+}
+
+#Preview("All states · 96pt") {
     HStack(spacing: 16) {
         ForEach(RunnerState.allCases, id: \.self) { s in
             VStack {

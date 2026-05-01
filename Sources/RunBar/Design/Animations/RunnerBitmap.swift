@@ -3,27 +3,41 @@ import SwiftUI
 
 /// Rend une pose du runner en `NSImage` template — pour l'icône menu bar.
 /// Template image = macOS gère l'inversion light/dark automatiquement.
+///
+/// Le cache indexe sur (state, subframe, pointSize) où subframe va de 0 à
+/// `state.frames * tweenSteps - 1`. Chaque sub-frame est une pose interpolée
+/// entre deux keyframes. À 8 fps logiques × 3 tweenSteps = 24 fps de rendu.
+/// Nombre d'in-betweens entre deux keyframes consécutives. Hors MainActor
+/// pour pouvoir être lu depuis n'importe quel contexte (RunnerFrames notamment).
+public let RunnerTweenSteps: Int = 3
+
 @MainActor
 public enum RunnerBitmap {
-    /// Cache simple : (state, frame) → image. Évite de re-render à chaque tick
-    /// d'un timer qui boucle sur les mêmes 4-6 frames.
+    /// Re-export pratique — pour l'AppDelegate timer et le code legacy.
+    public static var tweenSteps: Int { RunnerTweenSteps }
+
     private static var cache: [Key: NSImage] = [:]
     private static let lock = NSLock()
 
     private struct Key: Hashable {
         let state: RunnerState
-        let frame: Int
+        let subframe: Int
         let pointSize: Int
     }
 
-    public static func image(for state: RunnerState, frame: Int, pointSize: CGFloat = 22) -> NSImage? {
-        let key = Key(state: state, frame: frame, pointSize: Int(pointSize.rounded()))
+    /// Image cached pour un sub-frame donné. `subframe` est mod-borné dans
+    /// `[0, state.frames * tweenSteps)`.
+    public static func image(for state: RunnerState, subframe: Int, pointSize: CGFloat = 22) -> NSImage? {
+        let totalSubframes = state.frames * tweenSteps
+        let safe = ((subframe % totalSubframes) + totalSubframes) % totalSubframes
+        let key = Key(state: state, subframe: safe, pointSize: Int(pointSize.rounded()))
+
         lock.lock()
         let cached = cache[key]
         lock.unlock()
         if let cached { return cached }
 
-        let pose = RunnerFrames.pose(for: state, frame: frame)
+        let pose = RunnerFrames.tweenedPose(for: state, subframe: safe)
         let view = StaticRunnerView(pose: pose, color: .black)
             .frame(width: pointSize, height: pointSize)
 
@@ -32,7 +46,7 @@ public enum RunnerBitmap {
         renderer.isOpaque = false
 
         guard let image = renderer.nsImage else { return nil }
-        image.isTemplate = true   // light/dark auto
+        image.isTemplate = true
 
         lock.lock()
         cache[key] = image
@@ -40,13 +54,19 @@ public enum RunnerBitmap {
         return image
     }
 
-    /// Précalcule toutes les frames de tous les états — appelé au démarrage
-    /// pour que le premier affichage soit instantané.
+    /// Pré-calcule toutes les sub-frames de tous les états — appelé au démarrage
+    /// pour que le premier affichage soit instantané. Coût total ~2KB × ~70 = ~140KB.
     public static func warmCache(pointSize: CGFloat = 22) {
         for state in RunnerState.allCases {
-            for frame in 0..<state.frames {
-                _ = image(for: state, frame: frame, pointSize: pointSize)
+            let total = state.frames * tweenSteps
+            for sub in 0..<total {
+                _ = image(for: state, subframe: sub, pointSize: pointSize)
             }
         }
+    }
+
+    /// Total de sub-frames pour un état (utile pour boucler le timer).
+    public static func totalSubframes(for state: RunnerState) -> Int {
+        state.frames * tweenSteps
     }
 }

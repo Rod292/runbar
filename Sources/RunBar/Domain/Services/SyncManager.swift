@@ -1,0 +1,55 @@
+import Combine
+import Foundation
+import Logging
+
+/// Orchestre la synchronisation des activités depuis Strava (et plus tard Garmin/HealthKit).
+@MainActor
+public final class SyncManager: ObservableObject {
+    @Published public var isSyncing: Bool = false
+    @Published public var lastSync: Date? = nil
+    @Published public var lastError: String? = nil
+
+    private let store: ActivityStore
+    private let strava: StravaServiceProtocol
+    private var timer: Timer?
+
+    public init(store: ActivityStore, strava: StravaServiceProtocol) {
+        self.store = store
+        self.strava = strava
+    }
+
+    public func startBackgroundSync(interval: TimeInterval = 30 * 60) {
+        timer?.invalidate()
+        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            Task { await self?.syncNow() }
+        }
+    }
+
+    public func stop() {
+        timer?.invalidate()
+        timer = nil
+    }
+
+    public func syncNow() async {
+        guard !isSyncing else { return }
+        isSyncing = true
+        defer { isSyncing = false }
+
+        let monday = Date.now.startOfWeek()
+        do {
+            let isAuth = await strava.isAuthenticated()
+            guard isAuth else {
+                RunBarLog.sync.notice("Sync skipped — Strava not authenticated (stub)")
+                lastSync = .now
+                return
+            }
+            let dtos = try await strava.fetchActivities(since: monday)
+            store.upsert(dtos)
+            lastSync = .now
+            lastError = nil
+        } catch {
+            RunBarLog.sync.error("Sync failed: \(error.localizedDescription)")
+            lastError = error.localizedDescription
+        }
+    }
+}

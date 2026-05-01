@@ -1,0 +1,14 @@
+.DS_Store
+.build/
+# Strava credentials — never commit
+Sources/RunBar/App/Secrets.swift
+.env
+
+.swiftpm/
+*.xcodeproj/
+Package.resolved
+xcuserdata/
+DerivedData/
+*.xcworkspace/
+.netrc
+*.bak

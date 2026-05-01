@@ -1,0 +1,49 @@
+import SwiftUI
+
+/// Une ligne de la liste des sorties dans le popover.
+struct ActivityRowView: View {
+    let day: String
+    let name: String
+    let distanceKm: Double
+    let timeLabel: String
+    let dark: Bool
+    let highlight: Bool
+    let accent: Color
+
+    var body: some View {
+        HStack(spacing: 10) {
+            Text(day)
+                .font(.system(size: 10, weight: .bold).monospaced())
+                .tracking(0.6)
+                .foregroundStyle(highlight ? accent : RunBarColor.mutedInk(dark: dark))
+                .frame(width: 32, alignment: .leading)
+
+            Text(name)
+                .font(.system(size: 12.5, weight: .medium))
+                .foregroundStyle(RunBarColor.ink(dark: dark))
+                .lineLimit(1)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            HStack(spacing: 1) {
+                Text(String(format: "%.1f", distanceKm))
+                    .font(.system(size: 12).monospacedDigit())
+                    .foregroundStyle(RunBarColor.ink(dark: dark).opacity(0.85))
+                Text(" km")
+                    .font(.system(size: 10))
+                    .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+            }
+            .frame(width: 60, alignment: .trailing)
+
+            Text(timeLabel)
+                .font(.system(size: 12).monospacedDigit())
+                .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+                .frame(width: 44, alignment: .trailing)
+        }
+        .padding(.vertical, 6)
+        .padding(.horizontal, 6)
+        .background(
+            RoundedRectangle(cornerRadius: 6)
+                .fill(highlight ? RunBarColor.gold.opacity(0.12) : .clear)
+        )
+    }
+}

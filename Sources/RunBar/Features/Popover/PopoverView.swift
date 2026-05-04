@@ -47,7 +47,9 @@ public struct PopoverView: View {
             sortiesList(runs: runs, mode: mode, accent: accent)
             footer(accent: accent)
         }
-        .frame(width: 320, height: 460)
+        .frame(width: 320)
+        .frame(minHeight: 460)
+        .fixedSize(horizontal: false, vertical: true)
         .background(RunBarColor.surface(dark: isDark))
         .foregroundStyle(RunBarColor.ink(dark: isDark))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -526,51 +528,80 @@ private struct WeeklyHistoryStrip: View {
     let dark: Bool
 
     @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
+    @State private var hoveredIndex: Int? = nil
+
     private var unit: DistanceUnit { DistanceUnit(rawValue: unitRaw) ?? .km }
 
     private var ordered: [WeeklySnapshot] {
         Array(snapshots.sorted(by: { $0.weekStart < $1.weekStart }).suffix(8))
     }
 
-    /// Scale max — 1.5× le target pour qu'une bonne semaine ait du headroom.
+    /// Échelle Y — top = max(goal, achievedMax) × 1.05, ceil au palier "nice".
+    /// Multiplier serré (5%) pour rester collé au max + paliers fins jusqu'à
+    /// 200 km : un goal de 95 km avec max 90 km donne 100 km au top, pas 125.
     private var maxValue: Double {
-        let goalValue = goal.target
         let achievedMax = ordered.map(\.achieved).max() ?? 0
-        return max(goalValue * 1.5, achievedMax * 1.05, goalValue)
+        let raw = Swift.max(goal.target, achievedMax) * 1.05
+        return niceCeil(raw)
     }
 
-    /// 4 graduations Y : 0, target/2, target, target*1.5
+    private func niceCeil(_ v: Double) -> Double {
+        guard v > 0 else { return 10 }
+        let step: Double
+        switch v {
+        case ..<25:    step = 5
+        case ..<200:   step = 10
+        case ..<500:   step = 25
+        case ..<2000:  step = 50
+        default:       step = 100
+        }
+        return (v / step).rounded(.up) * step
+    }
+
+    /// 4 graduations Y : 0, top/3, 2·top/3, top — alignées sur l'échelle.
     private var yLabels: [(value: Double, label: String)] {
-        let t = goal.target
+        let top = maxValue
         let unitForLabel = goal.metric == .distance ? unit.symbol : goal.metric.unit
         let asInt = { (v: Double) -> String in
             let display = goal.metric == .distance ? unit.valueFromKilometers(v) : v
             return "\(Int(display.rounded())) \(unitForLabel)"
         }
         return [
-            (t * 1.5, asInt(t * 1.5)),
-            (t,        asInt(t)),
-            (t * 0.5,  asInt(t * 0.5)),
-            (0,        "0 \(unitForLabel)"),
+            (top,         asInt(top)),
+            (top * 2 / 3, asInt(top * 2 / 3)),
+            (top / 3,     asInt(top / 3)),
+            (0,           "0 \(unitForLabel)"),
         ]
     }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                Text("EIGHT WEEKS")
-                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
-                    .tracking(1.2)
-                    .textCase(.uppercase)
-                    .foregroundStyle(RunBarColor.mutedInk(dark: dark))
-                Spacer()
-                Text(insight)
-                    .font(.system(size: 9.5, weight: .regular, design: .monospaced))
-                    .tracking(0.6)
-                    .textCase(.uppercase)
-                    .lineLimit(1)
-                    .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+            HStack(alignment: .firstTextBaseline) {
+                if let snap = hoveredSnapshot {
+                    Text(hoverDetail(snap))
+                        .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                        .tracking(0.9)
+                        .textCase(.uppercase)
+                        .lineLimit(1)
+                        .foregroundStyle(RunBarColor.ink(dark: dark))
+                        .transition(.opacity)
+                    Spacer()
+                } else {
+                    Text("EIGHT WEEKS")
+                        .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                        .tracking(1.2)
+                        .textCase(.uppercase)
+                        .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+                    Spacer()
+                    Text(insight)
+                        .font(.system(size: 9.5, weight: .regular, design: .monospaced))
+                        .tracking(0.6)
+                        .textCase(.uppercase)
+                        .lineLimit(1)
+                        .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+                }
             }
+            .animation(.easeOut(duration: 0.12), value: hoveredIndex)
 
             // Chart frame
             chartFrame
@@ -579,6 +610,31 @@ private struct WeeklyHistoryStrip: View {
             // X-axis labels
             xAxis
         }
+    }
+
+    private var hoveredSnapshot: WeeklySnapshot? {
+        guard let idx = hoveredIndex else { return nil }
+        let slots = barSlots()
+        guard idx < slots.count else { return nil }
+        return slots[idx]
+    }
+
+    private func hoverDetail(_ snap: WeeklySnapshot) -> String {
+        let cal = Calendar.iso8601Monday
+        let week = cal.component(.weekOfYear, from: snap.weekStart)
+        let weekEnd = cal.date(byAdding: .day, value: 6, to: snap.weekStart) ?? snap.weekStart
+        let f = DateFormatter()
+        f.dateFormat = "MMM d"
+        f.locale = Locale(identifier: "en_US_POSIX")
+        let range = "\(f.string(from: snap.weekStart)) — \(f.string(from: weekEnd))"
+
+        let unitForLabel = goal.metric == .distance ? unit.symbol : goal.metric.unit
+        let displayAchieved = goal.metric == .distance
+            ? unit.valueFromKilometers(snap.achieved)
+            : snap.achieved
+        let valueText = "\(DistanceFormatter.number(displayAchieved)) \(unitForLabel)"
+        let pct = Int((snap.progress * 100).rounded())
+        return "W\(week) · \(range.uppercased()) · \(valueText) · \(pct)%"
     }
 
     @ViewBuilder
@@ -590,8 +646,12 @@ private struct WeeklyHistoryStrip: View {
             let scale = maxValue
             let labelH: CGFloat = 10
 
-            HStack(spacing: 0) {
-                // Bars area (left)
+            // Single ZStack so the Y-axis labels can be absolutely positioned
+            // in the same coordinate system as the bars — guarantees they
+            // line up with the goal line / baseline regardless of parent
+            // layout pressure.
+            ZStack(alignment: .topLeading) {
+                // Bars area (left portion)
                 ZStack(alignment: .bottomLeading) {
                     // Goal line — pointillé hairline
                     if scale > 0 {
@@ -619,53 +679,73 @@ private struct WeeklyHistoryStrip: View {
                         .frame(height: 0.8)
                         .frame(maxWidth: .infinity, alignment: .bottomLeading)
 
-                    // Bars
-                    HStack(alignment: .bottom, spacing: 0) {
+                    // Bars — each slot is a full-column hit area for hover.
+                    HStack(spacing: 0) {
                         ForEach(Array(barSlots().enumerated()), id: \.offset) { idx, snap in
-                            barView(snap: snap, isCurrent: idx == 7, scale: scale, height: chartH)
-                                .frame(maxWidth: .infinity, alignment: .center)
+                            ZStack(alignment: .bottom) {
+                                Rectangle()
+                                    .fill(hoveredIndex == idx
+                                          ? RunBarColor.hairline(dark: dark).opacity(0.5)
+                                          : Color.clear)
+                                    .frame(maxHeight: .infinity)
+                                barView(
+                                    snap: snap,
+                                    isCurrent: idx == 7,
+                                    isHovered: hoveredIndex == idx,
+                                    scale: scale,
+                                    height: chartH
+                                )
+                            }
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                            .onHover { hovering in
+                                hoveredIndex = hovering ? idx : (hoveredIndex == idx ? nil : hoveredIndex)
+                            }
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                 }
                 .frame(width: chartW, height: chartH)
 
-                // Y-axis labels (right) — centered on their tick, clamped to chart frame.
-                ZStack(alignment: .topTrailing) {
-                    ForEach(yLabels, id: \.label) { tick in
-                        let y = scale > 0 ? chartH * (1 - CGFloat(tick.value / scale)) : 0
-                        let clamped = min(chartH - labelH, Swift.max(0, y - labelH / 2))
-                        Text(tick.label)
-                            .font(.system(size: 8.5, weight: .regular, design: .monospaced))
-                            .tracking(0.4)
-                            .lineLimit(1)
-                            .fixedSize(horizontal: true, vertical: false)
-                            .foregroundStyle(RunBarColor.mutedInk(dark: dark))
-                            .frame(width: yAxisWidth - 4, height: labelH, alignment: .trailing)
-                            .offset(y: clamped)
-                    }
+                // Y-axis labels — absolutely positioned via .position so each
+                // label center sits exactly at its tick's y coordinate.
+                ForEach(yLabels, id: \.label) { tick in
+                    let y = scale > 0 ? chartH * (1 - CGFloat(tick.value / scale)) : 0
+                    let cy = Swift.min(chartH - labelH / 2, Swift.max(labelH / 2, y))
+                    Text(tick.label)
+                        .font(.system(size: 8.5, weight: .regular, design: .monospaced))
+                        .tracking(0.4)
+                        .lineLimit(1)
+                        .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+                        .frame(width: yAxisWidth - 6, height: labelH, alignment: .trailing)
+                        .position(
+                            x: chartW + (yAxisWidth - 6) / 2 + 3,
+                            y: cy
+                        )
                 }
-                .frame(width: yAxisWidth, height: chartH)
             }
+            .frame(width: geo.size.width, height: geo.size.height)
         }
     }
 
     @ViewBuilder
-    private func barView(snap: WeeklySnapshot?, isCurrent: Bool, scale: Double, height: CGFloat) -> some View {
+    private func barView(snap: WeeklySnapshot?, isCurrent: Bool, isHovered: Bool, scale: Double, height: CGFloat) -> some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
             if let snap, scale > 0 {
                 let h = height * CGFloat(min(1.0, snap.achieved / scale))
                 let isComplete = snap.completed
-                let fill: Color = {
+                let baseFill: Color = {
                     if isCurrent {
                         return isComplete ? RunBarColor.vermillon : RunBarColor.vermillon.opacity(0.7)
                     }
                     return isComplete ? RunBarColor.inkSoft(dark: dark) : RunBarColor.mutedInk(dark: dark).opacity(0.55)
                 }()
+                let fill = isHovered ? RunBarColor.vermillon : baseFill
                 Rectangle()
                     .fill(fill)
-                    .frame(width: 5, height: Swift.max(2, h))
+                    .frame(width: isHovered ? 6 : 5, height: Swift.max(2, h))
+                    .animation(.easeOut(duration: 0.12), value: isHovered)
             } else {
                 Rectangle()
                     .fill(RunBarColor.hairline(dark: dark))

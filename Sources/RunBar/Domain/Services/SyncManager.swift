@@ -35,9 +35,11 @@ public final class SyncManager: ObservableObject {
         isSyncing = true
         defer { isSyncing = false }
 
+        // 2 ans — donne du recul aux streaks et reste très peu coûteux en
+        // requêtes (à per_page=200, 2 ans × 300 runs/an = ~3 requêtes).
         let syncStart = Calendar.iso8601Monday.date(
             byAdding: .day,
-            value: -56,
+            value: -730,
             to: Date.now.startOfWeek()
         ) ?? Date.now.startOfWeek()
         do {

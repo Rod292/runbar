@@ -87,11 +87,14 @@ public actor StravaService: StravaServiceProtocol {
         var all: [StravaActivityDTO] = []
         var page = 1
 
+        // `per_page=200` est le maximum documenté Strava — minimise le nombre
+        // de requêtes pour le backfill initial (3 000 activités = ~15 reqs).
+        let perPage = 200
         while true {
             var components = URLComponents(string: "https://www.strava.com/api/v3/athlete/activities")!
             components.queryItems = [
                 URLQueryItem(name: "after", value: String(Int(since.timeIntervalSince1970))),
-                URLQueryItem(name: "per_page", value: "100"),
+                URLQueryItem(name: "per_page", value: String(perPage)),
                 URLQueryItem(name: "page", value: String(page)),
             ]
             var req = URLRequest(url: components.url!)
@@ -106,7 +109,7 @@ public actor StravaService: StravaServiceProtocol {
             decoder.dateDecodingStrategy = .iso8601
             let pageItems = try decoder.decode([StravaActivityDTO].self, from: data)
             all.append(contentsOf: pageItems)
-            guard pageItems.count == 100 else { break }
+            guard pageItems.count == perPage else { break }
             page += 1
         }
 

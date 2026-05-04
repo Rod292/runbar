@@ -154,11 +154,16 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         pop.contentSize = NSSize(width: 320, height: 460)
         pop.behavior = .transient
         pop.animates = true
-        pop.contentViewController = NSHostingController(
+        let host = NSHostingController(
             rootView: PopoverView(viewModel: popoverVM)
                 .environmentObject(store)
-                .frame(width: 320, height: 460)
+                .frame(width: 320)
         )
+        // Ask the hosting controller to pin the popover to the SwiftUI
+        // intrinsic height — so adding a race banner (or any optional row)
+        // grows the popover instead of clipping the top/bottom.
+        host.sizingOptions = [.preferredContentSize]
+        pop.contentViewController = host
         popover = pop
 
         // Permet au popover de se fermer via NotificationCenter (bouton ✕).

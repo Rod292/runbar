@@ -1,305 +1,156 @@
-import { MenuBarMockup } from "./MenuBarMockup";
 import { RunnerSprite } from "./RunnerSprite";
 
 /**
  * Section 2 / 6 — Menu bar showcase
- * Anchor: editorial product-sheet — top eyebrow, centered desktop scene,
- *         hairline annotations, magnifier detail crop, bottom paragraph.
- * Background: tonal warm layers + vertical rhythm hairlines + paper noise.
- * Density: high.
+ *
+ * One beat: a single, large menu-bar mockup with one clean callout that
+ * actually points to the runner. No faux desktop, no magnifier, no decoy
+ * "23.4" floating in the void. The five-mood breakdown lives in §03.
  */
+
 export function Showcase() {
   return (
     <section
       id="showcase"
       className="relative overflow-hidden border-y border-hairline bg-paper"
     >
-      {/* tonal warm wash — paper above, ivory toward the floor */}
+      {/* tonal warm wash */}
       <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-paper via-paper to-ivory" />
-      {/* vertical rhythm hairlines (12-col echo) */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-y-0 left-1/2 hidden w-full max-w-[1280px] -translate-x-1/2 md:block"
-      >
-        <div className="grid h-full grid-cols-12 gap-x-6 px-10">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <div
-              key={i}
-              className={
-                i === 0 || i === 6 || i === 11
-                  ? "border-l border-hairline/60"
-                  : "border-l border-hairline/20"
-              }
-            />
-          ))}
-        </div>
-      </div>
       {/* paper grain */}
       <div className="pointer-events-none absolute inset-0 noise-bg opacity-40" />
 
-      <div className="relative mx-auto w-full max-w-[1280px] px-6 pt-20 pb-28 md:px-10 md:pt-24 md:pb-36">
-        {/* TOP EYEBROW — section index + chapter title, full-width band */}
-        <div className="mb-12 flex items-end justify-between border-b border-hairline pb-4 md:mb-16">
+      <div className="relative mx-auto w-full max-w-[1200px] px-6 pt-20 pb-28 md:px-10 md:pt-24 md:pb-32">
+        {/* EYEBROW */}
+        <div className="mb-10 flex items-end justify-between border-b border-hairline pb-4 md:mb-14">
           <div className="flex items-baseline gap-4">
             <span className="font-mono text-[11px] uppercase tracking-[0.28em] text-vermillon">
               §02
             </span>
             <span className="text-[11px] uppercase tracking-[0.22em] text-ink-mute">
-              The icon · menu-bar residency
+              The runner · five moods
             </span>
           </div>
           <span className="hidden font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute md:block">
-            fig. 02 — runner at rest
+            fig. 02
           </span>
         </div>
 
-        {/* HEADLINE — wraps over the visual, editorial pull */}
-        <div className="grid grid-cols-12 gap-x-6">
-          <h2 className="col-span-12 font-display text-[clamp(2.2rem,4.4vw,4rem)] font-medium leading-[1.02] tracking-tightest text-ink md:col-span-10">
-            A 16-pixel runner whose mood{" "}
-            <span className="italic text-ink-soft">shifts</span> with your week —
-            <span className="text-ink-mute"> quietly, in the corner.</span>
-          </h2>
-        </div>
+        {/* HEADLINE */}
+        <h2 className="font-display text-[clamp(2.2rem,4.4vw,4rem)] font-medium leading-[1.02] tracking-tightest text-ink md:max-w-[18ch]">
+          A 16-pixel runner whose mood{" "}
+          <span className="italic text-ink-soft">shifts</span> with your week —
+          <span className="text-ink-mute"> quietly, in the corner.</span>
+        </h2>
 
-        {/* DESKTOP SCENE — main stage */}
-        <div className="relative mt-14 md:mt-20">
-          {/* faint window outline behind the bar (suggestion of an open app) */}
-          <div
-            aria-hidden
-            className="absolute -left-2 right-24 top-24 hidden h-[260px] rounded-[14px] border border-hairline/70 bg-white/40 shadow-[0_20px_60px_-40px_rgba(15,15,14,0.18)] md:block"
-          >
-            <div className="flex h-7 items-center gap-1.5 border-b border-hairline/60 px-3">
-              <span className="h-2 w-2 rounded-full bg-hairline" />
-              <span className="h-2 w-2 rounded-full bg-hairline" />
-              <span className="h-2 w-2 rounded-full bg-hairline" />
-            </div>
-          </div>
-          <div
-            aria-hidden
-            className="absolute -right-6 left-32 top-40 hidden h-[200px] rounded-[14px] border border-hairline/50 bg-white/25 md:block"
-          />
+        {/* HERO SHOT — one large, clean menu bar */}
+        <figure className="relative mt-14 md:mt-20">
+          <div className="relative mx-auto max-w-[820px]">
+            {/* the bar itself, scaled up */}
+            <div className="relative flex items-center justify-between rounded-2xl border border-hairline bg-white/95 px-4 py-3 shadow-[0_1px_0_rgba(15,15,14,0.04),0_30px_80px_-30px_rgba(15,15,14,0.22)] backdrop-blur-sm md:px-6 md:py-3.5">
+              {/* left — apple + app menu (Finder always, the rest only on wider) */}
+              <div className="flex items-center gap-3 text-[13px] text-ink-soft md:gap-5 md:text-[14px]">
+                <svg width="16" height="19" viewBox="0 0 22 26" className="text-ink">
+                  <path
+                    fill="currentColor"
+                    d="M16.7 13.7c0-3 2.5-4.4 2.6-4.5-1.4-2.1-3.6-2.4-4.4-2.4-1.9-.2-3.6 1.1-4.6 1.1-.9 0-2.4-1.1-4-1-2 0-3.9 1.2-5 3-2.1 3.7-.5 9.2 1.5 12.2 1 1.4 2.2 3.1 3.7 3 1.5-.1 2-1 3.8-1 1.7 0 2.2 1 3.8 1 1.6 0 2.6-1.5 3.6-2.9 1.1-1.6 1.6-3.2 1.6-3.3-.1-.1-3-1.2-3-4.7-.1-2.9 2.4-4.4 2.5-4.5zM13.7 4.4c.8-1 1.4-2.4 1.3-3.8-1.2 0-2.7.8-3.6 1.8-.8.9-1.5 2.4-1.3 3.7 1.4.1 2.7-.7 3.6-1.7z"
+                  />
+                </svg>
+                <span className="font-medium text-ink">Finder</span>
+                <span className="hidden md:inline">File</span>
+                <span className="hidden md:inline">Edit</span>
+                <span className="hidden md:inline">View</span>
+              </div>
 
-          {/* the desktop card itself */}
-          <div className="relative">
-            <div className="rounded-[18px] border border-hairline bg-white p-3 shadow-[0_40px_120px_-50px_rgba(15,15,14,0.35)]">
-              {/* traffic lights */}
-              <div className="mb-3 flex items-center gap-1.5">
-                <span className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#FEBC2E]" />
-                <span className="h-2.5 w-2.5 rounded-full bg-[#28C840]" />
-                <span className="ml-3 font-mono text-[10px] uppercase tracking-[0.2em] text-ink-mute">
-                  desktop · 2:32 PM
+              {/* right — status icons + RunBar */}
+              <div className="flex items-center gap-3 md:gap-5">
+                <span className="hidden h-4 w-4 rounded-sm bg-ink/40 sm:block" />
+                <span className="hidden h-4 w-4 rounded-full bg-ink/40 sm:block" />
+                <svg width="20" height="14" viewBox="0 0 18 12" className="hidden text-ink/55 sm:block">
+                  <rect x="0" y="3" width="3" height="6" fill="currentColor" />
+                  <rect x="5" y="1" width="3" height="8" fill="currentColor" />
+                  <rect x="10" y="0" width="3" height="9" fill="currentColor" opacity=".6" />
+                  <rect x="15" y="0" width="3" height="9" fill="currentColor" opacity=".25" />
+                </svg>
+
+                {/* RunBar — the star, with a clean highlight ring */}
+                <div className="relative -my-1 px-2 py-1">
+                  <span
+                    aria-hidden
+                    className="absolute inset-0 rounded-lg ring-1 ring-vermillon/50"
+                  />
+                  <span
+                    aria-hidden
+                    className="absolute -right-1 -top-1 block h-1.5 w-1.5 rounded-full bg-vermillon shadow-[0_0_0_2px_white]"
+                  />
+                  <div className="relative flex items-center gap-2">
+                    <RunnerSprite size={28} state="sprinting" variant="ink" />
+                    <span className="font-mono text-[14px] tabular-nums tracking-tight text-ink-soft">
+                      23.4
+                      <span className="text-ink-mute">/40</span>
+                    </span>
+                  </div>
+                </div>
+
+                <span className="font-mono text-[13px] tabular-nums text-ink md:text-[14px]">
+                  2:32 PM
                 </span>
               </div>
-
-              {/* abstracted desktop interior */}
-              <div className="relative h-[320px] overflow-hidden rounded-[10px] bg-gradient-to-br from-ivory via-paper to-[#F2ECDF] md:h-[420px]">
-                {/* tonal wallpaper crop — warm/cream layers, no gradient slop */}
-                <div
-                  aria-hidden
-                  className="absolute inset-0"
-                  style={{
-                    background:
-                      "radial-gradient(80% 60% at 20% 30%, rgba(229,82,61,0.06), transparent 60%), radial-gradient(60% 50% at 85% 70%, rgba(31,42,34,0.05), transparent 60%)",
-                  }}
-                />
-                <div className="absolute inset-0 noise-bg opacity-60" />
-
-                {/* faded stat — second-read */}
-                <div className="absolute bottom-20 left-10 max-w-[60%]">
-                  <div className="font-display text-[140px] font-light leading-none tracking-crammed text-ink/[0.07] md:text-[180px]">
-                    23.4
-                  </div>
-                  <div className="mt-2 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute/70">
-                    km · this week / 40
-                  </div>
-                </div>
-
-                {/* dock band — soft hint at bottom */}
-                <div
-                  aria-hidden
-                  className="absolute inset-x-12 bottom-3 h-9 rounded-xl border border-hairline/70 bg-white/55 backdrop-blur-sm md:inset-x-24"
-                >
-                  <div className="flex h-full items-center justify-center gap-2 px-3">
-                    {Array.from({ length: 7 }).map((_, i) => (
-                      <span
-                        key={i}
-                        className={`block rounded-[6px] ${
-                          i === 3
-                            ? "h-6 w-6 bg-vermillon/70"
-                            : "h-6 w-6 bg-ink/10"
-                        }`}
-                      />
-                    ))}
-                  </div>
-                </div>
-
-                {/* The bar — pinned crisp at top */}
-                <div className="absolute inset-x-3 top-3">
-                  <MenuBarMockup />
-                </div>
-              </div>
             </div>
 
-            {/* HAIRLINE ANNOTATIONS — editorial product-sheet style */}
-            {/* Top-right: "16-pixel runner" — line goes up & right from runner */}
-            <div className="pointer-events-none absolute -right-4 top-2 hidden w-56 md:block lg:-right-10">
-              <svg
-                viewBox="0 0 200 60"
-                className="absolute -left-32 top-3 h-[60px] w-[200px] text-ink-mute"
-                aria-hidden
-              >
+            {/* CALLOUT — points cleanly at the runner */}
+            <div
+              aria-hidden
+              className="pointer-events-none absolute right-[68px] -bottom-20 hidden h-20 w-20 md:block"
+            >
+              <svg viewBox="0 0 80 80" className="h-full w-full text-vermillon">
                 <path
-                  d="M2 56 L70 56 L130 12 L198 12"
+                  d="M40 4 L40 50 L70 70"
                   fill="none"
                   stroke="currentColor"
-                  strokeWidth="0.75"
+                  strokeWidth="1"
+                  strokeDasharray="2 3"
                 />
-                <circle cx="2" cy="56" r="2" fill="currentColor" />
+                <circle cx="40" cy="4" r="2" fill="currentColor" />
               </svg>
-              <div className="pl-2">
-                <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-vermillon">
-                  a · runner
-                </div>
-                <div className="mt-1 font-display text-[14px] leading-[1.3] text-ink">
-                  16-pixel sprite
-                </div>
-                <div className="mt-1 text-[11px] leading-[1.45] text-ink-soft">
-                  Hand-drawn, 8-frame cycle. Five mood states tied to your goal.
-                </div>
+            </div>
+            <div className="pointer-events-none absolute -bottom-32 right-0 hidden w-72 md:block">
+              <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-vermillon">
+                a · the runner
+              </div>
+              <div className="mt-1 font-display text-[18px] leading-[1.3] text-ink">
+                16-pixel sprite, hand-drawn.
+              </div>
+              <div className="mt-1 text-[13px] leading-[1.5] text-ink-soft">
+                Eight-frame cycle. Five mood states. Tracks your weekly goal,
+                lives next to the clock.
               </div>
             </div>
 
-            {/* Right-mid: "Live state" — points to highlight ring */}
-            <div className="pointer-events-none absolute -right-2 top-44 hidden w-52 md:block lg:-right-8">
-              <svg
-                viewBox="0 0 180 40"
-                className="absolute -left-24 top-2 h-[40px] w-[180px] text-ink-mute"
-                aria-hidden
-              >
-                <path
-                  d="M2 20 L88 20 L120 8 L178 8"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="0.75"
-                />
-                <circle cx="2" cy="20" r="2" fill="currentColor" />
-              </svg>
-              <div className="pl-2 pt-3">
-                <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-vermillon">
-                  b · live state
-                </div>
-                <div className="mt-1 font-display text-[14px] leading-[1.3] text-ink">
-                  Mood reads at a glance
-                </div>
-              </div>
-            </div>
-
-            {/* Bottom-left: "Strava-sync dot" */}
-            <div className="pointer-events-none absolute -left-2 bottom-6 hidden w-56 md:block lg:-left-6">
-              <svg
-                viewBox="0 0 200 50"
-                className="absolute left-32 bottom-7 h-[50px] w-[200px] text-ink-mute"
-                aria-hidden
-              >
-                <path
-                  d="M2 12 L70 12 L120 44 L198 44"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="0.75"
-                />
-                <circle cx="198" cy="44" r="2" fill="currentColor" />
-              </svg>
-              <div className="pb-2">
-                <div className="font-mono text-[10px] uppercase tracking-[0.22em] text-vermillon">
-                  c · strava sync
-                </div>
-                <div className="mt-1 font-display text-[14px] leading-[1.3] text-ink">
-                  Vermillon dot = fresh data
-                </div>
-                <div className="mt-1 text-[11px] leading-[1.45] text-ink-soft">
-                  Polls every 90s when you're online. Silent otherwise.
-                </div>
-              </div>
-            </div>
+            {/* mobile caption (no callout on mobile) */}
+            <p className="mt-6 text-center text-[13px] text-ink-soft md:hidden">
+              16-pixel sprite. Eight-frame cycle. Lives next to the clock.
+            </p>
           </div>
+        </figure>
 
-          {/* MAGNIFIER DETAIL CROP — bottom-right of stage, breaking the frame */}
-          <div className="relative mt-10 grid grid-cols-12 gap-x-6 md:mt-0">
-            <div className="col-span-12 md:col-start-8 md:col-span-5 md:-mt-20 md:translate-x-6 lg:translate-x-12">
-              <figure className="relative">
-                {/* magnifier frame */}
-                <div className="relative overflow-hidden rounded-full border border-hairline bg-white shadow-[0_20px_60px_-30px_rgba(15,15,14,0.35)]">
-                  <div className="aspect-square w-full bg-gradient-to-br from-ivory to-paper">
-                    {/* crosshair */}
-                    <div
-                      aria-hidden
-                      className="absolute inset-0 flex items-center justify-center"
-                    >
-                      <div className="h-px w-full bg-hairline/60" />
-                    </div>
-                    <div
-                      aria-hidden
-                      className="absolute inset-0 flex items-center justify-center"
-                    >
-                      <div className="h-full w-px bg-hairline/60" />
-                    </div>
-                    {/* the zoomed runner + km counter */}
-                    <div className="absolute inset-0 flex items-center justify-center gap-4">
-                      <RunnerSprite size={96} state="sprinting" variant="ink" />
-                      <div className="flex flex-col items-start">
-                        <span className="font-mono text-[28px] tabular-nums tracking-tight text-ink">
-                          23.4
-                        </span>
-                        <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
-                          / 40 km
-                        </span>
-                      </div>
-                    </div>
-                    {/* focus ring */}
-                    <div
-                      aria-hidden
-                      className="absolute inset-4 rounded-full border border-vermillon/40"
-                    />
-                  </div>
-                </div>
-                {/* magnifier handle */}
-                <div
-                  aria-hidden
-                  className="absolute -bottom-6 -right-2 h-16 w-2 origin-top rotate-[35deg] rounded-full bg-ink/80"
-                />
-                <figcaption className="mt-5 flex items-baseline gap-3 border-t border-hairline pt-3">
-                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-vermillon">
-                    detail
-                  </span>
-                  <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
-                    600 % zoom · sprinting state
-                  </span>
-                </figcaption>
-              </figure>
-            </div>
-
-            {/* BOTTOM PARAGRAPH — anchored bottom-left, wraps under visual */}
-            <div className="col-span-12 mt-10 md:col-span-6 md:row-start-1 md:mt-16">
-              <div className="border-l-2 border-vermillon pl-5">
-                <p className="font-display text-[clamp(1.1rem,1.4vw,1.4rem)] leading-[1.4] text-ink">
-                  Five subtle states — calm, jogging, sprinting, tired,
-                  victorious.
-                </p>
-                <p className="mt-4 max-w-[42ch] text-[14px] leading-[1.65] text-ink-soft">
-                  No nagging notifications, no popups, no badges. Just a quiet
-                  living signal in the top-right corner that you'll catch in
-                  peripheral vision while you work — and recognize without
-                  reading.
-                </p>
-                <div className="mt-6 flex items-center gap-4 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
-                  <span>macOS 13+</span>
-                  <span className="h-px w-6 bg-hairline" />
-                  <span>menu-bar only</span>
-                  <span className="h-px w-6 bg-hairline" />
-                  <span>no dock icon</span>
-                </div>
+        {/* OUTRO PARAGRAPH */}
+        <div className="mt-32 grid grid-cols-12 gap-x-6 md:mt-44">
+          <div className="col-span-12 md:col-span-7">
+            <div className="border-l-2 border-vermillon pl-5">
+              <p className="font-display text-[clamp(1.1rem,1.4vw,1.4rem)] leading-[1.4] text-ink">
+                A quiet living signal in the top-right corner — caught in
+                peripheral vision, recognized without reading.
+              </p>
+              <p className="mt-4 max-w-[44ch] text-[14px] leading-[1.65] text-ink-soft">
+                No nagging notifications, no popups, no badges. The runner
+                simply changes posture as your week unfolds.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center gap-3 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
+                <span>macOS 14+</span>
+                <span className="h-px w-6 bg-hairline" />
+                <span>menu-bar only</span>
+                <span className="h-px w-6 bg-hairline" />
+                <span>no dock icon</span>
               </div>
             </div>
           </div>

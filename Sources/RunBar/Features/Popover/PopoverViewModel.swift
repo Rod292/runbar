@@ -78,7 +78,9 @@ public final class PopoverViewModel: ObservableObject {
         guard let snapshots else { return }
         let cal = Calendar.iso8601Monday
         let thisStart = Date.now.startOfWeek(weekday: goal.resetWeekday)
-        for offset in 1..<8 {
+        // 104 semaines = 2 ans. Aligné sur la fenêtre de sync Strava.
+        // Permet à `StreakCalculator` de remonter aussi loin que les données.
+        for offset in 1..<104 {
             guard
                 let start = cal.date(byAdding: .day, value: -7 * offset, to: thisStart),
                 let end = cal.date(byAdding: .day, value: 7, to: start)

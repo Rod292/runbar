@@ -12,6 +12,8 @@ import Network
 @MainActor
 final class StravaOAuthCoordinator {
     func authorize() async throws -> String {
+        guard Secrets.hasStravaCredentials else { throw StravaError.missingConfiguration }
+        let state = UUID().uuidString
         var components = URLComponents(string: "https://www.strava.com/oauth/authorize")!
         components.queryItems = [
             URLQueryItem(name: "client_id",       value: Secrets.stravaClientID),
@@ -19,25 +21,33 @@ final class StravaOAuthCoordinator {
             URLQueryItem(name: "redirect_uri",    value: Secrets.stravaRedirectURI),
             URLQueryItem(name: "approval_prompt", value: "auto"),
             URLQueryItem(name: "scope",           value: Secrets.stravaScope),
+            URLQueryItem(name: "state",           value: state),
         ]
         let authURL = components.url!
 
         // On démarre le listener AVANT d'ouvrir le navigateur, sinon le
         // callback peut arriver avant qu'on écoute.
-        async let code: String = waitForCode()
+        async let code: String = waitForCode(expectedState: state)
         NSWorkspace.shared.open(authURL)
         return try await code
     }
 
-    private func waitForCode() async throws -> String {
+    private func waitForCode(expectedState: String) async throws -> String {
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<String, Error>) in
             do {
                 let listener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: Secrets.stravaLocalCallbackPort)!)
-                let handler = LocalCallbackHandler(continuation: cont, listener: listener)
+                let handler = LocalCallbackHandler(
+                    continuation: cont,
+                    listener: listener,
+                    expectedState: expectedState
+                )
                 listener.newConnectionHandler = { conn in
                     handler.handle(connection: conn)
                 }
                 listener.start(queue: .global(qos: .userInitiated))
+                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 120) {
+                    handler.timeout()
+                }
             } catch {
                 cont.resume(throwing: error)
             }
@@ -50,12 +60,14 @@ final class StravaOAuthCoordinator {
 private final class LocalCallbackHandler: @unchecked Sendable {
     private let continuation: CheckedContinuation<String, Error>
     private let listener: NWListener
+    private let expectedState: String
     private var done = false
     private let lock = NSLock()
 
-    init(continuation: CheckedContinuation<String, Error>, listener: NWListener) {
+    init(continuation: CheckedContinuation<String, Error>, listener: NWListener, expectedState: String) {
         self.continuation = continuation
         self.listener = listener
+        self.expectedState = expectedState
     }
 
     func handle(connection: NWConnection) {
@@ -66,6 +78,10 @@ private final class LocalCallbackHandler: @unchecked Sendable {
             // On répond toujours quelque chose, succès ou échec.
             connection.send(content: Self.responsePayload(success: parsed.code != nil),
                             completion: .contentProcessed { _ in connection.cancel() })
+            guard parsed.state == self.expectedState else {
+                self.finish(.failure(StravaError.invalidOAuthState))
+                return
+            }
             if let code = parsed.code {
                 self.finish(.success(code))
             } else if parsed.error != nil {
@@ -75,16 +91,21 @@ private final class LocalCallbackHandler: @unchecked Sendable {
     }
 
     /// Parse une ligne `GET /callback?code=...` (ou `?error=...`).
-    private static func parseCallback(data: Data?) -> (code: String?, error: String?) {
+    func timeout() {
+        finish(.failure(StravaError.oauthTimeout))
+    }
+
+    private static func parseCallback(data: Data?) -> (code: String?, error: String?, state: String?) {
         guard
             let data = data,
             let request = String(data: data, encoding: .utf8),
             let path = requestPath(in: request),
             let comps = URLComponents(string: "http://x" + path)
-        else { return (nil, nil) }
+        else { return (nil, nil, nil) }
         let code  = comps.queryItems?.first(where: { $0.name == "code"  })?.value
         let error = comps.queryItems?.first(where: { $0.name == "error" })?.value
-        return (code, error)
+        let state = comps.queryItems?.first(where: { $0.name == "state" })?.value
+        return (code, error, state)
     }
 
     private func finish(_ result: Result<String, Error>) {

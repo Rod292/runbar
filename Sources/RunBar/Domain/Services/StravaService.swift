@@ -46,24 +46,37 @@ public actor StravaService: StravaServiceProtocol {
     }
 
     public func fetchActivities(since: Date) async throws -> [ActivityDTO] {
+        guard Secrets.hasStravaCredentials else { throw StravaError.missingConfiguration }
         let token = try await ensureFreshAccessToken()
-        var components = URLComponents(string: "https://www.strava.com/api/v3/athlete/activities")!
-        components.queryItems = [
-            URLQueryItem(name: "after", value: String(Int(since.timeIntervalSince1970))),
-            URLQueryItem(name: "per_page", value: "100"),
-        ]
-        var req = URLRequest(url: components.url!)
-        req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        let (data, resp) = try await URLSession.shared.data(for: req)
-        guard let http = resp as? HTTPURLResponse, http.statusCode == 200 else {
-            let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
-            RunBarLog.strava.error("activities fetch failed: HTTP \(code)")
-            throw StravaError.httpStatus(code)
+        var all: [StravaActivityDTO] = []
+        var page = 1
+
+        while true {
+            var components = URLComponents(string: "https://www.strava.com/api/v3/athlete/activities")!
+            components.queryItems = [
+                URLQueryItem(name: "after", value: String(Int(since.timeIntervalSince1970))),
+                URLQueryItem(name: "per_page", value: "100"),
+                URLQueryItem(name: "page", value: String(page)),
+            ]
+            var req = URLRequest(url: components.url!)
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            let (data, resp) = try await URLSession.shared.data(for: req)
+            guard let http = resp as? HTTPURLResponse, http.statusCode == 200 else {
+                let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+                RunBarLog.strava.error("activities fetch failed: HTTP \(code)")
+                throw StravaError.httpStatus(code)
+            }
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let pageItems = try decoder.decode([StravaActivityDTO].self, from: data)
+            all.append(contentsOf: pageItems)
+            guard pageItems.count == 100 else { break }
+            page += 1
         }
-        let decoder = JSONDecoder()
-        decoder.dateDecodingStrategy = .iso8601
-        let raw = try decoder.decode([StravaActivityDTO].self, from: data)
-        return raw.map { $0.toDomain() }
+
+        return all
+            .filter(\.isRunningActivity)
+            .map { $0.toDomain() }
     }
 
     // MARK: - Token plumbing
@@ -162,21 +175,32 @@ private struct StravaActivityDTO: Decodable {
             source: .strava
         )
     }
+
+    var isRunningActivity: Bool {
+        ["Run", "TrailRun", "VirtualRun"].contains(type)
+    }
 }
 
 // MARK: - Errors
 
 public enum StravaError: Error, LocalizedError {
     case notImplemented
+    case missingConfiguration
     case notAuthenticated
     case oauthFailed
+    case oauthTimeout
+    case invalidOAuthState
     case httpStatus(Int)
 
     public var errorDescription: String? {
         switch self {
         case .notImplemented:    return "Connexion Strava à venir."
+        case .missingConfiguration:
+            return "Configuration Strava manquante. Définis RUNBAR_STRAVA_CLIENT_ID et RUNBAR_STRAVA_CLIENT_SECRET."
         case .notAuthenticated:  return "Pas connecté à Strava."
         case .oauthFailed:       return "Échec de l'autorisation."
+        case .oauthTimeout:      return "Connexion Strava expirée."
+        case .invalidOAuthState: return "Réponse OAuth invalide."
         case .httpStatus(let c): return "Erreur serveur (HTTP \(c))."
         }
     }

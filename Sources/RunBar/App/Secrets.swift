@@ -1,21 +1,20 @@
-// Copie ce fichier en `Secrets.swift` (sans le .txt) si le fichier manque.
-// Les valeurs réelles doivent être fournies via variables d'environnement.
-//
-// 1. Crée une app Strava : https://www.strava.com/settings/api
-//    - Authorization Callback Domain : localhost
-// 2. Exporte RUNBAR_STRAVA_CLIENT_ID et RUNBAR_STRAVA_CLIENT_SECRET.
-
 import Foundation
 
+/// Configuration Strava. Les secrets réels doivent venir de l'environnement
+/// local, pas du dépôt.
 enum Secrets {
     static let stravaClientID = value(env: "RUNBAR_STRAVA_CLIENT_ID", defaults: "runbar.strava.clientID")
     static let stravaClientSecret = value(env: "RUNBAR_STRAVA_CLIENT_SECRET", defaults: "runbar.strava.clientSecret")
+    /// Callback OAuth — un mini serveur local intercepte la requête.
+    /// La "Authorization Callback Domain" sur https://www.strava.com/settings/api
+    /// doit valoir `localhost`.
     static let stravaRedirectURI = value(
         env: "RUNBAR_STRAVA_REDIRECT_URI",
         defaults: "runbar.strava.redirectURI",
         fallback: "http://localhost:47862/callback"
     )
     static let stravaLocalCallbackPort: UInt16 = 47862
+    /// Scope minimal pour lire les sorties privées et publiques.
     static let stravaScope = value(
         env: "RUNBAR_STRAVA_SCOPE",
         defaults: "runbar.strava.scope",

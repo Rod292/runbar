@@ -23,7 +23,7 @@ public final class NotificationService {
     }
 
     public func notifyVictory(distanceKm: Double, target: Double, unit: String) async {
-        guard hasBundle else { return }
+        guard hasBundle, RunBarPreferences.notifyVictory else { return }
         await requestAuthorizationIfNeeded()
         let content = UNMutableNotificationContent()
         content.title = String(localized: "notif.victory.title", bundle: .module)

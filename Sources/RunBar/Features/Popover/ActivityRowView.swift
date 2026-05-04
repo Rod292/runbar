@@ -5,6 +5,7 @@ struct ActivityRowView: View {
     let day: String
     let name: String
     let distanceKm: Double
+    let elevationGain: Double
     let timeLabel: String
     let dark: Bool
     let highlight: Bool
@@ -36,10 +37,17 @@ struct ActivityRowView: View {
             }
             .frame(width: 60, alignment: .trailing)
 
-            Text(timeLabel)
-                .font(.system(size: 12).monospacedDigit())
-                .foregroundStyle(RunBarColor.mutedInk(dark: dark))
-                .frame(width: 44, alignment: .trailing)
+            if RunBarPreferences.trailMode {
+                Text("+\(Int(elevationGain.rounded()))m")
+                    .font(.system(size: 11).monospacedDigit())
+                    .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+                    .frame(width: 48, alignment: .trailing)
+            } else {
+                Text(timeLabel)
+                    .font(.system(size: 12).monospacedDigit())
+                    .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+                    .frame(width: 44, alignment: .trailing)
+            }
         }
         .padding(.vertical, 6)
         .padding(.horizontal, 6)

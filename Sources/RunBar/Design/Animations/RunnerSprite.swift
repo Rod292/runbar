@@ -20,8 +20,8 @@ public enum RunnerSprite {
     /// Frames brutes — agrégat multi-résolutions (@1x + @2x + @3x) chargé
     /// comme une seule NSImage. macOS choisit alors la meilleure rep selon
     /// le scale factor de l'écran, sans rasterisation prématurée.
-    private static let rawFrames: [NSImage] = (1...8).map { i in
-        loadMultiResolution(baseName: "frame-\(i)") ?? NSImage()
+    private static let rawFrames: [NSImage] = (1...8).compactMap { i in
+        loadMultiResolution(baseName: "frame-\(i)")
     }
 
     private static func loadMultiResolution(baseName: String) -> NSImage? {
@@ -76,6 +76,7 @@ public enum RunnerSprite {
         let key = Key(frame: safe, pointSize: Int(pointSize.rounded()))
         if let cached = cache[key] { return cached }
         let leaned = leaned(rawFrames[safe], degrees: leanDegrees, pointSize: pointSize)
+        guard !leaned.representations.isEmpty, leaned.size.width > 0, leaned.size.height > 0 else { return nil }
         leaned.isTemplate = true
         cache[key] = leaned
         return leaned

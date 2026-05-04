@@ -30,6 +30,10 @@ public final class SnapshotStore: ObservableObject {
         StreakCalculator.current(snapshots: snapshots)
     }
 
+    public func recent(limit: Int = 8) -> [WeeklySnapshot] {
+        Array(snapshots.sorted(by: { $0.weekStart > $1.weekStart }).prefix(limit))
+    }
+
     private func load() {
         guard let data = UserDefaults.standard.data(forKey: key) else { return }
         if let decoded = try? JSONDecoder().decode([WeeklySnapshot].self, from: data) {

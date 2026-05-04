@@ -51,11 +51,12 @@ public struct SettingsView: View {
     @ObservedObject var coordinator: SettingsCoordinator
     @State private var selection: Tab = .general
     @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
-    @AppStorage("runbar.showGlyph") private var showGlyph: Bool = true
-    @AppStorage("runbar.showPercent") private var showPercent: Bool = false
-    @AppStorage("runbar.autoSync") private var autoSync: Bool = true
-    @AppStorage("runbar.notifyVictory") private var notifyVictory: Bool = true
-    @AppStorage("runbar.trailMode") private var trailMode: Bool = false
+    @AppStorage(RunBarPreferences.Key.showGlyph) private var showGlyph: Bool = true
+    @AppStorage(RunBarPreferences.Key.showPercent) private var showPercent: Bool = false
+    @AppStorage(RunBarPreferences.Key.autoSync) private var autoSync: Bool = true
+    @AppStorage(RunBarPreferences.Key.notifyVictory) private var notifyVictory: Bool = true
+    @AppStorage(RunBarPreferences.Key.trailMode) private var trailMode: Bool = false
+    @State private var raceEnabled: Bool = false
     @State private var sliderGoal: Double = 60
 
     private var unit: DistanceUnit {
@@ -66,6 +67,7 @@ public struct SettingsView: View {
         self.store = store
         self.coordinator = coordinator
         self._sliderGoal = State(initialValue: store.goal.target)
+        self._raceEnabled = State(initialValue: store.goal.raceDate != nil)
     }
 
     enum Tab: String, CaseIterable, Identifiable {
@@ -187,6 +189,8 @@ public struct SettingsView: View {
 
             Divider().padding(.vertical, 8)
 
+            diagnosticPanel
+
             HStack {
                 VStack(alignment: .leading, spacing: 2) {
                     Text("settings.sources.local_data.title", bundle: .module)
@@ -201,6 +205,7 @@ public struct SettingsView: View {
                     Text("settings.sources.local_data.clear", bundle: .module)
                 }
                 .controlSize(.small)
+                .buttonStyle(PressableButtonStyle())
             }
             .padding(.vertical, 8)
             .padding(.horizontal, 12)
@@ -237,6 +242,7 @@ public struct SettingsView: View {
                     Text("settings.sources.disconnect", bundle: .module)
                 }
                 .controlSize(.small)
+                .buttonStyle(PressableButtonStyle())
             } else {
                 Button {
                     Task { await coordinator.connectStrava() }
@@ -251,6 +257,56 @@ public struct SettingsView: View {
         .padding(.vertical, 8)
         .padding(.horizontal, 12)
         .background(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
+    }
+
+    private var diagnosticPanel: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("settings.sources.diagnostic.title", bundle: .module)
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .textCase(.uppercase)
+                .tracking(0.4)
+            HStack(spacing: 0) {
+                diagnosticMetric(
+                    title: String(localized: "settings.sources.diagnostic.strava", bundle: .module),
+                    value: coordinator.stravaConnected
+                        ? String(localized: "settings.sources.connected", bundle: .module)
+                        : String(localized: "settings.sources.disconnected", bundle: .module),
+                    color: coordinator.stravaConnected ? RunBarColor.moss : RunBarColor.terra
+                )
+                Divider().padding(.horizontal, 12)
+                diagnosticMetric(
+                    title: String(localized: "settings.general.autosync", bundle: .module),
+                    value: autoSync
+                        ? String(localized: "common.on", bundle: .module)
+                        : String(localized: "common.off", bundle: .module),
+                    color: autoSync ? RunBarColor.moss : Color.secondary
+                )
+                Divider().padding(.horizontal, 12)
+                diagnosticMetric(
+                    title: String(localized: "settings.sources.diagnostic.local", bundle: .module),
+                    value: "\(store.activities.count)",
+                    color: RunBarColor.slate
+                )
+            }
+        }
+        .padding(.vertical, 10)
+        .padding(.horizontal, 12)
+        .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.45)))
+        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
+    }
+
+    private func diagnosticMetric(title: String, value: String, color: Color) -> some View {
+        VStack(alignment: .leading, spacing: 3) {
+            Text(title)
+                .font(.system(size: 10.5))
+                .foregroundStyle(.secondary)
+            Text(value)
+                .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                .foregroundStyle(color)
+                .lineLimit(1)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     private func sourceRow(name: String, status: String, canConnect: Bool) -> some View {
@@ -268,32 +324,53 @@ public struct SettingsView: View {
     }
 
     private var goalsPane: some View {
-        // Le slider et le store sont en km. On affiche dans l'unité préférée.
-        let displayValue = unit.valueFromKilometers(sliderGoal)
-        let displayMin = unit.valueFromKilometers(10)
-        let displayMax = unit.valueFromKilometers(150)
-        let targetLabelKey: LocalizedStringKey = unit == .km
-            ? "settings.goals.weekly_target"
-            : "settings.goals.weekly_target_mi"
+        let metric = store.goal.metric
+        let target = displayTargetValue(store.goal.target, metric: metric)
+        let range = targetRange(metric: metric)
+        let step = targetStep(metric: metric)
+        let targetBinding = Binding<Double>(
+            get: { displayTargetValue(store.goal.target, metric: store.goal.metric) },
+            set: { newDisplayValue in
+                store.goal.target = storedTargetValue(newDisplayValue, metric: store.goal.metric)
+                sliderGoal = store.goal.target
+            }
+        )
         return Form {
+            Picker(selection: Binding(
+                get: { store.goal.metric },
+                set: {
+                    store.goal.metric = $0
+                    store.goal.target = defaultTarget(for: $0)
+                    sliderGoal = store.goal.target
+                }
+            )) {
+                ForEach(GoalMetric.allCases, id: \.self) { metric in
+                    Text(metric.label).tag(metric)
+                }
+            } label: {
+                Text("settings.goals.metric", bundle: .module)
+            }
+
             Section {
                 VStack(alignment: .leading) {
                     HStack {
-                        Text(targetLabelKey, bundle: .module)
+                        Text("settings.goals.weekly_target", bundle: .module)
                         Spacer()
-                        Text("\(Int(displayValue.rounded())) \(unit.symbol)")
+                        Text("\(Int(target.rounded())) \(targetUnit(metric: metric))")
                             .font(.system(size: 13, weight: .semibold).monospaced())
                     }
-                    Slider(value: Binding(
-                        get: { displayValue },
-                        set: { newDisplayValue in
-                            sliderGoal = unit.toKilometers(newDisplayValue)
-                        }
-                    ), in: displayMin...displayMax, step: unit == .km ? 5 : 1) {
+                    Slider(value: targetBinding, in: range, step: step) {
                         EmptyView()
-                    } onEditingChanged: { editing in
-                        if !editing { store.goal.target = sliderGoal }
                     }
+                }
+                Picker(selection: Binding(
+                    get: { store.goal.resetWeekday },
+                    set: { store.goal.resetWeekday = $0 }
+                )) {
+                    Text("Lundi").tag(2)
+                    Text("Dimanche").tag(1)
+                } label: {
+                    Text("settings.goals.reset_day", bundle: .module)
                 }
                 Toggle(isOn: $trailMode) {
                     Text("settings.display.trail_mode", bundle: .module)
@@ -309,7 +386,16 @@ public struct SettingsView: View {
                 )) {
                     Text("settings.goals.race_name", bundle: .module)
                 }
-                if store.goal.raceDate != nil {
+                Toggle(isOn: Binding(
+                    get: { raceEnabled },
+                    set: { enabled in
+                        raceEnabled = enabled
+                        store.goal.raceDate = enabled ? (store.goal.raceDate ?? Date.now.addingTimeInterval(30 * 24 * 3600)) : nil
+                    }
+                )) {
+                    Text("settings.goals.race_date", bundle: .module)
+                }
+                if raceEnabled {
                     DatePicker(selection: Binding(
                         get: { store.goal.raceDate ?? .now },
                         set: { store.goal.raceDate = $0 }
@@ -322,6 +408,45 @@ public struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+    }
+
+    private func displayTargetValue(_ stored: Double, metric: GoalMetric) -> Double {
+        metric == .distance ? unit.valueFromKilometers(stored) : stored
+    }
+
+    private func storedTargetValue(_ display: Double, metric: GoalMetric) -> Double {
+        metric == .distance ? unit.toKilometers(display) : display
+    }
+
+    private func targetRange(metric: GoalMetric) -> ClosedRange<Double> {
+        switch metric {
+        case .distance:
+            return unit == .km ? 10...150 : 5...95
+        case .count:
+            return 1...14
+        case .elevation:
+            return 100...10_000
+        }
+    }
+
+    private func targetStep(metric: GoalMetric) -> Double {
+        switch metric {
+        case .distance: return unit == .km ? 5 : 1
+        case .count: return 1
+        case .elevation: return 100
+        }
+    }
+
+    private func targetUnit(metric: GoalMetric) -> String {
+        metric == .distance ? unit.symbol : metric.unit
+    }
+
+    private func defaultTarget(for metric: GoalMetric) -> Double {
+        switch metric {
+        case .distance: return 60
+        case .count: return 4
+        case .elevation: return 1_000
+        }
     }
 
     private var aboutPane: some View {

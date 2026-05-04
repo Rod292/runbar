@@ -1,8 +1,7 @@
 .DS_Store
 .build/
 build/
-# Strava credentials — never commit
-Sources/RunBar/App/Secrets.swift
+# Strava credentials come from env/defaults; Secrets.swift contains no secrets.
 .env
 
 .swiftpm/

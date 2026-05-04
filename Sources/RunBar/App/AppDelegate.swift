@@ -19,6 +19,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var frameIndex: Int = 0
     private var currentState: RunnerState = .idle
     private var stateObserver: AnyCancellable?
+    private var preferencesObserver: NSObjectProtocol?
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
         // Force-init container avant tout
@@ -27,6 +28,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         setupStatusItem()
         setupPopover()
         bindRunnerState()
+        observePreferences()
         startFrameTimer()
         startBackgroundWork()
         registerGlobalHotkey()
@@ -50,9 +52,27 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func startBackgroundWork() {
-        sync.startBackgroundSync()
-        AppContainer.shared.webhook.start()
+        configureAutoSync()
         Task { await sync.syncNow() }
+    }
+
+    private func configureAutoSync() {
+        if RunBarPreferences.autoSync {
+            sync.startBackgroundSync()
+        } else {
+            sync.stop()
+        }
+    }
+
+    private func observePreferences() {
+        preferencesObserver = NotificationCenter.default.addObserver(
+            forName: UserDefaults.didChangeNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                self?.configureAutoSync()
+                self?.refreshIcon()
+            }
+        }
     }
 
     /// Si l'onboarding n'a jamais été fait, on ouvre le popover automatiquement
@@ -76,15 +96,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         // et place le popover hors écran (button.bounds = .zero).
         let item = NSStatusBar.system.statusItem(withLength: 28)
         if let button = item.button {
-            let image = RunnerBitmap.image(for: currentState, subframe: 0)
-            button.image = image
-            // Fallback texte si l'image n'a pas pu être rendue.
-            if image == nil { button.title = "RB" }
-            button.imagePosition = image == nil ? .noImage : .imageOnly
+            applyIcon(to: button, image: RunnerBitmap.image(for: currentState, subframe: 0))
             button.action = #selector(handleClick(_:))
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            NSLog("[RunBar] StatusItem créé image=\(image == nil ? "nil" : "ok")")
+            NSLog("[RunBar] StatusItem créé frameCount=\(RunnerSprite.frameCount)")
         }
         statusItem = item
     }
@@ -229,6 +245,42 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func refreshIcon() {
-        statusItem?.button?.image = RunnerBitmap.image(for: currentState, subframe: frameIndex)
+        guard let button = statusItem?.button else { return }
+        applyIcon(to: button, image: RunnerBitmap.image(for: currentState, subframe: frameIndex))
+    }
+
+    private func applyIcon(to button: NSStatusBarButton, image: NSImage?) {
+        let wantsGlyph = RunBarPreferences.showGlyph
+        let wantsPercent = RunBarPreferences.showPercent
+        let validImage = image?.isUsableStatusImage == true ? image : fallbackStatusImage()
+        let percent = "\(Int(round(popoverVM.progress * 100)))%"
+
+        statusItem?.length = wantsPercent ? 52 : 28
+        button.title = wantsPercent ? percent : ""
+        button.image = wantsGlyph ? validImage : nil
+
+        switch (wantsGlyph, wantsPercent) {
+        case (true, true):
+            button.imagePosition = .imageLeft
+        case (true, false):
+            button.imagePosition = .imageOnly
+        case (false, true):
+            button.imagePosition = .noImage
+        case (false, false):
+            button.title = "RB"
+            button.imagePosition = .noImage
+        }
+    }
+
+    private func fallbackStatusImage() -> NSImage? {
+        let image = NSImage(systemSymbolName: "figure.run", accessibilityDescription: "RunBar")
+        image?.isTemplate = true
+        return image
+    }
+}
+
+private extension NSImage {
+    var isUsableStatusImage: Bool {
+        !representations.isEmpty && size.width > 0 && size.height > 0
     }
 }

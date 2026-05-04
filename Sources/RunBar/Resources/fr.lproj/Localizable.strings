@@ -13,6 +13,20 @@
 "popover.last_sync_hour" = "Sync il y a %d h";
 "popover.button.sync" = "Synchroniser";
 "popover.button.settings" = "Préférences";
+"popover.status.connect_title" = "Strava n'est pas connecté";
+"popover.status.connect_detail" = "Connecte Strava pour synchroniser tes sorties.";
+"popover.status.error_title" = "Sync échouée";
+"popover.status.error_detail" = "Impossible de mettre les données à jour.";
+"popover.status.syncing_title" = "Synchronisation";
+"popover.status.syncing_detail" = "Lecture de tes dernières sorties.";
+"popover.status.waiting_title" = "Aucune sync confirmée";
+"popover.status.waiting_detail" = "Lance une sync pour vérifier les données.";
+"popover.status.ready_title" = "Données à jour";
+"popover.history.title" = "8 semaines";
+"popover.history.waiting" = "Historique en construction";
+"popover.history.stable" = "Stable";
+"popover.history.up" = "+%@ %@ vs sem. précédente";
+"popover.history.down" = "-%@ %@ vs sem. précédente";
 
 /* ── Runner state labels ────────────────────── */
 "runner.state.idle" = "Au repos";
@@ -57,11 +71,16 @@
 "settings.sources.local_data.title" = "Données locales";
 "settings.sources.local_data.subtitle" = "%d activité(s) en base.";
 "settings.sources.local_data.clear" = "Effacer toutes les données";
+"settings.sources.diagnostic.title" = "Diagnostic";
+"settings.sources.diagnostic.strava" = "Strava";
+"settings.sources.diagnostic.local" = "Local";
 
 /* ── Settings — goals ───────────────────────── */
 "settings.goals.section" = "Objectif hebdo";
-"settings.goals.weekly_target" = "Volume cible (km par semaine)";
+"settings.goals.metric" = "Métrique";
+"settings.goals.weekly_target" = "Cible hebdomadaire";
 "settings.goals.weekly_target_mi" = "Volume cible (mi par semaine)";
+"settings.goals.reset_day" = "Début de semaine";
 "settings.goals.race_section" = "Course à venir";
 "settings.goals.race_name" = "Nom de la course";
 "settings.goals.race_date" = "Date";
@@ -77,13 +96,13 @@
 "onboarding.profile.title" = "Quel coureur es-tu ?";
 "onboarding.profile.subtitle" = "On utilise ça pour pré-remplir ton objectif. Tu pourras l'ajuster plus tard.";
 "onboarding.tier.discovery" = "Découverte";
-"onboarding.tier.discovery.subtitle" = "Je débute, ~10 km/sem";
+"onboarding.tier.discovery.dynamic" = "Je débute, ~%d %@/sem";
 "onboarding.tier.regular" = "Régulier";
-"onboarding.tier.regular.subtitle" = "2-3 sorties, ~25 km/sem";
+"onboarding.tier.regular.dynamic" = "2-3 sorties, ~%d %@/sem";
 "onboarding.tier.engaged" = "Engagé";
-"onboarding.tier.engaged.subtitle" = "4-5 sorties, ~50 km/sem";
+"onboarding.tier.engaged.dynamic" = "4-5 sorties, ~%d %@/sem";
 "onboarding.tier.endurance" = "Endurance";
-"onboarding.tier.endurance.subtitle" = "Marathon+, ~80 km/sem";
+"onboarding.tier.endurance.dynamic" = "Marathon+, ~%d %@/sem";
 "onboarding.metrics.title" = "Comment veux-tu mesurer ?";
 "onboarding.metrics.subtitle" = "Tu peux changer ça plus tard dans Préférences.";
 "onboarding.unit.title" = "Kilomètres ou miles ?";
@@ -92,6 +111,8 @@
 "onboarding.goal.subtitle" = "Glisse pour ajuster.";
 "onboarding.goal.summary_km" = "%@ km par semaine";
 "onboarding.goal.summary_mi" = "%@ mi par semaine";
+"onboarding.goal.summary_count" = "%d sorties par semaine";
+"onboarding.goal.summary_elevation" = "%d m D+ par semaine";
 "onboarding.connect.title" = "Connecte ton Strava";
 "onboarding.connect.subtitle" = "On synchronise tes sorties automatiquement, dans les deux sens.";
 "onboarding.connect.cta" = "Connecter Strava";
@@ -123,3 +144,5 @@
 "common.cancel" = "Annuler";
 "common.save" = "Enregistrer";
 "common.delete" = "Supprimer";
+"common.on" = "Actif";
+"common.off" = "Inactif";

@@ -38,12 +38,20 @@ enum RunnerTier: String, CaseIterable {
         }
     }
 
-    var blurbKey: LocalizedStringKey {
+    func blurb(unit: DistanceUnit) -> String {
         switch self {
-        case .discovery: return "onboarding.tier.discovery.subtitle"
-        case .regular:   return "onboarding.tier.regular.subtitle"
-        case .engaged:   return "onboarding.tier.engaged.subtitle"
-        case .endurance: return "onboarding.tier.endurance.subtitle"
+        case .discovery:
+            return String(format: String(localized: "onboarding.tier.discovery.dynamic", bundle: .module),
+                          Int(unit.valueFromKilometers(10).rounded()), unit.symbol)
+        case .regular:
+            return String(format: String(localized: "onboarding.tier.regular.dynamic", bundle: .module),
+                          Int(unit.valueFromKilometers(25).rounded()), unit.symbol)
+        case .engaged:
+            return String(format: String(localized: "onboarding.tier.engaged.dynamic", bundle: .module),
+                          Int(unit.valueFromKilometers(50).rounded()), unit.symbol)
+        case .endurance:
+            return String(format: String(localized: "onboarding.tier.endurance.dynamic", bundle: .module),
+                          Int(unit.valueFromKilometers(80).rounded()), unit.symbol)
         }
     }
 
@@ -109,14 +117,18 @@ public struct OnboardingView: View {
                     switch step {
                     case 0: WelcomeStep().transition(stepTransition)
                     case 1: UnitStep(unitRaw: $unitRaw).transition(stepTransition)
-                    case 2: MetricStep(selected: $metric).transition(stepTransition)
+                    case 2: MetricStep(selected: $metric, unit: unit).transition(stepTransition)
                     case 3: GoalStep(metric: metric,
                                      unit: unit,
                                      targetKm: $targetKm,
                                      targetCount: $targetCount,
                                      targetElev: $targetElev).transition(stepTransition)
                     case 4: ConnectStep(coordinator: coordinator).transition(stepTransition)
-                    default: DoneStep().transition(stepTransition)
+                    default: DoneStep(metric: metric,
+                                      unit: unit,
+                                      targetKm: targetKm,
+                                      targetCount: targetCount,
+                                      targetElev: targetElev).transition(stepTransition)
                     }
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -162,7 +174,7 @@ public struct OnboardingView: View {
                 Button { withAnimation { step -= 1 } } label: {
                     Text("onboarding.back", bundle: .module)
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(PressableButtonStyle())
                 .foregroundStyle(.secondary)
                 .font(.system(size: 13))
             } else {
@@ -193,7 +205,7 @@ public struct OnboardingView: View {
             )
             .foregroundStyle(RunBarColor.cream)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
     }
 
     private var primaryButtonKey: LocalizedStringKey {
@@ -287,10 +299,8 @@ private struct UnitStep: View {
             )
 
             HStack(spacing: 16) {
-                unitCard(.km, title: "onboarding.tier.regular.subtitle".asLocalizedKey,
-                         caption: "settings.general.unit.km")
-                unitCard(.mi, title: "onboarding.tier.regular.subtitle".asLocalizedKey,
-                         caption: "settings.general.unit.mi")
+                unitCard(.km, caption: "settings.general.unit.km")
+                unitCard(.mi, caption: "settings.general.unit.mi")
             }
             .padding(.horizontal, 36)
             Spacer()
@@ -298,7 +308,7 @@ private struct UnitStep: View {
     }
 
     @ViewBuilder
-    private func unitCard(_ value: DistanceUnit, title: LocalizedStringKey, caption: LocalizedStringKey) -> some View {
+    private func unitCard(_ value: DistanceUnit, caption: LocalizedStringKey) -> some View {
         let isOn = unitRaw == value.rawValue
         Button {
             withAnimation(.spring(response: 0.3)) { unitRaw = value.rawValue }
@@ -323,7 +333,7 @@ private struct UnitStep: View {
             )
             .scaleEffect(isOn ? 1.03 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
     }
 }
 
@@ -331,6 +341,7 @@ private struct UnitStep: View {
 
 private struct MetricStep: View {
     @Binding var selected: GoalMetric
+    let unit: DistanceUnit
 
     var body: some View {
         VStack(spacing: 18) {
@@ -341,13 +352,18 @@ private struct MetricStep: View {
             )
 
             HStack(spacing: 14) {
-                metricCard(.distance,  icon: "ruler",      title: "settings.tab.goals", example: "60 km / wk")
+                metricCard(.distance,  icon: "ruler",      title: "settings.tab.goals", example: distanceExample)
                 metricCard(.count,     icon: "calendar",   title: "popover.outings",    example: "4 / wk")
                 metricCard(.elevation, icon: "mountain.2", title: "settings.display.trail_mode", example: "1000 m+ / wk")
             }
             .padding(.horizontal, 36)
             Spacer()
         }
+    }
+
+    private var distanceExample: String {
+        let value = Int(unit.valueFromKilometers(60).rounded())
+        return "\(value) \(unit.symbol) / wk"
     }
 
     @ViewBuilder
@@ -379,7 +395,7 @@ private struct MetricStep: View {
             )
             .scaleEffect(isOn ? 1.03 : 1.0)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(PressableButtonStyle())
     }
 }
 
@@ -489,7 +505,7 @@ private struct GoalStep: View {
                 Text(tier.labelKey, bundle: .module)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(RunBarColor.slate)
-                Text(tier.blurbKey, bundle: .module)
+                Text(tier.blurb(unit: unit))
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: 320, alignment: .leading)
@@ -551,7 +567,7 @@ private struct ConnectStep: View {
                         )
                         .foregroundStyle(.white)
                     }
-                    .buttonStyle(.plain)
+                    .buttonStyle(PressableButtonStyle())
                     .disabled(coordinator.stravaBusy)
                 }
 
@@ -568,36 +584,82 @@ private struct ConnectStep: View {
 // MARK: - Step 5 — Done
 
 private struct DoneStep: View {
+    let metric: GoalMetric
+    let unit: DistanceUnit
+    let targetKm: Double
+    let targetCount: Double
+    let targetElev: Double
     @State private var pop: Bool = false
 
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: 18) {
             Spacer()
             ZStack {
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(Color.white.opacity(0.68))
+                    .frame(width: 340, height: 164)
+                    .overlay(alignment: .top) {
+                        HStack(spacing: 12) {
+                            Capsule().fill(RunBarColor.slate.opacity(0.12)).frame(width: 58, height: 20)
+                            Capsule().fill(RunBarColor.slate.opacity(0.12)).frame(width: 40, height: 20)
+                            ZStack {
+                                Capsule().fill(RunBarColor.slate).frame(width: 62, height: 24)
+                                RunnerView(state: .jogging, color: RunBarColor.cream)
+                                    .frame(width: 16, height: 16)
+                            }
+                            Capsule().fill(RunBarColor.slate.opacity(0.12)).frame(width: 32, height: 20)
+                        }
+                        .padding(.top, 18)
+                    }
                 Circle()
-                    .fill(RunBarColor.gold.opacity(0.15))
-                    .frame(width: 200, height: 200)
-                Circle()
-                    .fill(RunBarColor.gold.opacity(0.25))
-                    .frame(width: 130, height: 130)
+                    .fill(RunBarColor.gold.opacity(0.18))
+                    .frame(width: 116, height: 116)
                 RunnerView(state: .victory, color: RunBarColor.slate)
-                    .frame(width: 110, height: 110)
+                    .frame(width: 90, height: 90)
                     .scaleEffect(pop ? 1.0 : 0.6)
                     .animation(.spring(response: 0.5, dampingFraction: 0.6), value: pop)
-                ConfettiView(width: 320, height: 220)
+                ConfettiView(width: 340, height: 190)
             }
-            .frame(height: 240)
+            .frame(height: 190)
             .onAppear { pop = true }
 
             VStack(spacing: 8) {
                 Text("onboarding.done.title", bundle: .module)
                     .font(.system(size: 28, weight: .bold))
+                Text(summary)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(RunBarColor.slate)
                 Text("onboarding.done.subtitle", bundle: .module)
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
+                HStack(spacing: 6) {
+                    Image(systemName: "command")
+                    Image(systemName: "shift")
+                    Text("R")
+                        .font(.system(size: 12, weight: .bold).monospaced())
+                }
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(RunBarColor.moss)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(Capsule().fill(RunBarColor.moss.opacity(0.12)))
+                .padding(.top, 4)
             }
             Spacer()
+        }
+    }
+
+    private var summary: String {
+        switch metric {
+        case .distance:
+            let value = DistanceFormatter.number(unit.valueFromKilometers(targetKm), fractionDigits: 0)
+            let key = unit == .km ? "onboarding.goal.summary_km" : "onboarding.goal.summary_mi"
+            return String(format: String(localized: String.LocalizationValue(key), bundle: .module), value)
+        case .count:
+            return String(format: String(localized: "onboarding.goal.summary_count", bundle: .module), Int(targetCount))
+        case .elevation:
+            return String(format: String(localized: "onboarding.goal.summary_elevation", bundle: .module), Int(targetElev))
         }
     }
 }

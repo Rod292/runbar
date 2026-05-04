@@ -4,19 +4,26 @@
 
 **Strava uniquement** (Apple Health et Garmin sont prévus mais pas branchés en v0.1).
 
-Crée tes credentials sur https://www.strava.com/settings/api puis copie le template :
+Crée tes credentials sur https://www.strava.com/settings/api puis fournis-les via variables d'environnement :
 
 ```sh
-cp Sources/RunBar/App/Secrets.template.swift.txt Sources/RunBar/App/Secrets.swift
-# Édite Secrets.swift avec ton client_id et client_secret
+export RUNBAR_STRAVA_CLIENT_ID="..."
+export RUNBAR_STRAVA_CLIENT_SECRET="..."
 ```
 
-`Secrets.swift` est gitignored — il ne sera jamais commit.
+Pour lancer le bundle `.app` via Finder/LaunchServices, utilise plutôt `defaults` :
+
+```sh
+defaults write com.rodrigue.runbar runbar.strava.clientID "..."
+defaults write com.rodrigue.runbar runbar.strava.clientSecret "..."
+```
+
+`Sources/RunBar/App/Secrets.swift` ne doit pas contenir de secret en clair. Si un secret Strava a déjà été partagé, régénère-le côté Strava.
 
 ## Configurer l'app Strava
 
 Sur https://www.strava.com/settings/api :
-- **Authorization Callback Domain** → mets `runbar` (n'importe quel domaine — `ASWebAuthenticationSession` intercepte le callback côté app, le domaine n'a pas besoin d'être réel).
+- **Authorization Callback Domain** → mets `localhost`.
 - Vérifie que le scope `activity:read_all` est autorisé (devrait l'être par défaut).
 
 ## Lancer l'app
@@ -58,16 +65,14 @@ swift test
 
 `swift run` est suffisant pour tester en dev. Pour un vrai bundle distribuable :
 
-1. `swift build -c release`
-2. Créer une structure `RunBar.app/Contents/{MacOS,Resources}/`
-3. Copier le binaire dans `MacOS/RunBar`
-4. Copier `AppBundle/Info.plist` dans `Contents/Info.plist` (il contient déjà `LSUIElement = true` et le scheme `runbar://`)
-5. Code-signing si distribution externe (cf. Phase 10 du plan)
-
-À ce stade le scheme `runbar://` est aussi enregistré système — utile uniquement si tu veux qu'un autre process (Slack, terminal...) puisse ouvrir RunBar via une URL.
+```sh
+scripts/package-app.sh
+open build/RunBar.app
+```
 
 ## Limites connues
 
-- **OAuth en `swift run`** : ASWebAuthenticationSession ouvre le navigateur Strava et capture le callback `runbar://` *en interne*. Pas besoin de bundle .app. Si le browser n'a pas de fenêtre clé, passe `prefersEphemeralWebBrowserSession = true` dans `StravaOAuth.swift`.
+- **OAuth en `swift run`** : RunBar ouvre Strava dans le navigateur et écoute temporairement `http://localhost:47862/callback`. Le callback est protégé par un paramètre `state` et expire après 120 secondes.
 - **Refresh token** : stocké en Keychain sous service `com.rodrigue.runbar.strava`, account `refresh_token`. Pour reset l'auth : `security delete-generic-password -s com.rodrigue.runbar.strava -a refresh_token`.
+- **Webhook Strava** : le serveur local est conservé pour du debug, mais il n'est pas lancé par défaut. Une app desktop derrière localhost ne peut pas recevoir les webhooks Strava sans tunnel ou backend public.
 - **HealthKit / Garmin** : pas encore branchés (post-MVP, cf. PLANRunbar.md).

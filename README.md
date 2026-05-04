@@ -18,7 +18,7 @@ Strava raconte ce que tu as fait. RunBar te dit où tu en es **maintenant**, en 
 - ⚙️ **Settings macOS-natives** : objectif, métrique (km / sorties / D+), apparence, sources
 - 🎉 **Onboarding 5 étapes** avec gamification (tier de coureur — Découverte → Endurance)
 - 🔔 **Notifications** : objectif atteint (avec son), récap dominical 21h
-- 🔄 **Sync Strava** OAuth + webhook receiver pour sync instantanée
+- 🔄 **Sync Strava** OAuth + polling auto, avec receiver webhook local pour debug
 - 💾 **SwiftData** persistence locale
 - 🌓 **Light/dark** mode auto
 
@@ -33,8 +33,8 @@ Pas d'autres dépendances externes.
 ```sh
 git clone https://github.com/<your-handle>/runbar.git
 cd runbar
-cp Sources/RunBar/App/Secrets.template.swift.txt Sources/RunBar/App/Secrets.swift
-# Édite Secrets.swift avec tes credentials Strava
+export RUNBAR_STRAVA_CLIENT_ID="..."
+export RUNBAR_STRAVA_CLIENT_SECRET="..."
 swift run RunBar
 ```
 

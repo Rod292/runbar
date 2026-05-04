@@ -16,6 +16,7 @@ public final class PopoverViewModel: ObservableObject {
     @Published public var goal: WeeklyGoal = .default
     @Published public var lastSync: Date? = nil
     @Published public var isSyncing: Bool = false
+    @Published public var lastError: String? = nil
 
     public var settingsCoordinator: SettingsCoordinator?
 
@@ -36,11 +37,15 @@ public final class PopoverViewModel: ObservableObject {
         snapshots?.currentStreak ?? 0
     }
 
+    public var recentSnapshots: [WeeklySnapshot] {
+        snapshots?.recent(limit: 8) ?? []
+    }
+
     /// Record progression de la semaine en cours dans le store de snapshots.
     /// Appelé après chaque sync pour que le streak soit à jour.
     public func recordCurrentWeek() {
         guard let snapshots else { return }
-        let monday = Date.now.startOfWeek()
+        let monday = Date.now.startOfWeek(weekday: goal.resetWeekday)
         let previousValue = snapshots.snapshots.first(where: {
             $0.weekStart == monday
         })?.achieved ?? 0
@@ -50,7 +55,7 @@ public final class PopoverViewModel: ObservableObject {
 
         // Victory : on franchit la ligne pour la première fois cette semaine.
         let target = goal.target
-        if previousValue < target && value >= target {
+        if RunBarPreferences.notifyVictory, previousValue < target && value >= target {
             playVictorySound()
             Task {
                 await NotificationService.shared.notifyVictory(
@@ -69,6 +74,22 @@ public final class PopoverViewModel: ObservableObject {
         }
     }
 
+    public func recordRecentWeeks() {
+        guard let snapshots else { return }
+        let cal = Calendar.iso8601Monday
+        let thisStart = Date.now.startOfWeek(weekday: goal.resetWeekday)
+        for offset in 1..<8 {
+            guard
+                let start = cal.date(byAdding: .day, value: -7 * offset, to: thisStart),
+                let end = cal.date(byAdding: .day, value: 7, to: start)
+            else { continue }
+            let weekActivities = store.activities.filter { $0.startDate >= start && $0.startDate < end }
+            guard !weekActivities.isEmpty else { continue }
+            let value = calculator.currentValue(activities: weekActivities, goal: goal)
+            snapshots.record(weekStart: start, metric: goal.metric, target: goal.target, achieved: value)
+        }
+    }
+
     private func playVictorySound() {
         // Son discret « Glass » du système.
         NSSound(named: NSSound.Name("Glass"))?.play()
@@ -80,13 +101,20 @@ public final class PopoverViewModel: ObservableObject {
             .sink { [weak self] all in
                 guard let self else { return }
                 self.activitiesThisWeek = self.calculator.activitiesThisWeek(all, goal: self.goal)
+                self.recordRecentWeeks()
                 self.recordCurrentWeek()
             }
             .store(in: &cancellables)
 
         store.$goal
             .receive(on: DispatchQueue.main)
-            .assign(to: \.goal, on: self)
+            .sink { [weak self] goal in
+                guard let self else { return }
+                self.goal = goal
+                self.activitiesThisWeek = self.calculator.activitiesThisWeek(self.store.activities, goal: goal)
+                self.recordRecentWeeks()
+                self.recordCurrentWeek()
+            }
             .store(in: &cancellables)
 
         syncManager.$isSyncing
@@ -97,6 +125,11 @@ public final class PopoverViewModel: ObservableObject {
         syncManager.$lastSync
             .receive(on: DispatchQueue.main)
             .assign(to: \.lastSync, on: self)
+            .store(in: &cancellables)
+
+        syncManager.$lastError
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.lastError, on: self)
             .store(in: &cancellables)
     }
 
@@ -141,6 +174,44 @@ public final class PopoverViewModel: ObservableObject {
         let hours = minutes / 60
         let template = String(localized: "popover.last_sync_hour", bundle: .module)
         return String(format: template, hours)
+    }
+
+    public var statusKind: PopoverStatusKind {
+        if !stravaConnected { return .needsConnection }
+        if let lastError, !lastError.isEmpty { return .error }
+        if isSyncing { return .syncing }
+        if lastSync == nil { return .waitingForSync }
+        return .ready
+    }
+
+    public var statusTitle: String {
+        switch statusKind {
+        case .needsConnection:
+            return String(localized: "popover.status.connect_title", bundle: .module)
+        case .error:
+            return String(localized: "popover.status.error_title", bundle: .module)
+        case .syncing:
+            return String(localized: "popover.status.syncing_title", bundle: .module)
+        case .waitingForSync:
+            return String(localized: "popover.status.waiting_title", bundle: .module)
+        case .ready:
+            return String(localized: "popover.status.ready_title", bundle: .module)
+        }
+    }
+
+    public var statusDetail: String {
+        switch statusKind {
+        case .needsConnection:
+            return String(localized: "popover.status.connect_detail", bundle: .module)
+        case .error:
+            return lastError ?? String(localized: "popover.status.error_detail", bundle: .module)
+        case .syncing:
+            return String(localized: "popover.status.syncing_detail", bundle: .module)
+        case .waitingForSync:
+            return String(localized: "popover.status.waiting_detail", bundle: .module)
+        case .ready:
+            return lastSyncLabel
+        }
     }
 
     public var averagePaceLabel: String {
@@ -194,6 +265,14 @@ public final class PopoverViewModel: ObservableObject {
     public func close() {
         NotificationCenter.default.post(name: .runbarClosePopover, object: nil)
     }
+}
+
+public enum PopoverStatusKind: Sendable {
+    case needsConnection
+    case error
+    case syncing
+    case waitingForSync
+    case ready
 }
 
 public extension Notification.Name {

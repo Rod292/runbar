@@ -69,6 +69,28 @@ public final class ActivityStore: ObservableObject {
         loadActivities()
     }
 
+    /// Remplace la fenêtre synchronisée pour une source donnée. Cela garde les
+    /// autres sources intactes et supprime localement les activités Strava qui
+    /// ont été retirées ou ne sont plus renvoyées par l'API.
+    public func reconcile(source: ActivitySource, since: Date, with incoming: [ActivityDTO]) {
+        upsert(incoming)
+
+        let ids = Set(incoming.map(\.id))
+        let sourceRaw = source.rawValue
+        let context = container.mainContext
+        let descriptor = FetchDescriptor<Activity>(
+            predicate: #Predicate { activity in
+                activity.sourceRaw == sourceRaw && activity.startDate >= since
+            }
+        )
+        let existing = (try? context.fetch(descriptor)) ?? []
+        for activity in existing where !ids.contains(activity.id) {
+            context.delete(activity)
+        }
+        try? context.save()
+        loadActivities()
+    }
+
     public func clear() {
         let context = container.mainContext
         try? context.delete(model: Activity.self)

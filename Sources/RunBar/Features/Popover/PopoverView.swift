@@ -28,11 +28,13 @@ public struct PopoverView: View {
 
         VStack(spacing: 0) {
             header(accent: accent)
+            statusBanner
             if let days = goal.daysUntilRace(), days >= 0, days <= 30 {
                 raceCountdownBanner(days: days, name: goal.raceName ?? String(localized: "settings.goals.race_section", bundle: .module), accent: accent)
             }
             statsBlock(value: value, goal: goal, pct: pct, pctLabel: pctLabel, mode: mode, accent: accent)
             trackBlock(pct: pct, runner: runner, mode: mode)
+            historyBlock(accent: accent)
             divider
             sortiesList(runs: runs, mode: mode, accent: accent)
             footer(accent: accent)
@@ -49,6 +51,73 @@ public struct PopoverView: View {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
                 openWindow(id: "onboarding")
             }
+        }
+    }
+
+    @ViewBuilder
+    private var statusBanner: some View {
+        let kind = viewModel.statusKind
+        if kind != .ready {
+            HStack(spacing: 9) {
+                Image(systemName: statusIcon(kind))
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(statusColor(kind))
+                    .frame(width: 18)
+                VStack(alignment: .leading, spacing: 1) {
+                    Text(viewModel.statusTitle)
+                        .font(.system(size: 11.5, weight: .semibold))
+                        .foregroundStyle(RunBarColor.ink(dark: isDark))
+                    Text(viewModel.statusDetail)
+                        .font(.system(size: 10.5))
+                        .lineLimit(1)
+                        .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                }
+                Spacer(minLength: 8)
+                if kind == .needsConnection {
+                    Button(action: { viewModel.connectStrava() }) {
+                        Text("settings.sources.connect", bundle: .module)
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(RunBarColor.moss))
+                            .foregroundStyle(RunBarColor.cream)
+                    }
+                    .buttonStyle(.plain)
+                } else if kind == .error {
+                    Button(action: { viewModel.syncNow() }) {
+                        Image(systemName: "arrow.clockwise")
+                            .font(.system(size: 11, weight: .semibold))
+                            .frame(width: 22, height: 22)
+                            .background(Circle().fill(RunBarColor.faintInk(dark: isDark)))
+                    }
+                    .buttonStyle(.plain)
+                    .foregroundStyle(RunBarColor.ink(dark: isDark))
+                }
+            }
+            .padding(.horizontal, 12)
+            .frame(height: 46)
+            .background(statusColor(kind).opacity(isDark ? 0.16 : 0.10))
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(RunBarColor.faintInk(dark: isDark)).frame(height: 1)
+            }
+        }
+    }
+
+    private func statusIcon(_ kind: PopoverStatusKind) -> String {
+        switch kind {
+        case .needsConnection: return "link.badge.plus"
+        case .error: return "exclamationmark.triangle.fill"
+        case .syncing: return "arrow.triangle.2.circlepath"
+        case .waitingForSync: return "clock"
+        case .ready: return "checkmark.circle.fill"
+        }
+    }
+
+    private func statusColor(_ kind: PopoverStatusKind) -> Color {
+        switch kind {
+        case .needsConnection, .waitingForSync: return RunBarColor.gold
+        case .error: return RunBarColor.terra
+        case .syncing, .ready: return RunBarColor.moss
         }
     }
 
@@ -210,6 +279,19 @@ public struct PopoverView: View {
         .padding(.bottom, 10)
     }
 
+    @ViewBuilder
+    private func historyBlock(accent: Color) -> some View {
+        WeeklyHistoryStrip(
+            snapshots: viewModel.recentSnapshots,
+            goal: viewModel.goal,
+            dark: isDark,
+            accent: accent
+        )
+        .frame(height: 54)
+        .padding(.horizontal, 16)
+        .padding(.bottom, 8)
+    }
+
     private var divider: some View {
         Rectangle()
             .fill(RunBarColor.faintInk(dark: isDark))
@@ -249,6 +331,7 @@ public struct PopoverView: View {
                             day: run.dayLabel(),
                             name: run.name,
                             distanceKm: run.distanceKm,
+                            elevationGain: run.elevationGain,
                             timeLabel: viewModel.timeLabel(for: run),
                             dark: isDark,
                             highlight: mode == .victory && idx == runs.count - 1,
@@ -350,6 +433,82 @@ public struct PopoverView: View {
                 .fill(RunBarColor.faintInk(dark: isDark))
                 .frame(height: 1)
         }
+    }
+}
+
+private struct WeeklyHistoryStrip: View {
+    let snapshots: [WeeklySnapshot]
+    let goal: WeeklyGoal
+    let dark: Bool
+    let accent: Color
+
+    private var ordered: [WeeklySnapshot] {
+        Array(snapshots.sorted(by: { $0.weekStart < $1.weekStart }).suffix(8))
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack {
+                Text("popover.history.title", bundle: .module)
+                    .font(.system(size: 10.5, weight: .semibold))
+                    .tracking(0.3)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+                Spacer()
+                Text(insight)
+                    .font(.system(size: 10.5))
+                    .lineLimit(1)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+            }
+
+            if ordered.isEmpty {
+                HStack(spacing: 4) {
+                    ForEach(0..<8, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: 2)
+                            .fill(RunBarColor.faintInk(dark: dark))
+                            .frame(maxWidth: .infinity, maxHeight: 22)
+                    }
+                }
+            } else {
+                HStack(alignment: .bottom, spacing: 4) {
+                    ForEach(Array(ordered.enumerated()), id: \.element.weekStart) { _, snap in
+                        VStack(spacing: 3) {
+                            RoundedRectangle(cornerRadius: 2)
+                                .fill(snap.completed ? RunBarColor.gold : accent.opacity(0.82))
+                                .frame(height: max(5, 24 * min(1.0, snap.progress)))
+                            Text(shortWeek(snap.weekStart))
+                                .font(.system(size: 8).monospacedDigit())
+                                .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+                        }
+                        .frame(maxWidth: .infinity, maxHeight: 34, alignment: .bottom)
+                    }
+                }
+            }
+        }
+        .padding(.top, 2)
+    }
+
+    private var insight: String {
+        guard ordered.count >= 2 else {
+            return String(localized: "popover.history.waiting", bundle: .module)
+        }
+        let previous = ordered.dropLast().last
+        guard let previous else { return "" }
+        let delta = goal.metric == .distance
+            ? UnitPreferences.current.valueFromKilometers(ordered.last?.achieved ?? 0) - UnitPreferences.current.valueFromKilometers(previous.achieved)
+            : (ordered.last?.achieved ?? 0) - previous.achieved
+        if abs(delta) < 0.1 {
+            return String(localized: "popover.history.stable", bundle: .module)
+        }
+        let key = delta > 0 ? "popover.history.up" : "popover.history.down"
+        let value = abs(delta)
+        let unit = goal.metric == .distance ? UnitPreferences.current.symbol : goal.metric.unit
+        return String(format: String(localized: String.LocalizationValue(key), bundle: .module), DistanceFormatter.number(value), unit)
+    }
+
+    private func shortWeek(_ date: Date) -> String {
+        let week = Calendar.iso8601Monday.component(.weekOfYear, from: date)
+        return "W\(week)"
     }
 }
 

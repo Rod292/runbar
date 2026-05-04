@@ -13,6 +13,20 @@
 "popover.last_sync_hour" = "Synced %d h ago";
 "popover.button.sync" = "Sync";
 "popover.button.settings" = "Settings";
+"popover.status.connect_title" = "Strava is not connected";
+"popover.status.connect_detail" = "Connect Strava to sync your runs.";
+"popover.status.error_title" = "Sync failed";
+"popover.status.error_detail" = "Could not refresh your data.";
+"popover.status.syncing_title" = "Syncing";
+"popover.status.syncing_detail" = "Reading your latest runs.";
+"popover.status.waiting_title" = "No confirmed sync";
+"popover.status.waiting_detail" = "Run a sync to verify the data.";
+"popover.status.ready_title" = "Data up to date";
+"popover.history.title" = "8 weeks";
+"popover.history.waiting" = "Building history";
+"popover.history.stable" = "Stable";
+"popover.history.up" = "+%@ %@ vs previous week";
+"popover.history.down" = "-%@ %@ vs previous week";
 
 /* ── Runner state labels ────────────────────── */
 "runner.state.idle" = "At rest";
@@ -57,11 +71,16 @@
 "settings.sources.local_data.title" = "Local data";
 "settings.sources.local_data.subtitle" = "%d activity(ies) stored.";
 "settings.sources.local_data.clear" = "Clear all data";
+"settings.sources.diagnostic.title" = "Diagnostic";
+"settings.sources.diagnostic.strava" = "Strava";
+"settings.sources.diagnostic.local" = "Local";
 
 /* ── Settings — goals ───────────────────────── */
 "settings.goals.section" = "Weekly goal";
-"settings.goals.weekly_target" = "Target volume (km per week)";
+"settings.goals.metric" = "Metric";
+"settings.goals.weekly_target" = "Weekly target";
 "settings.goals.weekly_target_mi" = "Target volume (mi per week)";
+"settings.goals.reset_day" = "Week starts on";
 "settings.goals.race_section" = "Upcoming race";
 "settings.goals.race_name" = "Race name";
 "settings.goals.race_date" = "Date";
@@ -77,13 +96,13 @@
 "onboarding.profile.title" = "What kind of runner are you?";
 "onboarding.profile.subtitle" = "We use this to pre-fill your goal. You can adjust it later.";
 "onboarding.tier.discovery" = "Discovery";
-"onboarding.tier.discovery.subtitle" = "Just starting, ~10 km/wk";
+"onboarding.tier.discovery.dynamic" = "Just starting, ~%d %@/wk";
 "onboarding.tier.regular" = "Regular";
-"onboarding.tier.regular.subtitle" = "2-3 runs, ~25 km/wk";
+"onboarding.tier.regular.dynamic" = "2-3 runs, ~%d %@/wk";
 "onboarding.tier.engaged" = "Committed";
-"onboarding.tier.engaged.subtitle" = "4-5 runs, ~50 km/wk";
+"onboarding.tier.engaged.dynamic" = "4-5 runs, ~%d %@/wk";
 "onboarding.tier.endurance" = "Endurance";
-"onboarding.tier.endurance.subtitle" = "Marathon+, ~80 km/wk";
+"onboarding.tier.endurance.dynamic" = "Marathon+, ~%d %@/wk";
 "onboarding.metrics.title" = "How do you want to track it?";
 "onboarding.metrics.subtitle" = "You can change this later in Settings.";
 "onboarding.unit.title" = "Kilometres or miles?";
@@ -92,6 +111,8 @@
 "onboarding.goal.subtitle" = "Slide to adjust.";
 "onboarding.goal.summary_km" = "%@ km per week";
 "onboarding.goal.summary_mi" = "%@ mi per week";
+"onboarding.goal.summary_count" = "%d runs per week";
+"onboarding.goal.summary_elevation" = "%d m+ per week";
 "onboarding.connect.title" = "Connect your Strava";
 "onboarding.connect.subtitle" = "We sync your runs both ways, automatically.";
 "onboarding.connect.cta" = "Connect Strava";
@@ -123,3 +144,5 @@
 "common.cancel" = "Cancel";
 "common.save" = "Save";
 "common.delete" = "Delete";
+"common.on" = "On";
+"common.off" = "Off";

@@ -35,16 +35,20 @@ public final class SyncManager: ObservableObject {
         isSyncing = true
         defer { isSyncing = false }
 
-        let monday = Date.now.startOfWeek()
+        let syncStart = Calendar.iso8601Monday.date(
+            byAdding: .day,
+            value: -56,
+            to: Date.now.startOfWeek()
+        ) ?? Date.now.startOfWeek()
         do {
             let isAuth = await strava.isAuthenticated()
             guard isAuth else {
                 RunBarLog.sync.notice("Sync skipped — Strava not authenticated (stub)")
-                lastSync = .now
+                lastError = nil
                 return
             }
-            let dtos = try await strava.fetchActivities(since: monday)
-            store.upsert(dtos)
+            let dtos = try await strava.fetchActivities(since: syncStart)
+            store.reconcile(source: .strava, since: syncStart, with: dtos)
             lastSync = .now
             lastError = nil
         } catch {

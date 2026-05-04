@@ -70,6 +70,31 @@ scripts/package-app.sh
 open build/RunBar.app
 ```
 
+Pour éviter que macOS redemande l'accès au trousseau après chaque rebuild, signe
+avec une identité stable au lieu de la signature ad-hoc par défaut :
+
+```sh
+RUNBAR_CODESIGN_IDENTITY="RunBar Local Dev" scripts/package-app.sh
+```
+
+Cette identité doit exister dans Trousseau d'accès. Pour un usage quotidien,
+copie ensuite `build/RunBar.app` vers `/Applications/RunBar.app` et lance cette
+copie stable.
+
+## Créer le DMG
+
+```sh
+scripts/make-dmg.sh
+```
+
+Le DMG contient `RunBar.app` et un raccourci vers `/Applications`. Il est aussi
+copié vers `website/public/download/RunBar.dmg`, qui est l'URL utilisée par le
+site Next.js (`/download/RunBar.dmg`).
+
+Pour une distribution publique, il faudra signer avec Developer ID puis notariser
+le `.dmg`. L'auto-update à distance demande ensuite un appcast signé, par exemple
+avec Sparkle.
+
 ## Limites connues
 
 - **OAuth en `swift run`** : RunBar ouvre Strava dans le navigateur et écoute temporairement `http://localhost:47862/callback`. Le callback est protégé par un paramètre `state` et expire après 120 secondes.

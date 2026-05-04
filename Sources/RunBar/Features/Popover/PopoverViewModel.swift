@@ -159,6 +159,9 @@ public final class PopoverViewModel: ObservableObject {
     }
 
     public var lastSyncLabel: String {
+        if let lastError, !lastError.isEmpty {
+            return String(localized: "popover.last_sync_failed", bundle: .module)
+        }
         guard let last = lastSync else {
             return String(localized: "popover.last_sync_now", bundle: .module)
         }

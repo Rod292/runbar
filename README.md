@@ -40,6 +40,15 @@ swift run RunBar
 
 Voir [`RUNNING.md`](./RUNNING.md) pour le détail (configuration Strava OAuth, webhook, tests).
 
+## Distribution
+
+```sh
+scripts/make-dmg.sh
+```
+
+Le script génère `build/RunBar.dmg` et le copie dans
+`website/public/download/RunBar.dmg`, utilisé par la landing page.
+
 ## Architecture
 
 ```

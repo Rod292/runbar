@@ -33,7 +33,7 @@ public struct PopoverView: View {
                 raceCountdownBanner(days: days, name: goal.raceName ?? String(localized: "settings.goals.race_section", bundle: .module), accent: accent)
             }
             statsBlock(value: value, goal: goal, pct: pct, pctLabel: pctLabel, mode: mode, accent: accent)
-            trackBlock(pct: pct, runner: runner, mode: mode)
+            progressRibbon(pct: pct, mode: mode, accent: accent)
             historyBlock(accent: accent)
             divider
             sortiesList(runs: runs, mode: mode, accent: accent)
@@ -267,16 +267,39 @@ public struct PopoverView: View {
 
     // MARK: Track
     @ViewBuilder
-    private func trackBlock(pct: Double, runner: RunnerState, mode: PopoverMode) -> some View {
-        TrackView(
-            progress: mode == .empty ? 0 : pct,
-            runnerState: runner,
-            dark: isDark,
-            victory: mode == .victory
-        )
-        .frame(height: 70)
-        .padding(.horizontal, 16)
-        .padding(.bottom, 10)
+    private func progressRibbon(pct: Double, mode: PopoverMode, accent: Color) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            GeometryReader { geo in
+                let progress = mode == .empty ? 0 : min(1, max(0, pct))
+                let width = geo.size.width
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(RunBarColor.faintInk(dark: isDark))
+                        .frame(height: 10)
+                    Capsule()
+                        .fill(
+                            LinearGradient(
+                                colors: [accent.opacity(0.78), accent],
+                                startPoint: .leading,
+                                endPoint: .trailing
+                            )
+                        )
+                        .frame(width: max(10, width * progress), height: 10)
+                    Circle()
+                        .fill(RunBarColor.surface(dark: isDark))
+                        .frame(width: 20, height: 20)
+                        .overlay(Circle().strokeBorder(accent, lineWidth: 3))
+                        .shadow(color: .black.opacity(isDark ? 0.28 : 0.12), radius: 5, x: 0, y: 2)
+                        .offset(x: min(width - 20, max(0, width * progress - 10)))
+                    FinishFlagView(size: 22, dark: isDark, waving: mode == .victory)
+                        .offset(x: width - 18, y: -18)
+                }
+                .frame(height: 36, alignment: .center)
+            }
+            .frame(height: 36)
+        }
+        .padding(.horizontal, 18)
+        .padding(.bottom, 8)
     }
 
     @ViewBuilder

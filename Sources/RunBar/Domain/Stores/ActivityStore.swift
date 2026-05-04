@@ -15,16 +15,21 @@ public final class ActivityStore: ObservableObject {
     private var goalCancellable: AnyCancellable?
     private let goalKey = "runbar.weeklyGoal.v1"
 
-    public init() {
+    public init(inMemory: Bool = false) {
         let schema = Schema([Activity.self])
         let url = URL.applicationSupportDirectory
             .appending(path: "RunBar/store.sqlite")
         do {
-            try FileManager.default.createDirectory(
-                at: url.deletingLastPathComponent(),
-                withIntermediateDirectories: true
-            )
-            let config = ModelConfiguration(schema: schema, url: url)
+            let config: ModelConfiguration
+            if inMemory {
+                config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            } else {
+                try FileManager.default.createDirectory(
+                    at: url.deletingLastPathComponent(),
+                    withIntermediateDirectories: true
+                )
+                config = ModelConfiguration(schema: schema, url: url)
+            }
             self.container = try ModelContainer(for: schema, configurations: config)
         } catch {
             // Fallback en mémoire si on ne peut pas écrire (sandbox, etc.).

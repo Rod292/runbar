@@ -11,6 +11,7 @@
 "popover.last_sync_now" = "Synced just now";
 "popover.last_sync_min" = "Synced %d min ago";
 "popover.last_sync_hour" = "Synced %d h ago";
+"popover.last_sync_failed" = "Sync failed";
 "popover.button.sync" = "Sync";
 "popover.button.settings" = "Settings";
 "popover.status.connect_title" = "Strava is not connected";
@@ -88,6 +89,7 @@
 /* ── Settings — about ───────────────────────── */
 "settings.about.version" = "Version %@";
 "settings.about.tagline" = "The silent coach in your menu bar.";
+"settings.about.check_updates" = "Download latest version";
 
 /* ── Onboarding ─────────────────────────────── */
 "onboarding.welcome.title" = "Welcome to RunBar";

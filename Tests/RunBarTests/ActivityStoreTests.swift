@@ -4,7 +4,7 @@ import XCTest
 @MainActor
 final class ActivityStoreTests: XCTestCase {
     func test_upsert_dedup_avoids_duplicates() {
-        let store = ActivityStore()
+        let store = ActivityStore(inMemory: true)
         store.clear()
         let a = ActivityDTO(id: "x", name: "Run", distance: 5000, movingTime: 1500,
                             elevationGain: 0, startDate: .now, type: "Run", source: .strava)
@@ -13,7 +13,7 @@ final class ActivityStoreTests: XCTestCase {
     }
 
     func test_upsert_updates_existing() {
-        let store = ActivityStore()
+        let store = ActivityStore(inMemory: true)
         store.clear()
         let a = ActivityDTO(id: "x", name: "Run", distance: 5000, movingTime: 1500,
                             elevationGain: 0, startDate: .now, type: "Run", source: .strava)
@@ -27,7 +27,7 @@ final class ActivityStoreTests: XCTestCase {
     }
 
     func test_reconcile_removes_missing_source_items_since_date() {
-        let store = ActivityStore()
+        let store = ActivityStore(inMemory: true)
         store.clear()
         let monday = Date.now.startOfWeek()
         let keep = ActivityDTO(id: "keep", name: "Run", distance: 5000, movingTime: 1500,

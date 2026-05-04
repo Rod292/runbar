@@ -12,12 +12,19 @@ public protocol StravaServiceProtocol: Sendable {
 public actor StravaService: StravaServiceProtocol {
     public init() {}
 
+    private let connectedKey = "runbar.strava.connected"
+
     /// Refresh token (durée de vie longue). Stocké en Keychain.
     private var refreshToken: String? {
         get { Keychain.get(account: "refresh_token") }
         set {
-            if let newValue { try? Keychain.set(newValue, account: "refresh_token") }
-            else { Keychain.remove(account: "refresh_token") }
+            if let newValue {
+                try? Keychain.set(newValue, account: "refresh_token")
+                UserDefaults.standard.set(true, forKey: connectedKey)
+            } else {
+                Keychain.remove(account: "refresh_token")
+                UserDefaults.standard.set(false, forKey: connectedKey)
+            }
         }
     }
 
@@ -26,7 +33,7 @@ public actor StravaService: StravaServiceProtocol {
     private var accessTokenExpiry: Date?
 
     public func isAuthenticated() async -> Bool {
-        Keychain.get(account: "refresh_token") != nil
+        UserDefaults.standard.bool(forKey: connectedKey)
     }
 
     public func startOAuth() async throws {
@@ -86,7 +93,10 @@ public actor StravaService: StravaServiceProtocol {
         if let token = accessToken, let exp = accessTokenExpiry, exp > Date.now.addingTimeInterval(60) {
             return token
         }
-        guard let refresh = refreshToken else { throw StravaError.notAuthenticated }
+        guard let refresh = refreshToken else {
+            UserDefaults.standard.set(false, forKey: connectedKey)
+            throw StravaError.notAuthenticated
+        }
         let tokens = try await refreshTokens(refreshToken: refresh)
         self.accessToken = tokens.accessToken
         self.accessTokenExpiry = Date(timeIntervalSince1970: tokens.expiresAt)

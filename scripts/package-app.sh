@@ -80,11 +80,13 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
 </plist>
 PLIST
 
-# 4. Ad-hoc code signing — sans ça, macOS ne reconnaît pas l'app entre les
-# runs et redemande à chaque fois le mot de passe du trousseau pour les
-# items Keychain (Strava refresh token, etc.).
-echo "==> Ad-hoc code signing"
-codesign --force --deep --sign - "$APP_DIR" 2>&1 | tail -3 || true
+# 4. Code signing. Par défaut on signe ad-hoc pour produire une app lançable.
+# Pour éviter que macOS redemande l'accès Keychain à chaque rebuild, utilise
+# une identité stable :
+#   RUNBAR_CODESIGN_IDENTITY="RunBar Local Dev" scripts/package-app.sh
+SIGN_IDENTITY="${RUNBAR_CODESIGN_IDENTITY:--}"
+echo "==> Code signing ($SIGN_IDENTITY)"
+codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_DIR" 2>&1 | tail -3 || true
 
 echo "==> RunBar.app prêt"
 echo "    → $APP_DIR"

@@ -470,6 +470,16 @@ public struct SettingsView: View {
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 360, alignment: .leading)
+            Button {
+                NSWorkspace.shared.open(URL(string: "https://runbar.app/download/RunBar.dmg")!)
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "arrow.down.circle")
+                    Text("settings.about.check_updates", bundle: .module)
+                }
+            }
+            .controlSize(.small)
+            .buttonStyle(PressableButtonStyle())
         }
     }
 }

@@ -6,16 +6,16 @@
         <description>Mises à jour RunBar</description>
         <language>fr</language>
         <item>
-            <title>Version 0.1.3</title>
-            <pubDate>Mon, 04 May 2026 20:30:40 +0000</pubDate>
-            <sparkle:version>0.1.3</sparkle:version>
-            <sparkle:shortVersionString>0.1.3</sparkle:shortVersionString>
+            <title>Version 0.1.4</title>
+            <pubDate>Mon, 04 May 2026 21:14:46 +0000</pubDate>
+            <sparkle:version>0.1.4</sparkle:version>
+            <sparkle:shortVersionString>0.1.4</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[Fix critique : ajout du rpath @executable_path/../Frameworks pour que dyld trouve Sparkle.framework au lancement (la 0.1.2 ne lançait pas du tout). Inclut tous les hardenings sécurité de la 0.1.2.]]></description>
+            <description><![CDATA[Fix Tahoe : corrige le status item invisible pour l'app installée depuis le DMG en laissant LSUIElement gérer le bundle et en ne passant en accessory qu'en mode swift run.]]></description>
             <enclosure
-                url="https://runbar.vercel.app/download/RunBar-0.1.3.dmg"
-                sparkle:edSignature="VULyQ08Tpc1R54//VOhmnLhHQtmoQfek+X5SxZ/J6x4indMnfcgZkDygOGT0pF+oxat1Jd+jo3n5EUdNnMLIDQ=="
-                length="2231152"
+                url="https://runbar.vercel.app/download/RunBar-0.1.4.dmg"
+                sparkle:edSignature="MzLdYO8ACpENw/Z/7f1BbPYjLQFlIaoSlUe78c4AkQlwl4ffr2nupJUcUiAPO1BNA0QU492iDxmCE25XgwJeCg=="
+                length="2233090"
                 type="application/octet-stream" />
         </item>
     </channel>

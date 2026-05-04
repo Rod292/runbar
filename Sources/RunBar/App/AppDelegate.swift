@@ -26,6 +26,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         _ = AppContainer.shared
         RunnerBitmap.warmCache()
         setupStatusItem()
+        configureActivationPolicy()
         setupPopover()
         bindRunnerState()
         observePreferences()
@@ -97,6 +98,22 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     // MARK: - Status item
+
+    private func configureActivationPolicy() {
+        // A bundled RunBar.app is already a menu-bar agent through LSUIElement.
+        // On Tahoe, calling .accessory before/while AppKit installs the status
+        // item can leave the item in Control Center's hidden/offscreen slot.
+        // Keep the programmatic policy only for `swift run`, where there is no
+        // app Info.plist to hide the Dock icon.
+        let isAgentBundle = (Bundle.main.object(forInfoDictionaryKey: "LSUIElement") as? Bool) == true
+        guard !isAgentBundle else {
+            NSLog("[RunBar] Activation policy left to LSUIElement")
+            return
+        }
+
+        NSApplication.shared.setActivationPolicy(.accessory)
+        NSLog("[RunBar] Activation policy set to accessory after status item creation")
+    }
 
     private func setupStatusItem() {
         // variableLength : laisse macOS auto-sizer, plus fiable que length fixe

@@ -191,11 +191,16 @@ public final class PopoverViewModel: ObservableObject {
     }
 
     public var lastSyncLabel: String {
+        // Pas connecté → on n'invente pas un "Synced just now" mensonger.
+        if !stravaConnected {
+            return String(localized: "popover.status.connect_title", bundle: .module)
+        }
         if let lastError, !lastError.isEmpty {
             return String(localized: "popover.last_sync_failed", bundle: .module)
         }
         guard let last = lastSync else {
-            return String(localized: "popover.last_sync_now", bundle: .module)
+            // Connecté mais jamais syncé encore.
+            return String(localized: "popover.status.waiting_title", bundle: .module)
         }
         let secs = Date.now.timeIntervalSince(last)
         if secs < 60 {

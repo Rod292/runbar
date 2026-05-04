@@ -10,11 +10,6 @@ struct RunBarApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @AppStorage("runbar.onboardingDone") private var onboardingDone: Bool = false
 
-    init() {
-        // Menu-bar-only même sans bundle .app — caché du Dock.
-        NSApplication.shared.setActivationPolicy(.accessory)
-    }
-
     var body: some Scene {
         Settings {
             SettingsView(store: AppContainer.shared.store, coordinator: AppContainer.shared.settings)

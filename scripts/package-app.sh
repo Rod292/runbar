@@ -81,6 +81,8 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <string>RunBar</string>
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
+    <key>LSApplicationCategoryType</key>
+    <string>public.app-category.healthcare-fitness</string>
     <key>CFBundleShortVersionString</key>
     <string>0.1.4</string>
     <key>CFBundleVersion</key>

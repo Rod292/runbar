@@ -4,6 +4,7 @@ public enum RunBarPreferences {
     public enum Key {
         public static let showGlyph = "runbar.showGlyph"
         public static let showPercent = "runbar.showPercent"
+        public static let showStreak = "runbar.showStreak"
         public static let autoSync = "runbar.autoSync"
         public static let notifyVictory = "runbar.notifyVictory"
         public static let trailMode = "runbar.trailMode"
@@ -15,6 +16,10 @@ public enum RunBarPreferences {
 
     public static var showPercent: Bool {
         UserDefaults.standard.object(forKey: Key.showPercent) as? Bool ?? false
+    }
+
+    public static var showStreak: Bool {
+        UserDefaults.standard.object(forKey: Key.showStreak) as? Bool ?? true
     }
 
     public static var autoSync: Bool {

@@ -33,7 +33,7 @@ public enum RunnerBitmap {
         let total = totalSubframes(for: state)
         let safe = ((subframe % total) + total) % total
 
-        if state.hasSpriteAssets, let sprite = RunnerSprite.image(frame: safe, pointSize: pointSize) {
+        if state.hasSpriteAssets, let sprite = RunnerSprite.image(state: state, frame: safe, pointSize: pointSize) {
             return sprite
         }
 

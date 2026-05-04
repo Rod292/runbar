@@ -57,6 +57,7 @@ public struct SettingsView: View {
     @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
     @AppStorage(RunBarPreferences.Key.showGlyph) private var showGlyph: Bool = true
     @AppStorage(RunBarPreferences.Key.showPercent) private var showPercent: Bool = false
+    @AppStorage(RunBarPreferences.Key.showStreak) private var showStreak: Bool = true
     @AppStorage(RunBarPreferences.Key.autoSync) private var autoSync: Bool = true
     @AppStorage(RunBarPreferences.Key.notifyVictory) private var notifyVictory: Bool = true
     @AppStorage(RunBarPreferences.Key.trailMode) private var trailMode: Bool = false
@@ -274,6 +275,18 @@ public struct SettingsView: View {
                     Spacer()
                     Toggle("", isOn: $showPercent).labelsHidden()
                 }
+                hairline
+                row {
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("Show streak")
+                            .font(.system(size: 13))
+                        Text("Flame badge appears at 2+ consecutive weeks at goal.")
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
+                    Toggle("", isOn: $showStreak).labelsHidden()
+                }
             }
 
             PaneSection("settings.display.preview", figure: "live") {
@@ -287,7 +300,12 @@ public struct SettingsView: View {
                             .font(.system(size: 12, design: .monospaced))
                             .foregroundStyle(.secondary)
                     }
-                    if !showGlyph && !showPercent {
+                    if showStreak {
+                        Text("🔥3")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    if !showGlyph && !showPercent && !showStreak {
                         Text("(empty)")
                             .font(.system(size: 11, design: .monospaced))
                             .foregroundStyle(.tertiary)

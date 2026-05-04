@@ -8,21 +8,23 @@ public enum RunnerState: String, CaseIterable, Codable, Sendable {
     case tired
     case victory
 
-    /// Nombre de frames d'animation (cf. design canvas et tables `RunnerFrames`).
+    /// Nombre de frames d'animation par état.
+    /// - jogging/sprinting partagent les 8 frames du cycle de course
+    /// - idle/tired/victory ont chacun leur propre cycle de 6 frames
     public var frames: Int {
         switch self {
-        case .idle:      return 4
+        case .idle:      return 6
         case .jogging:   return 8
         case .sprinting: return 8
-        case .tired:     return 8
-        case .victory:   return 4
+        case .tired:     return 6
+        case .victory:   return 6
         }
     }
 
     /// Cadence d'animation (frames par seconde).
     public var fps: Double {
         switch self {
-        case .idle:      return 4
+        case .idle:      return 3
         case .jogging:   return 6
         case .sprinting: return 9
         case .tired:     return 4
@@ -30,15 +32,10 @@ public enum RunnerState: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// Vrai si l'état utilise les sprites PNG hand-drawn (cycle de course
-    /// partagé). Idle et victory restent en rendu parametric — ce ne sont
-    /// pas des poses de course.
-    public var hasSpriteAssets: Bool {
-        switch self {
-        case .jogging, .sprinting, .tired: return true
-        case .idle, .victory: return false
-        }
-    }
+    /// Tous les états utilisent désormais des sprites PNG hand-drawn dédiés.
+    /// Le rendu parametric (RunnerFrames + Canvas) reste en fallback pour
+    /// les preview / tests sans assets bundle.
+    public var hasSpriteAssets: Bool { true }
 
     public var label: String {
         let key: String.LocalizationValue

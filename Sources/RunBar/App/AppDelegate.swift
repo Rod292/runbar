@@ -261,14 +261,34 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applyIcon(to button: NSStatusBarButton, image: NSImage?) {
         let wantsGlyph = RunBarPreferences.showGlyph
         let wantsPercent = RunBarPreferences.showPercent
+        let wantsStreak = RunBarPreferences.showStreak
         let validImage = image?.isUsableStatusImage == true ? image : fallbackStatusImage()
         let percent = "\(Int(round(popoverVM.progress * 100)))%"
 
-        statusItem?.length = wantsPercent ? 52 : 28
-        button.title = wantsPercent ? percent : ""
+        let streak = popoverVM.currentStreak
+        let streakActive = wantsStreak && streak >= 2
+        let streakSuffix = streakActive ? "🔥\(streak)" : ""
+
+        // Compose title — percent and/or streak, separated by a thin space.
+        let title: String = {
+            switch (wantsPercent, streakActive) {
+            case (true, true):  return "\(percent) \(streakSuffix)"
+            case (true, false): return percent
+            case (false, true): return streakSuffix
+            case (false, false): return ""
+            }
+        }()
+
+        // Adjust width: 28 (icon only), +24 per visible text segment.
+        let extras = (wantsPercent ? 1 : 0) + (streakActive ? 1 : 0)
+        let glyphWidth: CGFloat = wantsGlyph ? 28 : 0
+        let textWidth: CGFloat = CGFloat(extras) * 26
+        statusItem?.length = max(28, glyphWidth + textWidth)
+
+        button.title = title
         button.image = wantsGlyph ? validImage : nil
 
-        switch (wantsGlyph, wantsPercent) {
+        switch (wantsGlyph, !title.isEmpty) {
         case (true, true):
             button.imagePosition = .imageLeft
         case (true, false):

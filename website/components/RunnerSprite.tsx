@@ -1,38 +1,67 @@
 /**
  * Runner sprite, ported from the actual app assets.
  *
- * Uses the 8-frame running cycle PNG sheet exported from
- * Sources/RunBar/Resources/RunnerFrames/. The CSS animation is a pure
- * `steps(8)` shift on a horizontal sprite — no JavaScript, no flicker.
+ * Each state has its own dedicated sprite sheet (8 or 6 frames horizontal):
+ *   - jogging / sprinting → /runner/sprite.png         (8 frames)
+ *   - idle                → /runner/sprite-idle.png    (6 frames)
+ *   - tired               → /runner/sprite-tired.png   (6 frames)
+ *   - victory             → /runner/sprite-victory.png (6 frames)
  *
- * State semantics mirror RunnerState in the Swift code:
- *   - jogging  → 6 fps cycle
- *   - sprinting → 9 fps cycle
- *   - tired    → 4 fps cycle
- *   - idle     → single static frame (the app uses parametric rendering)
- *   - victory  → single static frame (parametric in the app)
+ * The CSS animation is a pure `steps(N)` shift on a horizontal sheet —
+ * no JavaScript, no flicker. fps mirrors `RunnerState.fps` in Swift.
  *
- * `lean = -6°` matches RunnerSprite.swift's leanDegrees.
+ * Lean (-6°) is applied only to running poses (jogging/sprinting). Other
+ * states are upright or pre-slouched, so we don't add tilt.
  */
 
 export type RunnerStateName = "idle" | "jogging" | "sprinting" | "tired" | "victory";
 type Variant = "ink" | "paper";
 
-const ANIM: Record<
-  RunnerStateName,
-  { kind: "cycle" | "static"; fps?: number; staticFrame?: number }
-> = {
-  idle: { kind: "static", staticFrame: 0 },
-  jogging: { kind: "cycle", fps: 6 },
-  sprinting: { kind: "cycle", fps: 9 },
-  tired: { kind: "cycle", fps: 4 },
-  victory: { kind: "static", staticFrame: 3 },
+type CycleConfig = {
+  sheet: { ink: string; paper: string };
+  frameCount: number;
+  fps: number;
+  lean: number;
+};
+
+const CYCLES: Record<RunnerStateName, CycleConfig> = {
+  idle: {
+    sheet: { ink: "/runner/sprite-idle.png", paper: "/runner/sprite-idle-white.png" },
+    frameCount: 6,
+    fps: 3,
+    lean: 0,
+  },
+  jogging: {
+    sheet: { ink: "/runner/sprite.png", paper: "/runner/sprite-white.png" },
+    frameCount: 8,
+    fps: 6,
+    lean: -6,
+  },
+  sprinting: {
+    sheet: { ink: "/runner/sprite.png", paper: "/runner/sprite-white.png" },
+    frameCount: 8,
+    fps: 9,
+    lean: -6,
+  },
+  tired: {
+    sheet: { ink: "/runner/sprite-tired.png", paper: "/runner/sprite-tired-white.png" },
+    frameCount: 6,
+    fps: 4,
+    lean: 0,
+  },
+  victory: {
+    sheet: { ink: "/runner/sprite-victory.png", paper: "/runner/sprite-victory-white.png" },
+    frameCount: 6,
+    fps: 6,
+    lean: 0,
+  },
 };
 
 type Props = {
   size?: number;
   state?: RunnerStateName;
   variant?: Variant;
+  /** Override the default lean (-6° on running states, 0° elsewhere). */
   lean?: number;
   className?: string;
 };
@@ -41,49 +70,27 @@ export function RunnerSprite({
   size = 88,
   state = "jogging",
   variant = "ink",
-  lean = -6,
+  lean,
   className = "",
 }: Props) {
-  const cfg = ANIM[state];
-  const sheet =
-    variant === "paper" ? "/runner/sprite-white.png" : "/runner/sprite.png";
+  const cfg = CYCLES[state];
+  const sheet = variant === "paper" ? cfg.sheet.paper : cfg.sheet.ink;
+  const tilt = lean ?? cfg.lean;
+  const duration = cfg.frameCount / cfg.fps;
 
-  const baseStyle: React.CSSProperties = {
-    width: size,
-    height: size,
-    backgroundImage: `url(${sheet})`,
-    backgroundSize: `${size * 8}px ${size}px`,
-    backgroundRepeat: "no-repeat",
-    transform: `rotate(${lean}deg)`,
-    imageRendering: "auto",
-  };
-
-  if (cfg.kind === "cycle") {
-    const duration = 8 / (cfg.fps ?? 6);
-    return (
-      <span
-        aria-hidden
-        className={`inline-block ${className}`}
-        style={{
-          ...baseStyle,
-          // jump-none distributes 8 stops over [0%, 100%] inclusive
-          // (0, 1/7, 2/7, …, 7/7), so each stop lands on an integer frame
-          // boundary. Default `steps(8)` = jump-end skips 100% and lands at
-          // 0, 1/8, …, 7/8 — half-frame offsets, hence sliced silhouettes.
-          animation: `runner-cycle ${duration}s steps(8, jump-none) infinite`,
-        }}
-      />
-    );
-  }
-
-  const frame = cfg.staticFrame ?? 0;
   return (
     <span
       aria-hidden
       className={`inline-block ${className}`}
       style={{
-        ...baseStyle,
-        backgroundPosition: `${-frame * size}px 0`,
+        width: size,
+        height: size,
+        backgroundImage: `url(${sheet})`,
+        backgroundSize: `${size * cfg.frameCount}px ${size}px`,
+        backgroundRepeat: "no-repeat",
+        transform: `rotate(${tilt}deg)`,
+        imageRendering: "auto",
+        animation: `runner-cycle ${duration}s steps(${cfg.frameCount}, jump-none) infinite`,
       }}
     />
   );

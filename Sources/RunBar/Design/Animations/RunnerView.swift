@@ -55,19 +55,22 @@ public struct RunnerView: View {
 
     @ViewBuilder
     private func spriteBody(tint: Color) -> some View {
-        let total = max(RunnerSprite.frameCount, 1)
+        let total = max(RunnerSprite.frameCount(for: state), 1)
         let safe = ((frameIndex % total) + total) % total
         // On charge la NSImage multi-rep (la frame native @1x/@2x/@3x). SwiftUI
         // pioche la repr Retina au moment du rendu — pas de pré-scaling pixellisé.
-        // Rotation appliquée ici en vectoriel (pas dans la bitmap source).
-        if let nsImage = RunnerSprite.rawImage(frame: safe) {
+        // Le lean (jogging/sprinting uniquement) est appliqué vectoriellement.
+        if let nsImage = RunnerSprite.rawImage(state: state, frame: safe) {
+            let lean: Double = (state == .jogging || state == .sprinting)
+                ? Double(RunnerSprite.runningLeanDegrees)
+                : 0
             Image(nsImage: nsImage)
                 .resizable()
                 .renderingMode(.template)
                 .interpolation(.high)
                 .aspectRatio(contentMode: .fit)
                 .foregroundStyle(tint)
-                .rotationEffect(.degrees(RunnerSprite.leanDegrees))
+                .rotationEffect(.degrees(lean))
         } else {
             parametricBody(tint: tint)
         }

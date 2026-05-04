@@ -45,19 +45,22 @@ public final class SettingsCoordinator: ObservableObject {
     }
 }
 
-/// Fenêtre de préférences — réplique le mockup `extras.jsx > SettingsWindow`.
-/// 5 onglets : Général, Affichage, Sources, Objectifs, À propos.
+/// Fenêtre de préférences — 5 onglets : Général, Affichage, Sources, Objectifs, À propos.
 public struct SettingsView: View {
     @ObservedObject var store: ActivityStore
     @ObservedObject var coordinator: SettingsCoordinator
     @State private var selection: Tab = .general
-    @State private var unit: Unit = .km
-    @State private var showGlyph: Bool = true
-    @State private var showPercent: Bool = true
-    @State private var autoSync: Bool = true
-    @State private var notifyVictory: Bool = true
-    @State private var trailMode: Bool = false
+    @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
+    @AppStorage("runbar.showGlyph") private var showGlyph: Bool = true
+    @AppStorage("runbar.showPercent") private var showPercent: Bool = false
+    @AppStorage("runbar.autoSync") private var autoSync: Bool = true
+    @AppStorage("runbar.notifyVictory") private var notifyVictory: Bool = true
+    @AppStorage("runbar.trailMode") private var trailMode: Bool = false
     @State private var sliderGoal: Double = 60
+
+    private var unit: DistanceUnit {
+        get { DistanceUnit(rawValue: unitRaw) ?? .km }
+    }
 
     public init(store: ActivityStore, coordinator: SettingsCoordinator) {
         self.store = store
@@ -68,13 +71,13 @@ public struct SettingsView: View {
     enum Tab: String, CaseIterable, Identifiable {
         case general, display, sources, goals, about
         var id: Self { self }
-        var label: String {
+        var labelKey: LocalizedStringKey {
             switch self {
-            case .general: return "Général"
-            case .display: return "Affichage"
-            case .sources: return "Sources"
-            case .goals:   return "Objectifs"
-            case .about:   return "À propos"
+            case .general: return "settings.tab.general"
+            case .display: return "settings.tab.display"
+            case .sources: return "settings.tab.sources"
+            case .goals:   return "settings.tab.goals"
+            case .about:   return "settings.tab.about"
             }
         }
         var systemImage: String {
@@ -88,16 +91,15 @@ public struct SettingsView: View {
         }
     }
 
-    enum Unit: String, CaseIterable, Identifiable {
-        case km, mi
-        var id: Self { self }
-    }
-
     public var body: some View {
         NavigationSplitView {
             List(Tab.allCases, selection: $selection) { tab in
-                Label(tab.label, systemImage: tab.systemImage)
-                    .tag(tab)
+                Label {
+                    Text(tab.labelKey, bundle: .module)
+                } icon: {
+                    Image(systemName: tab.systemImage)
+                }
+                .tag(tab)
             }
             .navigationSplitViewColumnWidth(min: 160, ideal: 170)
         } detail: {
@@ -116,22 +118,27 @@ public struct SettingsView: View {
             }
         }
         .frame(width: 620, height: 440)
-        .navigationTitle("RunBar — Préférences")
+        .navigationTitle(Text("settings.tab.general", bundle: .module))
     }
 
     // MARK: Panes
 
     private var generalPane: some View {
         Form {
-            Picker("Unités", selection: $unit) {
-                Text("Kilomètres").tag(Unit.km)
-                Text("Miles").tag(Unit.mi)
+            Picker(selection: $unitRaw) {
+                Text("settings.general.unit.km", bundle: .module).tag(DistanceUnit.km.rawValue)
+                Text("settings.general.unit.mi", bundle: .module).tag(DistanceUnit.mi.rawValue)
+            } label: {
+                Text("settings.general.unit", bundle: .module)
             }
             .pickerStyle(.segmented)
 
-            Toggle("Lancer au démarrage", isOn: $autoSync)
-            Toggle("Synchro auto (toutes les 30 min)", isOn: $autoSync)
-            Toggle("Notification d'objectif", isOn: $notifyVictory)
+            Toggle(isOn: $autoSync) {
+                Text("settings.general.autosync", bundle: .module)
+            }
+            Toggle(isOn: $notifyVictory) {
+                Text("settings.general.notify_victory", bundle: .module)
+            }
         }
         .formStyle(.grouped)
     }
@@ -139,16 +146,16 @@ public struct SettingsView: View {
     private var displayPane: some View {
         VStack(alignment: .leading, spacing: 14) {
             Form {
-                Toggle("Glyphe coureur", isOn: $showGlyph)
-                Toggle("Pourcentage", isOn: $showPercent)
+                Toggle(isOn: $showGlyph) {
+                    Text("settings.display.show_glyph", bundle: .module)
+                }
+                Toggle(isOn: $showPercent) {
+                    Text("settings.display.show_percent", bundle: .module)
+                }
             }
             .formStyle(.grouped)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("APERÇU")
-                    .font(.system(size: 10, weight: .semibold).monospaced())
-                    .tracking(0.5)
-                    .foregroundStyle(.secondary)
                 HStack(spacing: 6) {
                     if showGlyph {
                         RunnerView(state: .jogging)
@@ -156,11 +163,6 @@ public struct SettingsView: View {
                     }
                     if showPercent {
                         Text("70%").font(.system(size: 12).monospaced())
-                    }
-                    if !showGlyph && !showPercent {
-                        Text("(rien à afficher)")
-                            .italic()
-                            .foregroundStyle(.secondary)
                     }
                 }
                 .padding(12)
@@ -171,14 +173,38 @@ public struct SettingsView: View {
     }
 
     private var sourcesPane: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let comingSoon = String(localized: "settings.sources.coming_soon", bundle: .module)
+        let alwaysOn = String(localized: "settings.sources.always_active", bundle: .module)
+        let countTemplate = String(localized: "settings.sources.local_data.subtitle", bundle: .module)
+        return VStack(alignment: .leading, spacing: 8) {
             stravaRow
-            sourceRow(name: "Apple Health",   status: "À venir",   canConnect: false)
-            sourceRow(name: "Garmin Connect", status: "À venir",   canConnect: false)
-            sourceRow(name: "Saisie manuelle", status: "Toujours actif", canConnect: false)
+            sourceRow(name: "Apple Health",    status: comingSoon, canConnect: false)
+            sourceRow(name: "Garmin Connect",  status: comingSoon, canConnect: false)
+            sourceRow(name: "Manual entry",    status: alwaysOn,   canConnect: false)
             if let err = coordinator.stravaError {
                 Text(err).font(.caption).foregroundStyle(.red).padding(.top, 4)
             }
+
+            Divider().padding(.vertical, 8)
+
+            HStack {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("settings.sources.local_data.title", bundle: .module)
+                        .font(.system(size: 13, weight: .medium))
+                    Text(String(format: countTemplate, store.activities.count))
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+                Spacer()
+                Button(role: .destructive) {
+                    store.clear()
+                } label: {
+                    Text("settings.sources.local_data.clear", bundle: .module)
+                }
+                .controlSize(.small)
+            }
+            .padding(.vertical, 8)
+            .padding(.horizontal, 12)
+            .background(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
         }
     }
 
@@ -197,18 +223,25 @@ public struct SettingsView: View {
                 .frame(width: 8, height: 8)
             Text("Strava").font(.system(size: 13, weight: .medium))
             Spacer()
-            Text(coordinator.stravaConnected ? "Connecté" : "Non connecté")
+            Text(coordinator.stravaConnected
+                 ? LocalizedStringKey("settings.sources.connected")
+                 : LocalizedStringKey("settings.sources.disconnected"),
+                 bundle: .module)
                 .font(.caption).foregroundStyle(.secondary)
             if coordinator.stravaBusy {
                 ProgressView().controlSize(.small)
             } else if coordinator.stravaConnected {
-                Button("Déconnecter") {
+                Button {
                     Task { await coordinator.disconnectStrava() }
+                } label: {
+                    Text("settings.sources.disconnect", bundle: .module)
                 }
                 .controlSize(.small)
             } else {
-                Button("Connecter") {
+                Button {
                     Task { await coordinator.connectStrava() }
+                } label: {
+                    Text("settings.sources.connect", bundle: .module)
                 }
                 .controlSize(.small)
                 .buttonStyle(.borderedProminent)
@@ -235,52 +268,57 @@ public struct SettingsView: View {
     }
 
     private var goalsPane: some View {
-        Form {
-            Section("Objectif hebdo") {
+        // Le slider et le store sont en km. On affiche dans l'unité préférée.
+        let displayValue = unit.valueFromKilometers(sliderGoal)
+        let displayMin = unit.valueFromKilometers(10)
+        let displayMax = unit.valueFromKilometers(150)
+        let targetLabelKey: LocalizedStringKey = unit == .km
+            ? "settings.goals.weekly_target"
+            : "settings.goals.weekly_target_mi"
+        return Form {
+            Section {
                 VStack(alignment: .leading) {
                     HStack {
-                        Text("Cible")
+                        Text(targetLabelKey, bundle: .module)
                         Spacer()
-                        Text("\(Int(sliderGoal)) \(store.goal.metric.unit)")
+                        Text("\(Int(displayValue.rounded())) \(unit.symbol)")
                             .font(.system(size: 13, weight: .semibold).monospaced())
                     }
-                    Slider(value: $sliderGoal, in: 10...150, step: 5) {
+                    Slider(value: Binding(
+                        get: { displayValue },
+                        set: { newDisplayValue in
+                            sliderGoal = unit.toKilometers(newDisplayValue)
+                        }
+                    ), in: displayMin...displayMax, step: unit == .km ? 5 : 1) {
                         EmptyView()
                     } onEditingChanged: { editing in
                         if !editing { store.goal.target = sliderGoal }
                     }
                 }
-                Picker("Métrique", selection: $store.goal.metric) {
-                    ForEach(GoalMetric.allCases, id: \.self) { m in
-                        Text(m.label).tag(m)
-                    }
+                Toggle(isOn: $trailMode) {
+                    Text("settings.display.trail_mode", bundle: .module)
                 }
-                Picker("Reset", selection: $store.goal.resetWeekday) {
-                    Text("Lundi").tag(2)
-                    Text("Dimanche").tag(1)
-                }
-                Toggle("Trail mode (pondération D+)", isOn: $trailMode)
+            } header: {
+                Text("settings.goals.section", bundle: .module)
             }
 
-            Section("Course visée") {
-                TextField("Nom de la course", text: Binding(
+            Section {
+                TextField(text: Binding(
                     get: { store.goal.raceName ?? "" },
                     set: { store.goal.raceName = $0.isEmpty ? nil : $0 }
-                ))
-                Toggle("Activer une course", isOn: Binding(
-                    get: { store.goal.raceDate != nil },
-                    set: { enabled in
-                        store.goal.raceDate = enabled
-                            ? Calendar.iso8601Monday.date(byAdding: .day, value: 30, to: .now)
-                            : nil
-                    }
-                ))
+                )) {
+                    Text("settings.goals.race_name", bundle: .module)
+                }
                 if store.goal.raceDate != nil {
-                    DatePicker("Date", selection: Binding(
+                    DatePicker(selection: Binding(
                         get: { store.goal.raceDate ?? .now },
                         set: { store.goal.raceDate = $0 }
-                    ), in: Date.now..., displayedComponents: .date)
+                    ), in: Date.now..., displayedComponents: .date) {
+                        Text("settings.goals.race_date", bundle: .module)
+                    }
                 }
+            } header: {
+                Text("settings.goals.race_section", bundle: .module)
             }
         }
         .formStyle(.grouped)
@@ -298,12 +336,12 @@ public struct SettingsView: View {
                 .frame(width: 56, height: 56)
                 VStack(alignment: .leading, spacing: 2) {
                     Text("RunBar").font(.system(size: 16, weight: .semibold))
-                    Text("v0.1.0 · Bretagne")
+                    Text(String(format: String(localized: "settings.about.version", bundle: .module), "0.1.0"))
                         .font(.system(size: 12).monospaced())
                         .foregroundStyle(.secondary)
                 }
             }
-            Text("Un compteur de course discret pour la barre des menus. Conçu sur les chemins côtiers, pour ceux qui aiment voir où ils en sont sans interrompre leur journée.")
+            Text("settings.about.tagline", bundle: .module)
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: 360, alignment: .leading)

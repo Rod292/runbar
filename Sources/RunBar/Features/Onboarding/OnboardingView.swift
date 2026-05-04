@@ -16,12 +16,34 @@ enum RunnerTier: String, CaseIterable {
         }
     }
 
-    var label: String {
+    var labelKey: LocalizedStringKey {
         switch self {
-        case .discovery: return "Découverte"
-        case .regular:   return "Régulier"
-        case .engaged:   return "Engagé"
-        case .endurance: return "Endurance"
+        case .discovery: return "onboarding.tier.discovery"
+        case .regular:   return "onboarding.tier.regular"
+        case .engaged:   return "onboarding.tier.engaged"
+        case .endurance: return "onboarding.tier.endurance"
+        }
+    }
+
+    var label: String {
+        String(localized: String.LocalizationValue(labelKeyRaw), bundle: .module)
+    }
+
+    private var labelKeyRaw: String {
+        switch self {
+        case .discovery: return "onboarding.tier.discovery"
+        case .regular:   return "onboarding.tier.regular"
+        case .engaged:   return "onboarding.tier.engaged"
+        case .endurance: return "onboarding.tier.endurance"
+        }
+    }
+
+    var blurbKey: LocalizedStringKey {
+        switch self {
+        case .discovery: return "onboarding.tier.discovery.subtitle"
+        case .regular:   return "onboarding.tier.regular.subtitle"
+        case .engaged:   return "onboarding.tier.engaged.subtitle"
+        case .endurance: return "onboarding.tier.endurance.subtitle"
         }
     }
 
@@ -31,15 +53,6 @@ enum RunnerTier: String, CaseIterable {
         case .regular:   return "tree"
         case .engaged:   return "mountain.2"
         case .endurance: return "trophy"
-        }
-    }
-
-    var blurb: String {
-        switch self {
-        case .discovery: return "Tu te lances. Une à deux sorties par semaine."
-        case .regular:   return "Trois à quatre sorties. Tu commences à voir les progrès."
-        case .engaged:   return "Quatre à cinq sorties. Préparation 10 km / semi."
-        case .endurance: return "Cinq sorties et plus. Marathon ou ultra dans le viseur."
         }
     }
 
@@ -53,7 +66,7 @@ enum RunnerTier: String, CaseIterable {
     }
 }
 
-/// Onboarding 5 étapes : Welcome → Métrique → Objectif → Strava → Done.
+/// Onboarding 6 étapes : Welcome → Unit → Metric → Goal → Strava → Done.
 public struct OnboardingView: View {
     @ObservedObject var store: ActivityStore
     @ObservedObject var coordinator: SettingsCoordinator
@@ -64,6 +77,11 @@ public struct OnboardingView: View {
     @State private var targetKm: Double = 40
     @State private var targetCount: Double = 4
     @State private var targetElev: Double = 800
+    @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
+
+    private var unit: DistanceUnit {
+        DistanceUnit(rawValue: unitRaw) ?? .km
+    }
 
     public init(
         store: ActivityStore,
@@ -74,6 +92,8 @@ public struct OnboardingView: View {
         self.coordinator = coordinator
         self.onFinish = onFinish
     }
+
+    private let totalSteps = 6
 
     public var body: some View {
         ZStack {
@@ -88,12 +108,14 @@ public struct OnboardingView: View {
                 Group {
                     switch step {
                     case 0: WelcomeStep().transition(stepTransition)
-                    case 1: MetricStep(selected: $metric).transition(stepTransition)
-                    case 2: GoalStep(metric: metric,
+                    case 1: UnitStep(unitRaw: $unitRaw).transition(stepTransition)
+                    case 2: MetricStep(selected: $metric).transition(stepTransition)
+                    case 3: GoalStep(metric: metric,
+                                     unit: unit,
                                      targetKm: $targetKm,
                                      targetCount: $targetCount,
                                      targetElev: $targetElev).transition(stepTransition)
-                    case 3: ConnectStep(coordinator: coordinator).transition(stepTransition)
+                    case 4: ConnectStep(coordinator: coordinator).transition(stepTransition)
                     default: DoneStep().transition(stepTransition)
                     }
                 }
@@ -125,7 +147,7 @@ public struct OnboardingView: View {
 
     private var progressBar: some View {
         HStack(spacing: 8) {
-            ForEach(0..<5, id: \.self) { i in
+            ForEach(0..<totalSteps, id: \.self) { i in
                 Capsule()
                     .fill(i <= step ? RunBarColor.moss : RunBarColor.moss.opacity(0.15))
                     .frame(height: 4)
@@ -136,11 +158,13 @@ public struct OnboardingView: View {
 
     private var navigationBar: some View {
         HStack {
-            if step > 0 && step < 4 {
-                Button("Retour") { withAnimation { step -= 1 } }
-                    .buttonStyle(.plain)
-                    .foregroundStyle(.secondary)
-                    .font(.system(size: 13))
+            if step > 0 && step < totalSteps - 1 {
+                Button { withAnimation { step -= 1 } } label: {
+                    Text("onboarding.back", bundle: .module)
+                }
+                .buttonStyle(.plain)
+                .foregroundStyle(.secondary)
+                .font(.system(size: 13))
             } else {
                 Spacer().frame(height: 1)
             }
@@ -151,10 +175,10 @@ public struct OnboardingView: View {
 
     @ViewBuilder
     private var primaryButton: some View {
-        let isLast = step == 4
+        let isLast = step == totalSteps - 1
         Button(action: handleNext) {
             HStack(spacing: 8) {
-                Text(primaryButtonLabel)
+                Text(primaryButtonKey, bundle: .module)
                     .font(.system(size: 14, weight: .semibold))
                 if !isLast {
                     Image(systemName: "arrow.right")
@@ -172,21 +196,20 @@ public struct OnboardingView: View {
         .buttonStyle(.plain)
     }
 
-    private var primaryButtonLabel: String {
+    private var primaryButtonKey: LocalizedStringKey {
         switch step {
-        case 0: return "Commencer"
-        case 1: return "Continuer"
-        case 2: return "Continuer"
-        case 3: return coordinator.stravaConnected ? "Continuer" : "Plus tard"
-        default: return "C'est parti"
+        case 0: return "onboarding.welcome.cta"
+        case totalSteps - 1: return "onboarding.done.cta"
+        case 4: return coordinator.stravaConnected ? "onboarding.next" : "onboarding.connect.skip"
+        default: return "onboarding.next"
         }
     }
 
     private func handleNext() {
-        if step == 2 {
+        if step == 3 {
             commitGoal()
         }
-        if step == 4 {
+        if step == totalSteps - 1 {
             onFinish()
             return
         }
@@ -196,6 +219,7 @@ public struct OnboardingView: View {
     private func commitGoal() {
         switch metric {
         case .distance:
+            // targetKm est déjà en km (le slider stocke en km).
             store.goal = WeeklyGoal(metric: .distance, target: targetKm)
         case .count:
             store.goal = WeeklyGoal(metric: .count, target: targetCount)
@@ -238,7 +262,7 @@ private struct WelcomeStep: View {
                 Text("RunBar")
                     .font(.system(size: 38, weight: .bold))
                     .tracking(-0.8)
-                Text("Un compagnon discret pour ta semaine de course.")
+                Text("onboarding.welcome.subtitle", bundle: .module)
                     .font(.system(size: 16))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -249,23 +273,24 @@ private struct WelcomeStep: View {
     }
 }
 
-// MARK: - Step 1 — Metric
+// MARK: - Step 1 — Unit (km vs mi)
 
-private struct MetricStep: View {
-    @Binding var selected: GoalMetric
+private struct UnitStep: View {
+    @Binding var unitRaw: String
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 22) {
             stepHeader(
-                kicker: "Étape 1 / 3",
-                title: "Comment tu mesures ta semaine ?",
-                subtitle: "Tu peux changer plus tard dans Préférences."
+                kickerKey: "onboarding.unit.title",
+                titleKey: "onboarding.unit.title",
+                subtitleKey: "onboarding.unit.subtitle"
             )
 
-            HStack(spacing: 14) {
-                metricCard(.distance, icon: "ruler", title: "Distance",      example: "60 km / sem")
-                metricCard(.count,    icon: "calendar", title: "Sorties",     example: "4 séances / sem")
-                metricCard(.elevation, icon: "mountain.2", title: "Dénivelé", example: "1000 m D+ / sem")
+            HStack(spacing: 16) {
+                unitCard(.km, title: "onboarding.tier.regular.subtitle".asLocalizedKey,
+                         caption: "settings.general.unit.km")
+                unitCard(.mi, title: "onboarding.tier.regular.subtitle".asLocalizedKey,
+                         caption: "settings.general.unit.mi")
             }
             .padding(.horizontal, 36)
             Spacer()
@@ -273,14 +298,67 @@ private struct MetricStep: View {
     }
 
     @ViewBuilder
-    private func metricCard(_ value: GoalMetric, icon: String, title: String, example: String) -> some View {
+    private func unitCard(_ value: DistanceUnit, title: LocalizedStringKey, caption: LocalizedStringKey) -> some View {
+        let isOn = unitRaw == value.rawValue
+        Button {
+            withAnimation(.spring(response: 0.3)) { unitRaw = value.rawValue }
+        } label: {
+            VStack(spacing: 8) {
+                Text(value == .km ? "10 km" : "6.2 mi")
+                    .font(.system(size: 30, weight: .bold).monospacedDigit())
+                    .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
+                Text(caption, bundle: .module)
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
+            }
+            .frame(maxWidth: .infinity, minHeight: 130)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(isOn ? RunBarColor.slate : Color.white.opacity(0.6))
+                    .shadow(color: .black.opacity(isOn ? 0.18 : 0.05), radius: isOn ? 12 : 4, y: isOn ? 6 : 2)
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(isOn ? RunBarColor.moss : Color.clear, lineWidth: 2)
+            )
+            .scaleEffect(isOn ? 1.03 : 1.0)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Step 2 — Metric
+
+private struct MetricStep: View {
+    @Binding var selected: GoalMetric
+
+    var body: some View {
+        VStack(spacing: 18) {
+            stepHeader(
+                kickerKey: "onboarding.metrics.title",
+                titleKey: "onboarding.metrics.title",
+                subtitleKey: "onboarding.metrics.subtitle"
+            )
+
+            HStack(spacing: 14) {
+                metricCard(.distance,  icon: "ruler",      title: "settings.tab.goals", example: "60 km / wk")
+                metricCard(.count,     icon: "calendar",   title: "popover.outings",    example: "4 / wk")
+                metricCard(.elevation, icon: "mountain.2", title: "settings.display.trail_mode", example: "1000 m+ / wk")
+            }
+            .padding(.horizontal, 36)
+            Spacer()
+        }
+    }
+
+    @ViewBuilder
+    private func metricCard(_ value: GoalMetric, icon: String, title: LocalizedStringKey, example: String) -> some View {
         let isOn = selected == value
-        Button(action: { withAnimation(.spring(response: 0.3)) { selected = value } }) {
+        Button { withAnimation(.spring(response: 0.3)) { selected = value } } label: {
             VStack(spacing: 10) {
                 Image(systemName: icon)
                     .font(.system(size: 26, weight: .light))
                     .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
-                Text(title)
+                Text(title, bundle: .module)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
                 Text(example)
@@ -305,21 +383,14 @@ private struct MetricStep: View {
     }
 }
 
-// MARK: - Step 2 — Goal value
+// MARK: - Step 3 — Goal value
 
 private struct GoalStep: View {
     let metric: GoalMetric
+    let unit: DistanceUnit
     @Binding var targetKm: Double
     @Binding var targetCount: Double
     @Binding var targetElev: Double
-
-    private var currentValue: Double {
-        switch metric {
-        case .distance:  return targetKm
-        case .count:     return targetCount
-        case .elevation: return targetElev
-        }
-    }
 
     private var tier: RunnerTier {
         switch metric {
@@ -332,9 +403,9 @@ private struct GoalStep: View {
     var body: some View {
         VStack(spacing: 22) {
             stepHeader(
-                kicker: "Étape 2 / 3",
-                title: "Vise ton objectif hebdo",
-                subtitle: "Le bonhomme reflètera où tu en es chaque jour."
+                kickerKey: "onboarding.goal.title",
+                titleKey: "onboarding.goal.title",
+                subtitleKey: "onboarding.goal.subtitle"
             )
 
             VStack(spacing: 6) {
@@ -344,11 +415,10 @@ private struct GoalStep: View {
                         .tracking(-2)
                         .foregroundStyle(RunBarColor.slate)
                         .contentTransition(.numericText())
-                    Text(metric.unit)
+                    Text(unitLabel)
                         .font(.system(size: 18, weight: .medium))
                         .foregroundStyle(.secondary)
                 }
-                Text("par semaine").font(.system(size: 12)).foregroundStyle(.secondary)
             }
             .padding(.top, 4)
 
@@ -365,7 +435,14 @@ private struct GoalStep: View {
     private var sliderForCurrent: some View {
         switch metric {
         case .distance:
-            Slider(value: $targetKm, in: 10...150, step: 5)
+            // Le store reste en km — on présente dans l'unité préférée.
+            let displayValue = unit.valueFromKilometers(targetKm)
+            let displayMin = unit.valueFromKilometers(10)
+            let displayMax = unit.valueFromKilometers(150)
+            Slider(value: Binding(
+                get: { displayValue },
+                set: { targetKm = unit.toKilometers($0) }
+            ), in: displayMin...displayMax, step: unit == .km ? 5 : 1)
                 .tint(RunBarColor.moss)
                 .frame(maxWidth: 420)
         case .count:
@@ -381,9 +458,20 @@ private struct GoalStep: View {
 
     private var formatted: String {
         switch metric {
-        case .distance:  return String(Int(targetKm))
-        case .count:     return String(Int(targetCount))
-        case .elevation: return String(Int(targetElev))
+        case .distance:
+            return "\(Int(unit.valueFromKilometers(targetKm).rounded()))"
+        case .count:
+            return String(Int(targetCount))
+        case .elevation:
+            return String(Int(targetElev))
+        }
+    }
+
+    private var unitLabel: String {
+        switch metric {
+        case .distance:  return unit.symbol
+        case .count:     return "/wk"
+        case .elevation: return "m+"
         }
     }
 
@@ -398,10 +486,10 @@ private struct GoalStep: View {
                     .foregroundStyle(tier.color)
             }
             VStack(alignment: .leading, spacing: 2) {
-                Text("Niveau \(tier.label)")
+                Text(tier.labelKey, bundle: .module)
                     .font(.system(size: 14, weight: .semibold))
                     .foregroundStyle(RunBarColor.slate)
-                Text(tier.blurb)
+                Text(tier.blurbKey, bundle: .module)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: 320, alignment: .leading)
@@ -417,7 +505,7 @@ private struct GoalStep: View {
     }
 }
 
-// MARK: - Step 3 — Connect
+// MARK: - Step 4 — Connect
 
 private struct ConnectStep: View {
     @ObservedObject var coordinator: SettingsCoordinator
@@ -425,9 +513,9 @@ private struct ConnectStep: View {
     var body: some View {
         VStack(spacing: 18) {
             stepHeader(
-                kicker: "Étape 3 / 3",
-                title: "Connecte tes sorties",
-                subtitle: "Strava synchronise tes courses toutes les 30 minutes."
+                kickerKey: "onboarding.connect.title",
+                titleKey: "onboarding.connect.title",
+                subtitleKey: "onboarding.connect.subtitle"
             )
 
             VStack(spacing: 12) {
@@ -435,7 +523,7 @@ private struct ConnectStep: View {
                     HStack(spacing: 10) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(RunBarColor.moss)
-                        Text("Strava connecté")
+                        Text("settings.sources.connected", bundle: .module)
                             .font(.system(size: 14, weight: .semibold))
                     }
                     .padding(.horizontal, 18)
@@ -452,7 +540,7 @@ private struct ConnectStep: View {
                             } placeholder: { Color.clear }
                             .frame(width: 22, height: 22)
                             .clipShape(RoundedRectangle(cornerRadius: 5))
-                            Text(coordinator.stravaBusy ? "Connexion…" : "Connecter Strava")
+                            Text("onboarding.connect.cta", bundle: .module)
                                 .font(.system(size: 15, weight: .semibold))
                         }
                         .padding(.horizontal, 22)
@@ -470,11 +558,6 @@ private struct ConnectStep: View {
                 if let err = coordinator.stravaError {
                     Text(err).font(.caption).foregroundStyle(.red)
                 }
-
-                Text("Apple Health et Garmin arrivent bientôt.")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.top, 4)
             }
 
             Spacer()
@@ -482,7 +565,7 @@ private struct ConnectStep: View {
     }
 }
 
-// MARK: - Step 4 — Done
+// MARK: - Step 5 — Done
 
 private struct DoneStep: View {
     @State private var pop: Bool = false
@@ -507,9 +590,9 @@ private struct DoneStep: View {
             .onAppear { pop = true }
 
             VStack(spacing: 8) {
-                Text("Tu es prêt")
+                Text("onboarding.done.title", bundle: .module)
                     .font(.system(size: 28, weight: .bold))
-                Text("Le runner t'attend en haut à droite. Bonne semaine.")
+                Text("onboarding.done.subtitle", bundle: .module)
                     .font(.system(size: 14))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -522,21 +605,21 @@ private struct DoneStep: View {
 // MARK: - Helpers
 
 @ViewBuilder
-private func stepHeader(kicker: String, title: String, subtitle: String) -> some View {
+private func stepHeader(kickerKey: LocalizedStringKey, titleKey: LocalizedStringKey, subtitleKey: LocalizedStringKey) -> some View {
     VStack(spacing: 8) {
-        Text(kicker)
-            .font(.system(size: 11, weight: .semibold).monospaced())
-            .tracking(0.8)
-            .foregroundStyle(RunBarColor.moss)
-        Text(title)
+        Text(titleKey, bundle: .module)
             .font(.system(size: 26, weight: .bold))
             .multilineTextAlignment(.center)
             .foregroundStyle(RunBarColor.slate)
-        Text(subtitle)
+        Text(subtitleKey, bundle: .module)
             .font(.system(size: 13))
             .foregroundStyle(.secondary)
             .multilineTextAlignment(.center)
     }
     .padding(.top, 6)
     .padding(.horizontal, 36)
+}
+
+private extension String {
+    var asLocalizedKey: LocalizedStringKey { LocalizedStringKey(self) }
 }

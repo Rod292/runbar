@@ -25,10 +25,12 @@ struct ActivityRowView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: 1) {
-                Text(String(format: "%.1f", distanceKm))
+                let unit = UnitPreferences.current
+                let displayDistance = unit.valueFromKilometers(distanceKm)
+                Text(DistanceFormatter.number(displayDistance))
                     .font(.system(size: 12).monospacedDigit())
                     .foregroundStyle(RunBarColor.ink(dark: dark).opacity(0.85))
-                Text(" km")
+                Text(" \(unit.symbol)")
                     .font(.system(size: 10))
                     .foregroundStyle(RunBarColor.mutedInk(dark: dark))
             }

@@ -29,7 +29,7 @@ public struct PopoverView: View {
         VStack(spacing: 0) {
             header(accent: accent)
             if let days = goal.daysUntilRace(), days >= 0, days <= 30 {
-                raceCountdownBanner(days: days, name: goal.raceName ?? "Course", accent: accent)
+                raceCountdownBanner(days: days, name: goal.raceName ?? String(localized: "settings.goals.race_section", bundle: .module), accent: accent)
             }
             statsBlock(value: value, goal: goal, pct: pct, pctLabel: pctLabel, mode: mode, accent: accent)
             trackBlock(pct: pct, runner: runner, mode: mode)
@@ -64,7 +64,7 @@ public struct PopoverView: View {
             }
             .frame(width: 18, height: 18)
 
-            Text("Cette semaine")
+            Text("popover.this_week", bundle: .module)
                 .font(RunBarFont.headerTitle)
 
             if viewModel.currentStreak >= 2 {
@@ -104,6 +104,7 @@ public struct PopoverView: View {
     // MARK: Race countdown
     @ViewBuilder
     private func raceCountdownBanner(days: Int, name: String, accent: Color) -> some View {
+        let template = String(localized: "popover.race_in_n_days", bundle: .module)
         HStack(spacing: 10) {
             Image(systemName: "flag.checkered")
                 .font(.system(size: 14, weight: .medium))
@@ -112,12 +113,12 @@ public struct PopoverView: View {
                 Text(name)
                     .font(.system(size: 11, weight: .semibold))
                     .lineLimit(1)
-                Text("dans \(days) \(days <= 1 ? "jour" : "jours")")
+                Text(String(format: template, days))
                     .font(.system(size: 10))
                     .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
             }
             Spacer()
-            Text("J\(days == 0 ? "" : "-\(days)")")
+            Text("D\(days == 0 ? "" : "-\(days)")")
                 .font(.system(size: 22, weight: .bold).monospacedDigit())
                 .tracking(-0.5)
                 .foregroundStyle(accent)
@@ -135,13 +136,17 @@ public struct PopoverView: View {
     // MARK: Stats
     @ViewBuilder
     private func statsBlock(value: Double, goal: WeeklyGoal, pct: Double, pctLabel: Int, mode: PopoverMode, accent: Color) -> some View {
+        let unit = UnitPreferences.current
+        // `value` et `goal.target` sont en km — on convertit pour l'affichage.
+        let displayValue = unit.valueFromKilometers(value)
+        let displayTarget = unit.valueFromKilometers(goal.target)
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .firstTextBaseline) {
                 HStack(alignment: .firstTextBaseline, spacing: 6) {
-                    Text(String(format: "%.1f", value))
+                    Text(DistanceFormatter.number(displayValue))
                         .font(RunBarFont.bigNumber.monospacedDigit())
                         .tracking(-0.6)
-                    Text("/ \(Int(goal.target)) \(goal.metric.unit)")
+                    Text("/ \(Int(displayTarget.rounded())) \(unit.symbol)")
                         .font(.system(size: 14).monospacedDigit())
                         .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
                 }
@@ -151,7 +156,7 @@ public struct PopoverView: View {
                     .tracking(-1.2)
                     .foregroundStyle(accent)
             }
-            Text(metaCaption(mode: mode, value: value, goal: goal))
+            Text(metaCaption(mode: mode, value: value, goal: goal, unit: unit))
                 .font(.system(size: 11, weight: .medium))
                 .tracking(0.2)
                 .textCase(.uppercase)
@@ -162,14 +167,33 @@ public struct PopoverView: View {
         .padding(.bottom, 6)
     }
 
-    private func metaCaption(mode: PopoverMode, value: Double, goal: WeeklyGoal) -> String {
+    private func metaCaption(mode: PopoverMode, value: Double, goal: WeeklyGoal, unit: DistanceUnit) -> String {
         switch mode {
-        case .victory: return "Objectif atteint"
-        case .empty:   return "Semaine \(Date().isoWeekOfYear()) — c'est parti"
+        case .victory:
+            return String(localized: "week.status.complete", bundle: .module)
+        case .empty:
+            let template = String(localized: "popover.week_n", bundle: .module)
+            let start = String(localized: "week.status.start", bundle: .module)
+            return String(format: template, Date().isoWeekOfYear(), start)
         case .normal:
-            let remaining = max(0, goal.target - value)
-            return "Plus que \(String(format: "%.1f", remaining)) \(goal.metric.unit)"
+            let remainingKm = max(0, goal.target - value)
+            let remaining = unit.valueFromKilometers(remainingKm)
+            return remainingLabel(value: remaining, unit: unit)
         }
+    }
+
+    /// "Plus que X km" / "X km to go" — on garde la chaîne dans Localizable.
+    private func remainingLabel(value: Double, unit: DistanceUnit) -> String {
+        let formatted = DistanceFormatter.number(value)
+        // Une seule clé dans Localizable, deux versions selon l'unité courante.
+        // Pour rester simple, on reformatte ici directement avec la chaîne déjà localisée.
+        let pattern: String = {
+            switch unit {
+            case .km: return String(localized: "week.status.in_progress", bundle: .module)
+            case .mi: return String(localized: "week.status.in_progress", bundle: .module)
+            }
+        }()
+        return "\(pattern) — \(formatted) \(unit.symbol)"
     }
 
     // MARK: Track
@@ -198,21 +222,20 @@ public struct PopoverView: View {
     private func sortiesList(runs: [Activity], mode: PopoverMode, accent: Color) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack {
-                Text("Sorties (\(runs.count))")
-                    .font(.system(size: 11, weight: .semibold))
-                    .tracking(0.4)
-                    .textCase(.uppercase)
-                    .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                HStack(spacing: 4) {
+                    Text("popover.outings", bundle: .module)
+                    Text("(\(runs.count))").monospacedDigit()
+                }
+                .font(.system(size: 11, weight: .semibold))
+                .tracking(0.4)
+                .textCase(.uppercase)
+                .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
                 Spacer()
                 if !runs.isEmpty {
-                    HStack(spacing: 0) {
-                        Text("Allure moy. ")
-                            .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
-                        Text(viewModel.averagePaceLabel)
-                            .monospacedDigit()
-                            .foregroundStyle(RunBarColor.ink(dark: isDark).opacity(0.85))
-                    }
-                    .font(.system(size: 11))
+                    Text(viewModel.averagePaceLabel)
+                        .monospacedDigit()
+                        .font(.system(size: 11))
+                        .foregroundStyle(RunBarColor.ink(dark: isDark).opacity(0.85))
                 }
             }
             .padding(.bottom, 6)
@@ -245,12 +268,13 @@ public struct PopoverView: View {
     @ViewBuilder
     private var emptyState: some View {
         VStack(spacing: 10) {
-            Text("Aucune sortie pour l'instant")
+            Text("popover.no_outing_yet", bundle: .module)
                 .font(.system(size: 13, weight: .medium))
                 .foregroundStyle(RunBarColor.ink(dark: isDark))
             Text(viewModel.stravaConnected
-                 ? "Le bonhomme attend au départ. Première sortie : il s'élance."
-                 : "Connecte Strava pour démarrer — tes sorties se synchronisent automatiquement.")
+                 ? LocalizedStringKey("popover.no_outing_subtitle")
+                 : LocalizedStringKey("popover.connect_strava_cta"),
+                 bundle: .module)
                 .font(.system(size: 11.5))
                 .multilineTextAlignment(.center)
                 .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
@@ -264,7 +288,7 @@ public struct PopoverView: View {
                         } placeholder: { Color.clear }
                         .frame(width: 14, height: 14)
                         .clipShape(RoundedRectangle(cornerRadius: 3))
-                        Text("Connecter Strava")
+                        Text("popover.connect_strava_cta", bundle: .module)
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .padding(.horizontal, 12)
@@ -304,7 +328,7 @@ public struct PopoverView: View {
                 HStack(spacing: 5) {
                     Image(systemName: viewModel.isSyncing ? "arrow.triangle.2.circlepath" : "arrow.clockwise")
                         .font(.system(size: 11))
-                    Text("Synchroniser")
+                    Text("popover.button.sync", bundle: .module)
                         .font(.system(size: 11, weight: .semibold))
                 }
                 .padding(.vertical, 5)

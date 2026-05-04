@@ -26,10 +26,17 @@ public enum RunnerBitmap {
     }
 
     /// Image cached pour un sub-frame donné. `subframe` est mod-borné dans
-    /// `[0, state.frames * tweenSteps)`.
+    /// `[0, totalSubframes(for: state))`. Pour les états avec sprites
+    /// (jogging/sprinting/tired), on bypasse l'interpolation et on retourne
+    /// directement la frame PNG correspondante.
     public static func image(for state: RunnerState, subframe: Int, pointSize: CGFloat = 22) -> NSImage? {
-        let totalSubframes = state.frames * tweenSteps
-        let safe = ((subframe % totalSubframes) + totalSubframes) % totalSubframes
+        let total = totalSubframes(for: state)
+        let safe = ((subframe % total) + total) % total
+
+        if state.hasSpriteAssets, let sprite = RunnerSprite.image(frame: safe, pointSize: pointSize) {
+            return sprite
+        }
+
         let key = Key(state: state, subframe: safe, pointSize: Int(pointSize.rounded()))
 
         lock.lock()
@@ -58,7 +65,7 @@ public enum RunnerBitmap {
     /// pour que le premier affichage soit instantané. Coût total ~2KB × ~70 = ~140KB.
     public static func warmCache(pointSize: CGFloat = 22) {
         for state in RunnerState.allCases {
-            let total = state.frames * tweenSteps
+            let total = totalSubframes(for: state)
             for sub in 0..<total {
                 _ = image(for: state, subframe: sub, pointSize: pointSize)
             }
@@ -66,7 +73,8 @@ public enum RunnerBitmap {
     }
 
     /// Total de sub-frames pour un état (utile pour boucler le timer).
+    /// Les états avec sprites n'ont pas d'interpolation : 1 sub-frame = 1 PNG.
     public static func totalSubframes(for state: RunnerState) -> Int {
-        state.frames * tweenSteps
+        state.hasSpriteAssets ? state.frames : state.frames * tweenSteps
     }
 }

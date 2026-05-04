@@ -126,25 +126,40 @@ public final class PopoverViewModel: ObservableObject {
     }
 
     public var lastSyncLabel: String {
-        guard let last = lastSync else { return "Pas encore synchronisé" }
+        guard let last = lastSync else {
+            return String(localized: "popover.last_sync_now", bundle: .module)
+        }
         let secs = Date.now.timeIntervalSince(last)
-        if secs < 60 { return "Sync à l'instant" }
+        if secs < 60 {
+            return String(localized: "popover.last_sync_now", bundle: .module)
+        }
         let minutes = Int(secs / 60)
-        if minutes < 60 { return "Sync il y a \(minutes) min" }
+        if minutes < 60 {
+            let template = String(localized: "popover.last_sync_min", bundle: .module)
+            return String(format: template, minutes)
+        }
         let hours = minutes / 60
-        return "Sync il y a \(hours) h"
+        let template = String(localized: "popover.last_sync_hour", bundle: .module)
+        return String(format: template, hours)
     }
 
     public var averagePaceLabel: String {
         let runs = activitiesThisWeek.filter { $0.distance > 0 && $0.movingTime > 0 }
         guard !runs.isEmpty else { return "—" }
         let totalTime = runs.reduce(0) { $0 + $1.movingTime }
-        let totalKm = runs.reduce(0) { $0 + $1.distanceKm }
-        guard totalKm > 0 else { return "—" }
-        let secsPerKm = Double(totalTime) / totalKm
-        let minutes = Int(secsPerKm) / 60
-        let seconds = Int(secsPerKm) % 60
-        return String(format: "%d:%02d/km", minutes, seconds)
+        let unit = UnitPreferences.current
+        // Allure exprimée dans l'unité préférée (min/km ou min/mi).
+        let totalDistanceInUnit: Double = {
+            switch unit {
+            case .km: return runs.reduce(0) { $0 + $1.distanceKm }
+            case .mi: return runs.reduce(0) { $0 + ($1.distance / 1609.344) }
+            }
+        }()
+        guard totalDistanceInUnit > 0 else { return "—" }
+        let secsPerUnit = Double(totalTime) / totalDistanceInUnit
+        let minutes = Int(secsPerUnit) / 60
+        let seconds = Int(secsPerUnit) % 60
+        return String(format: "%d:%02d/%@", minutes, seconds, unit.symbol)
     }
 
     public func timeLabel(for activity: Activity) -> String {

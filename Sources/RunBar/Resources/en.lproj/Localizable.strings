@@ -1,0 +1,125 @@
+/* RunBar — Localizable.strings (English) */
+
+/* ── Popover header ─────────────────────────── */
+"popover.this_week" = "This week";
+"popover.week_n" = "WEEK %d — %@";
+"popover.outings" = "RUNS";
+"popover.no_outing_yet" = "No run yet";
+"popover.no_outing_subtitle" = "The runner is waiting at the start line. First run kicks it off.";
+"popover.connect_strava_cta" = "Connect Strava";
+"popover.race_in_n_days" = "Race in %d day(s)";
+"popover.last_sync_now" = "Synced just now";
+"popover.last_sync_min" = "Synced %d min ago";
+"popover.last_sync_hour" = "Synced %d h ago";
+"popover.button.sync" = "Sync";
+"popover.button.settings" = "Settings";
+
+/* ── Runner state labels ────────────────────── */
+"runner.state.idle" = "At rest";
+"runner.state.jogging" = "On track";
+"runner.state.sprinting" = "Sprinting";
+"runner.state.tired" = "Falling behind";
+"runner.state.victory" = "Goal reached";
+
+/* ── Week status ────────────────────────────── */
+"week.status.start" = "GET GOING";
+"week.status.in_progress" = "IN PROGRESS";
+"week.status.behind" = "BEHIND";
+"week.status.complete" = "GOAL!";
+
+/* ── Settings — tabs ────────────────────────── */
+"settings.tab.general" = "General";
+"settings.tab.display" = "Display";
+"settings.tab.sources" = "Sources";
+"settings.tab.goals" = "Goals";
+"settings.tab.about" = "About";
+
+/* ── Settings — general ─────────────────────── */
+"settings.general.title" = "General preferences";
+"settings.general.unit" = "Units";
+"settings.general.unit.km" = "Kilometres";
+"settings.general.unit.mi" = "Miles";
+"settings.general.autosync" = "Automatic sync";
+"settings.general.notify_victory" = "Notify when goal reached";
+
+/* ── Settings — display ─────────────────────── */
+"settings.display.show_glyph" = "Show runner";
+"settings.display.show_percent" = "Show percentage";
+"settings.display.trail_mode" = "Trail mode (elevation)";
+
+/* ── Settings — sources ─────────────────────── */
+"settings.sources.connected" = "Connected";
+"settings.sources.disconnected" = "Not connected";
+"settings.sources.connect" = "Connect";
+"settings.sources.disconnect" = "Disconnect";
+"settings.sources.coming_soon" = "Coming soon";
+"settings.sources.always_active" = "Always on";
+"settings.sources.local_data.title" = "Local data";
+"settings.sources.local_data.subtitle" = "%d activity(ies) stored.";
+"settings.sources.local_data.clear" = "Clear all data";
+
+/* ── Settings — goals ───────────────────────── */
+"settings.goals.section" = "Weekly goal";
+"settings.goals.weekly_target" = "Target volume (km per week)";
+"settings.goals.weekly_target_mi" = "Target volume (mi per week)";
+"settings.goals.race_section" = "Upcoming race";
+"settings.goals.race_name" = "Race name";
+"settings.goals.race_date" = "Date";
+
+/* ── Settings — about ───────────────────────── */
+"settings.about.version" = "Version %@";
+"settings.about.tagline" = "The silent coach in your menu bar.";
+
+/* ── Onboarding ─────────────────────────────── */
+"onboarding.welcome.title" = "Welcome to RunBar";
+"onboarding.welcome.subtitle" = "The silent coach living in your menu bar.";
+"onboarding.welcome.cta" = "Get started";
+"onboarding.profile.title" = "What kind of runner are you?";
+"onboarding.profile.subtitle" = "We use this to pre-fill your goal. You can adjust it later.";
+"onboarding.tier.discovery" = "Discovery";
+"onboarding.tier.discovery.subtitle" = "Just starting, ~10 km/wk";
+"onboarding.tier.regular" = "Regular";
+"onboarding.tier.regular.subtitle" = "2-3 runs, ~25 km/wk";
+"onboarding.tier.engaged" = "Committed";
+"onboarding.tier.engaged.subtitle" = "4-5 runs, ~50 km/wk";
+"onboarding.tier.endurance" = "Endurance";
+"onboarding.tier.endurance.subtitle" = "Marathon+, ~80 km/wk";
+"onboarding.metrics.title" = "How do you want to track it?";
+"onboarding.metrics.subtitle" = "You can change this later in Settings.";
+"onboarding.unit.title" = "Kilometres or miles?";
+"onboarding.unit.subtitle" = "We will adapt every distance shown.";
+"onboarding.goal.title" = "What is your weekly goal?";
+"onboarding.goal.subtitle" = "Slide to adjust.";
+"onboarding.goal.summary_km" = "%@ km per week";
+"onboarding.goal.summary_mi" = "%@ mi per week";
+"onboarding.connect.title" = "Connect your Strava";
+"onboarding.connect.subtitle" = "We sync your runs both ways, automatically.";
+"onboarding.connect.cta" = "Connect Strava";
+"onboarding.connect.skip" = "Later";
+"onboarding.done.title" = "Ready to run";
+"onboarding.done.subtitle" = "The runner is waiting in your menu bar.";
+"onboarding.done.cta" = "Finish";
+"onboarding.next" = "Next";
+"onboarding.back" = "Back";
+
+/* ── Menu bar context menu ──────────────────── */
+"menu.sync_now" = "Sync now";
+"menu.settings" = "Settings…";
+"menu.quit" = "Quit RunBar";
+
+/* ── Notifications ──────────────────────────── */
+"notif.victory.title" = "Weekly goal reached!";
+"notif.victory.body" = "You hit your %@ — well done.";
+"notif.recap.title" = "Weekly recap";
+"notif.recap.body" = "You covered %@ this week.";
+
+/* ── Distance formats ───────────────────────── */
+"distance.km" = "km";
+"distance.mi" = "mi";
+"distance.format.km" = "%@ km";
+"distance.format.mi" = "%@ mi";
+
+/* ── Misc ───────────────────────────────────── */
+"common.cancel" = "Cancel";
+"common.save" = "Save";
+"common.delete" = "Delete";

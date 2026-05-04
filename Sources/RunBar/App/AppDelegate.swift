@@ -29,7 +29,18 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         bindRunnerState()
         startFrameTimer()
         startBackgroundWork()
+        registerGlobalHotkey()
         triggerOnboardingIfNeeded()
+    }
+
+    /// Raccourci global ⌘⇧R pour ouvrir le popover — utile quand l'icône menu
+    /// bar est cachée derrière l'encoche d'un MacBook.
+    private func registerGlobalHotkey() {
+        NSEvent.addGlobalMonitorForEvents(matching: .keyDown) { [weak self] event in
+            guard event.modifierFlags.intersection(.deviceIndependentFlagsMask) == [.command, .shift],
+                  event.charactersIgnoringModifiers == "R" else { return }
+            Task { @MainActor in self?.togglePopover() }
+        }
     }
 
     /// On ne veut PAS quitter quand l'utilisateur ferme Settings/Onboarding —
@@ -60,13 +71,20 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Status item
 
     private func setupStatusItem() {
+        // Length fixe 28 — `variableLength` peut donner 0 le temps que la
+        // première image soit calculée, ce qui rend la cible de clic invisible
+        // et place le popover hors écran (button.bounds = .zero).
         let item = NSStatusBar.system.statusItem(withLength: 28)
         if let button = item.button {
-            button.image = RunnerBitmap.image(for: currentState, subframe: 0)
-            button.imagePosition = .imageOnly
+            let image = RunnerBitmap.image(for: currentState, subframe: 0)
+            button.image = image
+            // Fallback texte si l'image n'a pas pu être rendue.
+            if image == nil { button.title = "RB" }
+            button.imagePosition = image == nil ? .noImage : .imageOnly
             button.action = #selector(handleClick(_:))
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            NSLog("[RunBar] StatusItem créé image=\(image == nil ? "nil" : "ok")")
         }
         statusItem = item
     }
@@ -85,12 +103,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showContextMenu() {
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: "Synchroniser maintenant",
+        menu.addItem(NSMenuItem(title: String(localized: "menu.sync_now", bundle: .module),
                                 action: #selector(menuSync), keyEquivalent: "r"))
-        menu.addItem(NSMenuItem(title: "Préférences…",
+        menu.addItem(NSMenuItem(title: String(localized: "menu.settings", bundle: .module),
                                 action: #selector(menuSettings), keyEquivalent: ","))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: "Quitter RunBar",
+        menu.addItem(NSMenuItem(title: String(localized: "menu.quit", bundle: .module),
                                 action: #selector(menuQuit), keyEquivalent: "q"))
         for item in menu.items { item.target = self }
         statusItem?.menu = menu
@@ -137,8 +155,34 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             pop.performClose(nil)
         } else {
             NSApp.activate(ignoringOtherApps: true)
-            pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            // Si l'icône est cachée (notch sur MacBook → button.window est nil
+            // ou hors écran), on tombe sur un popover ancré à un anchor view
+            // centré en haut de l'écran principal.
+            if button.window != nil, button.bounds.width > 0 {
+                pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
+            } else {
+                showPopoverAtTopCenter(pop)
+            }
             pop.contentViewController?.view.window?.makeKey()
+        }
+    }
+
+    /// Affiche le popover ancré au centre supérieur de l'écran principal —
+    /// fallback quand la status item n'est pas visible (barre saturée).
+    private var fallbackAnchor: NSWindow?
+    private func showPopoverAtTopCenter(_ pop: NSPopover) {
+        guard let screen = NSScreen.main else { return }
+        let frame = screen.visibleFrame
+        let anchorRect = NSRect(x: frame.midX - 1, y: frame.maxY - 4, width: 2, height: 2)
+        let window = NSWindow(contentRect: anchorRect, styleMask: .borderless,
+                              backing: .buffered, defer: false)
+        window.isOpaque = false
+        window.backgroundColor = .clear
+        window.level = .statusBar
+        window.makeKeyAndOrderFront(nil)
+        fallbackAnchor = window
+        if let view = window.contentView {
+            pop.show(relativeTo: view.bounds, of: view, preferredEdge: .minY)
         }
     }
 
@@ -168,8 +212,9 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func restartFrameTimer() {
         frameTimer?.invalidate()
-        // L'intervalle est divisé par tweenSteps pour rendre les sub-frames.
-        let interval = 1.0 / (currentState.fps * Double(RunnerBitmap.tweenSteps))
+        // Sprites = 1 sub-frame par PNG. Parametric = tweenSteps in-betweens par keyframe.
+        let mult = currentState.hasSpriteAssets ? 1.0 : Double(RunnerBitmap.tweenSteps)
+        let interval = 1.0 / (currentState.fps * mult)
         let t = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self else { return }

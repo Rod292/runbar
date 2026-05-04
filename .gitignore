@@ -1,5 +1,6 @@
 .DS_Store
 .build/
+build/
 # Strava credentials — never commit
 Sources/RunBar/App/Secrets.swift
 .env

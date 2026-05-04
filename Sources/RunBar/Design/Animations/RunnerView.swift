@@ -16,14 +16,16 @@ struct StaticRunnerView: View {
     }
 }
 
-/// Vue SwiftUI animée du coureur — silhouette pleine, façon pictogramme
-/// Apple Fitness. Cycle entre les sub-frames de la `RunnerBitmap` cache.
+/// Vue SwiftUI animée du coureur. Pour les états avec sprites hand-drawn
+/// (jogging/sprinting/tired) on cycle les PNG en mode template pour pouvoir
+/// les coloriser. Pour idle/victory on garde le rendu Canvas parametric.
 public struct RunnerView: View {
     public let state: RunnerState
     public let color: Color?
     public let animated: Bool
 
-    @State private var subframeIndex: Int = 0
+    @State private var frameIndex: Int = 0
+    @State private var animationTask: Task<Void, Never>?
 
     public init(state: RunnerState, color: Color? = nil, animated: Bool = true) {
         self.state = state
@@ -32,28 +34,68 @@ public struct RunnerView: View {
     }
 
     public var body: some View {
-        let totalSubframes = state.frames * RunnerBitmap.tweenSteps
-        let safe = ((subframeIndex % totalSubframes) + totalSubframes) % totalSubframes
-        let pose = RunnerFrames.tweenedPose(for: state, subframe: safe)
         let tint = color ?? RunBarColor.accent(for: state)
+
+        Group {
+            if state.hasSpriteAssets {
+                spriteBody(tint: tint)
+            } else {
+                parametricBody(tint: tint)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .onAppear { startAnimation() }
+        .onDisappear { animationTask?.cancel() }
+        .onChange(of: state) { _, _ in
+            frameIndex = 0
+            startAnimation()
+        }
+        .id(state)
+    }
+
+    @ViewBuilder
+    private func spriteBody(tint: Color) -> some View {
+        let total = max(RunnerSprite.frameCount, 1)
+        let safe = ((frameIndex % total) + total) % total
+        // On lit l'image native @1x — SwiftUI l'agrandit en gardant le bénéfice
+        // template (forme noire opaque), puis foregroundColor applique la teinte.
+        if let nsImage = RunnerSprite.image(frame: safe, pointSize: 96) {
+            Image(nsImage: nsImage)
+                .resizable()
+                .renderingMode(.template)
+                .interpolation(.high)
+                .aspectRatio(contentMode: .fit)
+                .foregroundStyle(tint)
+        } else {
+            // Fallback : pas d'asset, on retombe sur le rendu parametric.
+            parametricBody(tint: tint)
+        }
+    }
+
+    @ViewBuilder
+    private func parametricBody(tint: Color) -> some View {
+        let totalSubframes = state.frames * RunnerBitmap.tweenSteps
+        let safe = ((frameIndex % totalSubframes) + totalSubframes) % totalSubframes
+        let pose = RunnerFrames.tweenedPose(for: state, subframe: safe)
 
         Canvas { context, size in
             let scale = min(size.width, size.height) / 96
             context.scaleBy(x: scale, y: scale)
             drawRunner(pose: pose, in: &context, color: tint)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .onAppear { startTimer() }
-        .id(state)
     }
 
-    private func startTimer() {
+    private func startAnimation() {
+        animationTask?.cancel()
         guard animated else { return }
-        let interval = 1.0 / (state.fps * Double(RunnerBitmap.tweenSteps))
-        Task { @MainActor in
+        // Sprites = 1 frame / fps. Parametric = subframes interpolées.
+        let mult = state.hasSpriteAssets ? 1.0 : Double(RunnerBitmap.tweenSteps)
+        let interval = 1.0 / (state.fps * mult)
+        animationTask = Task { @MainActor in
             while !Task.isCancelled {
                 try? await Task.sleep(nanoseconds: UInt64(interval * 1_000_000_000))
-                subframeIndex &+= 1
+                if Task.isCancelled { break }
+                frameIndex &+= 1
             }
         }
     }

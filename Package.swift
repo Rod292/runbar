@@ -3,6 +3,7 @@ import PackageDescription
 
 let package = Package(
     name: "RunBar",
+    defaultLocalization: "fr",
     platforms: [.macOS(.v14)],
     products: [
         .executable(name: "RunBar", targets: ["RunBar"])
@@ -17,7 +18,10 @@ let package = Package(
                 .product(name: "Logging", package: "swift-log")
             ],
             path: "Sources/RunBar",
-            exclude: ["App/Secrets.template.swift.txt"]
+            exclude: ["App/Secrets.template.swift.txt"],
+            resources: [
+                .process("Resources")
+            ]
         ),
         .testTarget(
             name: "RunBarTests",

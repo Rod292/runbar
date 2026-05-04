@@ -80,7 +80,7 @@ export function Why() {
           <div className="grid grid-cols-3 divide-x divide-hairline">
             <ColophonCell value="0" label="Ad notifications" />
             <ColophonCell value="100%" label="Local-first" />
-            <ColophonCell value="MIT" label="Open source" />
+            <ColophonCell value="Free" label="Forever" />
           </div>
           <div className="border-b border-hairline" />
 
@@ -90,7 +90,7 @@ export function Why() {
               Colophon
             </span>
             <span className="font-mono text-[10px] uppercase tracking-[0.28em] text-ink-mute">
-              No tracking &nbsp;&middot;&nbsp; No account &nbsp;&middot;&nbsp; macOS&nbsp;13+
+              No tracking &nbsp;&middot;&nbsp; No account &nbsp;&middot;&nbsp; macOS&nbsp;14+
             </span>
           </div>
         </div>

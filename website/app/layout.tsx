@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: "RunBar — a runner in your menu bar",
   description:
     "Mac menu-bar app for runners. A tiny figure runs toward your weekly finish line. Strava sync. Built for macOS.",
-  metadataBase: new URL("https://runbar.app"),
+  metadataBase: new URL("https://runbar.vercel.app"),
   openGraph: {
     title: "RunBar — a runner in your menu bar",
     description:

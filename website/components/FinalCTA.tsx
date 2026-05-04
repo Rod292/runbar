@@ -57,35 +57,11 @@ export function FinalCTA() {
               <div className="flex items-center gap-2 pl-1 font-mono text-[10.5px] uppercase tracking-[0.16em] text-paper/35">
                 <span>macOS 14+</span>
                 <span className="text-paper/20">·</span>
-                <span>4.2 MB</span>
+                <span>2.2 MB</span>
                 <span className="text-paper/20">·</span>
-                <span>MIT</span>
+                <span>Free</span>
               </div>
             </div>
-
-            <a
-              href="https://github.com/Rod292/runbar"
-              className="group mt-6 inline-flex items-center gap-2 text-[12.5px] text-paper/55 hover:text-paper"
-            >
-              <svg
-                width="13"
-                height="13"
-                viewBox="0 0 16 16"
-                aria-hidden
-                className="opacity-70 transition group-hover:opacity-100"
-              >
-                <path
-                  fill="currentColor"
-                  d="M8 0C3.58 0 0 3.58 0 8a8 8 0 0 0 5.47 7.59c.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.42 7.42 0 0 1 4 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
-                />
-              </svg>
-              <span className="underline decoration-paper/20 underline-offset-[5px] group-hover:decoration-paper/60">
-                Source on GitHub
-              </span>
-              <span className="opacity-50 transition group-hover:translate-x-0.5">
-                →
-              </span>
-            </a>
           </div>
 
           {/* right — dominant typographic close */}
@@ -106,13 +82,12 @@ export function FinalCTA() {
           <div className="flex items-center gap-3">
             <span className="font-display italic text-paper">Run</span>
             <span className="font-medium text-paper">Bar</span>
-            <span>· v0.1 · MIT · 2026</span>
+            <span>· v0.1.1 · 2026</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <a href="#showcase" className="hover:text-paper">Overview</a>
             <a href="#features" className="hover:text-paper">States</a>
             <a href="#why" className="hover:text-paper">Manifesto</a>
-            <a href="https://github.com/Rod292/runbar" className="hover:text-paper">GitHub</a>
           </div>
         </div>
       </div>

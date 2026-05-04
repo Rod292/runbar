@@ -186,10 +186,12 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         if pop.isShown {
             pop.performClose(nil)
         } else {
-            NSApp.activate(ignoringOtherApps: true)
-            // Si l'icône est cachée (notch sur MacBook → button.window est nil
-            // ou hors écran), on tombe sur un popover ancré à un anchor view
-            // centré en haut de l'écran principal.
+            // ⚠️ Ne PAS appeler `NSApp.activate(ignoringOtherApps: true)` ici —
+            // cette API ramène toutes les fenêtres de l'app au premier plan,
+            // donc la Settings window (si elle était ouverte mais cachée)
+            // remonterait avec le popover. Le popover devient key window via
+            // `makeKey()` ci-dessous, c'est suffisant pour qu'il reçoive
+            // événements clavier et clics.
             if button.window != nil, button.bounds.width > 0 {
                 pop.show(relativeTo: button.bounds, of: button, preferredEdge: .minY)
             } else {

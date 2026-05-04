@@ -123,7 +123,7 @@ export function Popover() {
                 line={{ from: "right", length: 180 }}
                 index="C"
                 label="Live state"
-                hint="Sprite mirrors pace · jogging, sprinting, tired"
+                hint="Sprite mirrors pace · five moods, hand-drawn"
               />
 
               {/* Callout 4 — synced footer → "Local-first" (right side, paper) */}

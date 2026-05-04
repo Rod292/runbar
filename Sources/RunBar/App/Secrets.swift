@@ -14,7 +14,7 @@ enum Secrets {
     static let stravaClientID = value(
         env: "RUNBAR_STRAVA_CLIENT_ID",
         defaults: "runbar.strava.clientID",
-        fallback: "193852"
+        fallback: "235433"
     )
 
     /// Adresse du backend qui détient le `client_secret` et fait l'échange.

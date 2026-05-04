@@ -99,18 +99,42 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     // MARK: - Status item
 
     private func setupStatusItem() {
-        // Length fixe 28 — `variableLength` peut donner 0 le temps que la
-        // première image soit calculée, ce qui rend la cible de clic invisible
-        // et place le popover hors écran (button.bounds = .zero).
-        let item = NSStatusBar.system.statusItem(withLength: 28)
+        // variableLength : laisse macOS auto-sizer, plus fiable que length fixe
+        // sur les MacBook avec encoche où une length fixe peut se faire écraser
+        // à width=0 si l'app active a beaucoup de menus.
+        let item = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
+        // autosaveName explicite : sans ça, macOS range le status item dans le
+        // namespace "Item-N" partagé avec d'autres apps, et `com.apple.controlcenter`
+        // peut avoir une clé `NSStatusItem Visible Item-N = 0` qui écrase notre
+        // `isVisible = true`. Avec un nom dédié, on a notre propre slot.
+        item.autosaveName = "RunBarMenuBarItem"
+        item.isVisible = true
         if let button = item.button {
             applyIcon(to: button, image: RunnerBitmap.image(for: currentState, subframe: 0))
             button.action = #selector(handleClick(_:))
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            NSLog("[RunBar] StatusItem created frameCount=\(RunnerSprite.frameCount)")
+            NSLog("[RunBar] StatusItem created frameCount=\(RunnerSprite.frameCount) buttonFrame=\(button.frame)")
         }
         statusItem = item
+
+        // Diagnostic 2s après launch : si la fenêtre interne du status item
+        // a une width < 1 (squashée par l'encoche / app avec menus longs),
+        // l'icône est invisible et on auto-affiche le popover au top-center
+        // comme fallback. La frame du button reste 28×22 dans son window
+        // local — ce qui compte c'est la frame du window à l'écran.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
+            guard let self, let button = self.statusItem?.button else { return }
+            let buttonFrame = button.frame
+            let windowFrame = button.window?.frame ?? .zero
+            NSLog("[RunBar] After 2s: buttonFrame=\(buttonFrame) windowFrame=\(windowFrame)")
+            let hidden = windowFrame.width < 1 || windowFrame.origin.x == 0
+            if hidden, let pop = self.popover, !pop.isShown {
+                NSLog("[RunBar] Status item hidden by macOS (notch overflow). Showing popover at top-center.")
+                NSApp.activate(ignoringOtherApps: true)
+                self.showPopoverAtTopCenter(pop)
+            }
+        }
     }
 
     @objc private func handleClick(_ sender: AnyObject?) {

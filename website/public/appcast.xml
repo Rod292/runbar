@@ -6,16 +6,16 @@
         <description>Mises à jour RunBar</description>
         <language>fr</language>
         <item>
-            <title>Version 0.1.1</title>
-            <pubDate>Mon, 04 May 2026 20:02:21 +0000</pubDate>
-            <sparkle:version>0.1.1</sparkle:version>
-            <sparkle:shortVersionString>0.1.1</sparkle:shortVersionString>
+            <title>Version 0.1.2</title>
+            <pubDate>Mon, 04 May 2026 20:21:35 +0000</pubDate>
+            <sparkle:version>0.1.2</sparkle:version>
+            <sparkle:shortVersionString>0.1.2</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[Première release avec auto-updates Sparkle. Nouveau logo runner. Animations idle/tired/victory dédiées. Sprint plus marqué.]]></description>
+            <description><![CDATA[Hardening sécurité : webhook & callback OAuth bindés sur loopback (127.0.0.1) uniquement, fail-closed si verify-token Strava non configuré.]]></description>
             <enclosure
-                url="https://runbar.vercel.app/download/RunBar-0.1.1.dmg"
-                sparkle:edSignature="lyoiritg/x84MhhAplynWwqQ1mfaH+d2YvOUsexS17XqM0aPkph/VTrF7krihwpYMNnAhr5LB153UtfLDtljAw=="
-                length="2231095"
+                url="https://runbar.vercel.app/download/RunBar-0.1.2.dmg"
+                sparkle:edSignature="wIq9/s0zM6vXadcWOm8kPYyUkfGd28JBlexAwY+75DQWpd2iux7ARaaXCyvfIOFbYAF1lFhtgZK9UaPHWWSiBA=="
+                length="2231072"
                 type="application/octet-stream" />
         </item>
     </channel>

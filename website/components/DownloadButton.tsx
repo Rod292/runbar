@@ -22,6 +22,8 @@ export function DownloadButton({
   return (
     <a
       href={href}
+      aria-label="Download RunBar for macOS — direct DMG"
+      download
       className={`group inline-flex items-center gap-2.5 rounded-full font-medium tracking-tight transition ${sizing} ${palette} ${className}`}
     >
       {/* Apple glyph */}

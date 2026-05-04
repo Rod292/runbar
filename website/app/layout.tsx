@@ -1,16 +1,100 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
+const SITE_URL = "https://runbar.vercel.app";
+const TITLE = "RunBar — a runner in your menu bar";
+const DESCRIPTION =
+  "Mac menu-bar app for runners. A tiny figure runs toward your weekly finish line. Strava-synced. macOS 14+. Free.";
+const TAGLINE =
+  "Strava tells you what you did. RunBar tells you where you stand — right now.";
+
 export const metadata: Metadata = {
-  title: "RunBar — a runner in your menu bar",
-  description:
-    "Mac menu-bar app for runners. A tiny figure runs toward your weekly finish line. Strava sync. Built for macOS.",
-  metadataBase: new URL("https://runbar.vercel.app"),
+  metadataBase: new URL(SITE_URL),
+  title: {
+    default: TITLE,
+    template: "%s · RunBar",
+  },
+  description: DESCRIPTION,
+  applicationName: "RunBar",
+  authors: [{ name: "Rod" }],
+  keywords: [
+    "macOS menu bar app",
+    "Strava",
+    "running",
+    "weekly goal",
+    "Mac app",
+    "menu bar",
+    "runner",
+    "fitness tracker",
+  ],
+  alternates: {
+    canonical: SITE_URL,
+  },
   openGraph: {
-    title: "RunBar — a runner in your menu bar",
-    description:
-      "Strava tells you what you did. RunBar tells you where you stand — right now.",
     type: "website",
+    url: SITE_URL,
+    siteName: "RunBar",
+    title: TITLE,
+    description: TAGLINE,
+    locale: "en_US",
+    images: [
+      {
+        url: "/og-image.png",
+        width: 1200,
+        height: 630,
+        alt: "RunBar — a runner in your menu bar",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: TITLE,
+    description: TAGLINE,
+    images: ["/og-image.png"],
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
+  },
+  category: "productivity",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#fbf9f4" },
+    { media: "(prefers-color-scheme: dark)", color: "#0f0f0e" },
+  ],
+  width: "device-width",
+  initialScale: 1,
+};
+
+// JSON-LD structured data — schema.org SoftwareApplication.
+// Helps Google index RunBar with rich result formatting.
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "RunBar",
+  description: DESCRIPTION,
+  applicationCategory: "HealthApplication",
+  operatingSystem: "macOS 14",
+  url: SITE_URL,
+  downloadUrl: `${SITE_URL}/download/RunBar.dmg`,
+  softwareVersion: "0.1.2",
+  fileSize: "2.2 MB",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+  author: {
+    "@type": "Person",
+    name: "Rod",
   },
 };
 
@@ -21,6 +105,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
+      </head>
       <body className="bg-ivory text-ink">
         {children}
       </body>

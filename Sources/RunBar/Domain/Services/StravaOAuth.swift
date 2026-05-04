@@ -35,7 +35,11 @@ final class StravaOAuthCoordinator {
     private func waitForCode(expectedState: String) async throws -> String {
         try await withCheckedThrowingContinuation { (cont: CheckedContinuation<String, Error>) in
             do {
-                let listener = try NWListener(using: .tcp, on: NWEndpoint.Port(rawValue: Secrets.stravaLocalCallbackPort)!)
+                // Loopback uniquement : le callback OAuth doit venir du browser
+                // local de l'utilisateur, jamais d'un host distant sur le LAN.
+                let params = NWParameters.tcp
+                params.acceptLocalOnly = true
+                let listener = try NWListener(using: params, on: NWEndpoint.Port(rawValue: Secrets.stravaLocalCallbackPort)!)
                 let handler = LocalCallbackHandler(
                     continuation: cont,
                     listener: listener,

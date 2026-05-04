@@ -24,13 +24,17 @@ public final class StravaWebhookServer: @unchecked Sendable {
     public func start() {
         guard listener == nil else { return }
         do {
-            let listener = try NWListener(using: .tcp, on: port)
+            // Loopback uniquement : empêche un voisin LAN de hit le webhook
+            // pour déclencher des sync ou exploiter une éventuelle faille.
+            let params = NWParameters.tcp
+            params.acceptLocalOnly = true
+            let listener = try NWListener(using: params, on: port)
             listener.newConnectionHandler = { [weak self] conn in
                 self?.handle(conn)
             }
             listener.start(queue: .global(qos: .userInitiated))
             self.listener = listener
-            RunBarLog.strava.info("Webhook server listening on port \(self.port)")
+            RunBarLog.strava.info("Webhook server listening on 127.0.0.1:\(self.port)")
         } catch {
             RunBarLog.strava.error("Failed to start webhook server: \(error.localizedDescription)")
         }
@@ -78,8 +82,12 @@ public final class StravaWebhookServer: @unchecked Sendable {
               let challenge = comps.queryItems?.first(where: { $0.name == "hub.challenge" })?.value,
               let token     = comps.queryItems?.first(where: { $0.name == "hub.verify_token" })?.value
         else { return Self.simple(status: "400 Bad Request", body: "{}") }
-        guard token == Secrets.webhookVerifyToken else {
-            RunBarLog.strava.error("Webhook verify token mismatch")
+        // Fail-closed : si l'utilisateur n'a pas configuré de verify token, on
+        // refuse tout. Sinon un attaquant local pourrait passer un token vide
+        // contre le secret par défaut (vide aussi) et valider la souscription.
+        let expected = Secrets.webhookVerifyToken
+        guard !expected.isEmpty, token == expected else {
+            RunBarLog.strava.error("Webhook verify token mismatch or unset")
             return Self.simple(status: "401 Unauthorized", body: "{}")
         }
         let body = "{\"hub.challenge\":\"\(challenge)\"}"

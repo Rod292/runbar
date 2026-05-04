@@ -23,6 +23,13 @@ mkdir -p "$MACOS" "$RES"
 cp ".build/release/RunBar" "$MACOS/RunBar"
 chmod +x "$MACOS/RunBar"
 
+# 1b. Le binaire SwiftPM ne contient que `@loader_path` dans son rpath, qui
+# pointe sur Contents/MacOS/. Il ne trouve donc pas Sparkle.framework qu'on
+# embarque dans Contents/Frameworks/. On ajoute le rpath standard macOS
+# `@executable_path/../Frameworks`. Doit être fait avant la signature, sinon
+# install_name_tool casserait le code signing.
+install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS/RunBar" 2>/dev/null || true
+
 # 2. Resource bundle SwiftPM (frames PNG). Doit rester à côté du binaire dans
 # MacOS/ pour que `Bundle.module` le trouve. On lui injecte un Info.plist
 # minimal sinon codesign --deep le rejette ("bundle format unrecognized").
@@ -42,9 +49,9 @@ if [ -d "$RESOURCE_BUNDLE" ]; then
     <key>CFBundlePackageType</key>
     <string>BNDL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.2</string>
+    <string>0.1.3</string>
     <key>CFBundleVersion</key>
-    <string>3</string>
+    <string>4</string>
 </dict>
 </plist>
 BPLIST
@@ -75,9 +82,9 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.2</string>
+    <string>0.1.3</string>
     <key>CFBundleVersion</key>
-    <string>3</string>
+    <string>4</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>

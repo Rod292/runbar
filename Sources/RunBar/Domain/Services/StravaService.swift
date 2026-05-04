@@ -152,7 +152,13 @@ public actor StravaService: StravaServiceProtocol {
     }
 
     private func exchangeCodeForTokens(code: String) async throws -> TokenResponse {
-        try await callBackend(path: "/api/strava/exchange", payload: ["code": code])
+        try await callBackend(
+            path: "/api/strava/exchange",
+            payload: [
+                "code": code,
+                "redirect_uri": Secrets.stravaRedirectURI
+            ]
+        )
     }
 
     private func refreshTokens(refreshToken: String) async throws -> TokenResponse {

@@ -28,6 +28,8 @@ final class StravaOAuthCoordinator {
         // On démarre le listener AVANT d'ouvrir le navigateur, sinon le
         // callback peut arriver avant qu'on écoute.
         async let code: String = waitForCode(expectedState: state)
+        RunBarLog.strava.info("Starting OAuth listener on localhost:\(Secrets.stravaLocalCallbackPort)")
+        RunBarLog.strava.info("Opening Strava OAuth URL with redirect \(Secrets.stravaRedirectURI)")
         NSWorkspace.shared.open(authURL)
         return try await code
     }
@@ -46,6 +48,7 @@ final class StravaOAuthCoordinator {
                     expectedState: expectedState
                 )
                 listener.newConnectionHandler = { conn in
+                    RunBarLog.strava.info("Received Strava OAuth callback connection")
                     handler.handle(connection: conn)
                 }
                 listener.start(queue: .global(qos: .userInitiated))

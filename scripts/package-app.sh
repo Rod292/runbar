@@ -49,9 +49,9 @@ if [ -d "$RESOURCE_BUNDLE" ]; then
     <key>CFBundlePackageType</key>
     <string>BNDL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.4</string>
+    <string>0.1.5</string>
     <key>CFBundleVersion</key>
-    <string>5</string>
+    <string>6</string>
 </dict>
 </plist>
 BPLIST
@@ -74,7 +74,7 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <key>CFBundleExecutable</key>
     <string>RunBar</string>
     <key>CFBundleIdentifier</key>
-    <string>com.rodrigue.runbar</string>
+    <string>com.rodrigue.runbar.app</string>
     <key>CFBundleName</key>
     <string>RunBar</string>
     <key>CFBundleDisplayName</key>
@@ -84,9 +84,9 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.healthcare-fitness</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.4</string>
+    <string>0.1.5</string>
     <key>CFBundleVersion</key>
-    <string>5</string>
+    <string>6</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>

@@ -22,19 +22,41 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private var preferencesObserver: NSObjectProtocol?
 
     public func applicationDidFinishLaunching(_ notification: Notification) {
+        migrateLegacyDefaultsIfNeeded()
         // Force-init container avant tout
         _ = AppContainer.shared
         RunnerBitmap.warmCache()
-        setupStatusItem()
-        configureActivationPolicy()
         setupPopover()
         bindRunnerState()
         observePreferences()
-        startFrameTimer()
         startBackgroundWork()
         registerGlobalHotkey()
-        triggerOnboardingIfNeeded()
         UpdateService.shared.start()
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self else { return }
+            self.setupStatusItem()
+            self.configureActivationPolicy()
+            self.startFrameTimer()
+            self.triggerOnboardingIfNeeded()
+        }
+    }
+
+    private func migrateLegacyDefaultsIfNeeded() {
+        let legacyBundleID = "com.rodrigue.runbar"
+        guard Bundle.main.bundleIdentifier != legacyBundleID else { return }
+
+        let defaults = UserDefaults.standard
+        guard let legacyDomain = defaults.persistentDomain(forName: legacyBundleID), !legacyDomain.isEmpty else { return }
+
+        var migrated = 0
+        for (key, value) in legacyDomain where defaults.object(forKey: key) == nil {
+            defaults.set(value, forKey: key)
+            migrated += 1
+        }
+
+        if migrated > 0 {
+            NSLog("[RunBar] Migrated \(migrated) UserDefaults value(s) from \(legacyBundleID)")
+        }
     }
 
     /// Raccourci global ⌘⇧R pour ouvrir le popover — utile quand l'icône menu
@@ -336,7 +358,6 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             }
         }()
 
-        // Adjust width: 28 (icon only), +24 per visible text segment.
         let extras = (wantsPercent ? 1 : 0) + (streakActive ? 1 : 0)
         let glyphWidth: CGFloat = wantsGlyph ? 28 : 0
         let textWidth: CGFloat = CGFloat(extras) * 26
@@ -344,6 +365,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
         button.title = title
         button.image = wantsGlyph ? validImage : nil
+        button.image?.isTemplate = true
+        button.imageScaling = .scaleProportionallyDown
 
         switch (wantsGlyph, !title.isEmpty) {
         case (true, true):

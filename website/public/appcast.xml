@@ -6,16 +6,16 @@
         <description>Mises à jour RunBar</description>
         <language>fr</language>
         <item>
-            <title>Version 0.1.4</title>
-            <pubDate>Mon, 04 May 2026 21:14:46 +0000</pubDate>
-            <sparkle:version>0.1.4</sparkle:version>
-            <sparkle:shortVersionString>0.1.4</sparkle:shortVersionString>
+            <title>Version 0.1.5</title>
+            <pubDate>Mon, 04 May 2026 21:38:18 +0000</pubDate>
+            <sparkle:version>0.1.5</sparkle:version>
+            <sparkle:shortVersionString>0.1.5</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[Fix Tahoe : corrige le status item invisible pour l'app installée depuis le DMG en laissant LSUIElement gérer le bundle et en ne passant en accessory qu'en mode swift run.]]></description>
+            <description><![CDATA[Fix Tahoe : nouveau bundle identifier pour sortir de l'état ControlCenter corrompu, migration automatique des préférences existantes, et correction OAuth Strava avec redirect_uri localhost pendant l'échange du code.]]></description>
             <enclosure
-                url="https://runbar.vercel.app/download/RunBar-0.1.4.dmg"
-                sparkle:edSignature="MzLdYO8ACpENw/Z/7f1BbPYjLQFlIaoSlUe78c4AkQlwl4ffr2nupJUcUiAPO1BNA0QU492iDxmCE25XgwJeCg=="
-                length="2233090"
+                url="https://runbar.vercel.app/download/RunBar-0.1.5.dmg"
+                sparkle:edSignature="XH55tUkc3TLkHWxLV55JtEbXLGH1hOT0cJvCXUaMTZU3HsdT/PXf/aO0Czvf7kRJ4YiwlN6UyZ69yxwq87ywBg=="
+                length="2235136"
                 type="application/octet-stream" />
         </item>
     </channel>

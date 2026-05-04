@@ -128,22 +128,126 @@ private final class LocalCallbackHandler: @unchecked Sendable {
     }
 
     private static func responsePayload(success: Bool) -> Data {
-        let title = success ? "Connecté ✓" : "Échec"
+        let eyebrow = success ? "Step 04 of 06 · Strava" : "Step 04 of 06 · Strava"
+        let italicWord = success ? "Connected." : "Failed."
+        let supportingTitle = success ? "Tokens stored." : "Try again from RunBar."
         let body = success
-            ? "Tu peux fermer cet onglet et retourner à RunBar."
-            : "Quelque chose s'est mal passé. Réessaie depuis RunBar."
+            ? "You can close this tab and head back to your menu bar."
+            : "Something went wrong on our side. Re-open the popover and tap Connect Strava."
+        let accent = success ? "#2D7A3E" : "#C75D2C"
         let html = """
         <!doctype html>
-        <html lang="fr"><head><meta charset="utf-8"><title>RunBar</title>
-        <style>
-          body{font-family:-apple-system,sans-serif;background:#F5F0E6;color:#1C1C1E;
-               display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
-          .card{padding:32px 40px;border-radius:14px;background:#fff;
-                box-shadow:0 8px 32px rgba(0,0,0,.08);text-align:center;max-width:360px}
-          h1{margin:0 0 8px;font-size:22px;color:#2D7A3E}
-          p{margin:0;color:#4A4A4A;line-height:1.5}
-        </style></head>
-        <body><div class="card"><h1>\(title)</h1><p>\(body)</p></div></body></html>
+        <html lang="en">
+        <head>
+          <meta charset="utf-8">
+          <title>RunBar — \(italicWord)</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1">
+          <style>
+            :root {
+              --ivory: #F7F4EE;
+              --paper: #FBF9F4;
+              --ink: #0F0F0E;
+              --ink-soft: #46463F;
+              --ink-mute: #8A887E;
+              --hairline: #DDD7CB;
+              --accent: \(accent);
+            }
+            * { box-sizing: border-box; }
+            html, body { margin: 0; padding: 0; height: 100%; }
+            body {
+              background: var(--ivory);
+              color: var(--ink);
+              font-family: -apple-system, BlinkMacSystemFont, "Inter",
+                "Helvetica Neue", Arial, sans-serif;
+              -webkit-font-smoothing: antialiased;
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              padding: 32px;
+              background-image: radial-gradient(rgba(15,15,14,.025) 1px, transparent 1px);
+              background-size: 3px 3px;
+            }
+            .stage {
+              max-width: 520px;
+              width: 100%;
+            }
+            .eyebrow {
+              display: flex;
+              align-items: center;
+              gap: 12px;
+              font: 500 10.5px/1 ui-monospaced, SFMono-Regular, Menlo, monospace;
+              letter-spacing: .28em;
+              text-transform: uppercase;
+              color: var(--ink-mute);
+              margin-bottom: 20px;
+            }
+            .eyebrow .dot {
+              width: 6px; height: 6px; border-radius: 999px;
+              background: var(--accent);
+            }
+            .eyebrow .rule {
+              flex: 0 0 22px; height: 1px; background: var(--hairline);
+            }
+            h1 {
+              font: 500 clamp(48px, 9vw, 92px)/.9 "Times New Roman", Georgia, serif;
+              font-style: italic;
+              letter-spacing: -.045em;
+              margin: 0 0 6px 0;
+              color: var(--ink);
+            }
+            h2 {
+              font: 400 clamp(18px, 2.4vw, 24px)/1.1 "Times New Roman", Georgia, serif;
+              letter-spacing: -.02em;
+              color: var(--ink-soft);
+              margin: 0 0 24px 0;
+            }
+            .hairline {
+              height: 1px; background: var(--hairline);
+              margin: 24px 0;
+            }
+            p.body {
+              font: 400 15px/1.5 -apple-system, BlinkMacSystemFont, sans-serif;
+              color: var(--ink-soft);
+              max-width: 44ch;
+              margin: 0 0 28px 0;
+            }
+            .colophon {
+              display: flex;
+              align-items: baseline;
+              gap: 16px;
+              font: 500 10px/1 ui-monospaced, SFMono-Regular, Menlo, monospace;
+              letter-spacing: .22em;
+              text-transform: uppercase;
+              color: var(--ink-mute);
+            }
+            .colophon .rule { flex: 1; height: 1px; background: var(--hairline); }
+            .colophon .accent { color: var(--accent); }
+          </style>
+        </head>
+        <body>
+          <div class="stage">
+            <div class="eyebrow">
+              <span class="dot"></span>
+              <span>\(eyebrow)</span>
+              <span class="rule" aria-hidden="true"></span>
+              <span>oauth callback</span>
+            </div>
+
+            <h1>\(italicWord)</h1>
+            <h2>— \(supportingTitle)</h2>
+
+            <div class="hairline"></div>
+
+            <p class="body">\(body)</p>
+
+            <div class="colophon">
+              <span>RunBar</span>
+              <span class="rule" aria-hidden="true"></span>
+              <span class="accent">localhost:47862</span>
+            </div>
+          </div>
+        </body>
+        </html>
         """
         let response = """
         HTTP/1.1 200 OK\r

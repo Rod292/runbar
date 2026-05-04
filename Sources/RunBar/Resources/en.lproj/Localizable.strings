@@ -128,6 +128,7 @@
 /* ── Menu bar context menu ──────────────────── */
 "menu.sync_now" = "Sync now";
 "menu.settings" = "Settings…";
+"menu.check_updates" = "Check for Updates…";
 "menu.quit" = "Quit RunBar";
 
 /* ── Notifications ──────────────────────────── */
@@ -148,3 +149,17 @@
 "common.delete" = "Delete";
 "common.on" = "On";
 "common.off" = "Off";
+
+/* Settings — section labels (added 2026-05-04) */
+"settings.general.behavior" = "Behavior";
+"settings.display.icon" = "Menu-bar icon";
+"settings.display.preview" = "Preview";
+"settings.sources.providers" = "Providers";
+"settings.about.actions" = "Actions";
+
+/* Onboarding — race step (added 2026-05-04) */
+"onboarding.race.title" = "Race";
+"onboarding.race.subtitle" = "If you have an upcoming race, set the date — RunBar will count down. Skip if you don't.";
+"onboarding.race.enable" = "I have a race coming up";
+"onboarding.race.skip" = "Skip";
+"onboarding.race.skippable" = "Optional. You can always add one later in Settings → Goals.";

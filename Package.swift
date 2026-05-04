@@ -9,13 +9,15 @@ let package = Package(
         .executable(name: "RunBar", targets: ["RunBar"])
     ],
     dependencies: [
-        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0")
+        .package(url: "https://github.com/apple/swift-log.git", from: "1.5.0"),
+        .package(url: "https://github.com/sparkle-project/Sparkle.git", from: "2.6.0")
     ],
     targets: [
         .executableTarget(
             name: "RunBar",
             dependencies: [
-                .product(name: "Logging", package: "swift-log")
+                .product(name: "Logging", package: "swift-log"),
+                .product(name: "Sparkle", package: "Sparkle")
             ],
             path: "Sources/RunBar",
             exclude: ["App/Secrets.template.swift.txt"],

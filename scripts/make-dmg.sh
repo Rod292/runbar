@@ -1,34 +1,53 @@
 #!/bin/bash
-# Build RunBar.app, then package it as a simple drag-to-Applications DMG.
+# Build RunBar.app, then package it as a customized drag-to-Applications DMG.
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 APP="$ROOT/build/RunBar.app"
-DMG_DIR="$ROOT/build/dmg"
+DMG_STAGING="$ROOT/build/dmg-staging"
 DMG_NAME="RunBar.dmg"
 DMG_PATH="$ROOT/build/$DMG_NAME"
-WEBSITE_DOWNLOAD="$ROOT/website/public/download/$DMG_NAME"
+DMG_BACKGROUND="$ROOT/scripts/assets/dmg/background.png"
+
+if ! command -v create-dmg >/dev/null 2>&1; then
+    echo "create-dmg manquant. Installer avec: brew install create-dmg" >&2
+    exit 1
+fi
 
 "$ROOT/scripts/package-app.sh"
 
-echo "==> Préparation du volume DMG"
-rm -rf "$DMG_DIR" "$DMG_PATH"
-mkdir -p "$DMG_DIR"
-cp -R "$APP" "$DMG_DIR/RunBar.app"
-ln -s /Applications "$DMG_DIR/Applications"
+if [ ! -f "$DMG_BACKGROUND" ]; then
+    echo "==> Génération du background DMG"
+    swift "$ROOT/scripts/assets/generate-dmg-background.swift" "$DMG_BACKGROUND" 1
+    swift "$ROOT/scripts/assets/generate-dmg-background.swift" "${DMG_BACKGROUND%.png}@2x.png" 2
+fi
 
-echo "==> Création de $DMG_PATH"
-hdiutil create \
-  -volname "RunBar" \
-  -srcfolder "$DMG_DIR" \
-  -ov \
-  -format UDZO \
-  "$DMG_PATH" >/dev/null
+echo "==> Préparation du dossier source DMG"
+rm -rf "$DMG_STAGING" "$DMG_PATH"
+mkdir -p "$DMG_STAGING"
+cp -R "$APP" "$DMG_STAGING/RunBar.app"
 
-mkdir -p "$(dirname "$WEBSITE_DOWNLOAD")"
-cp "$DMG_PATH" "$WEBSITE_DOWNLOAD"
+echo "==> Création du DMG"
+create-dmg \
+    --volname "RunBar" \
+    --background "$DMG_BACKGROUND" \
+    --window-pos 200 120 \
+    --window-size 600 400 \
+    --icon-size 128 \
+    --icon "RunBar.app" 150 200 \
+    --hide-extension "RunBar.app" \
+    --app-drop-link 450 200 \
+    --no-internet-enable \
+    "$DMG_PATH" \
+    "$DMG_STAGING" >/dev/null
+
+SIGN_IDENTITY="${RUNBAR_CODESIGN_IDENTITY:-}"
+if [ -n "$SIGN_IDENTITY" ] && [ "$SIGN_IDENTITY" != "-" ]; then
+    echo "==> Signature DMG ($SIGN_IDENTITY)"
+    codesign --force --sign "$SIGN_IDENTITY" --timestamp "$DMG_PATH"
+fi
 
 echo "==> DMG prêt"
 echo "    → $DMG_PATH"
-echo "    → $WEBSITE_DOWNLOAD"
+echo "    Étape suivante : scripts/notarize-dmg.sh"

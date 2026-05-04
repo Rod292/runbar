@@ -233,14 +233,14 @@ public enum StravaError: Error, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .notImplemented:    return "Connexion Strava à venir."
+        case .notImplemented:    return "Strava connection coming soon."
         case .missingConfiguration:
-            return "Configuration Strava manquante. Définis RUNBAR_STRAVA_CLIENT_ID (env ou defaults). Le secret OAuth vit côté backend."
-        case .notAuthenticated:  return "Pas connecté à Strava."
-        case .oauthFailed:       return "Échec de l'autorisation."
-        case .oauthTimeout:      return "Connexion Strava expirée."
-        case .invalidOAuthState: return "Réponse OAuth invalide."
-        case .httpStatus(let c): return "Erreur serveur (HTTP \(c))."
+            return "Strava configuration missing. Set RUNBAR_STRAVA_CLIENT_ID (env or defaults). The OAuth secret lives on the backend."
+        case .notAuthenticated:  return "Not connected to Strava."
+        case .oauthFailed:       return "Authorization failed."
+        case .oauthTimeout:      return "Strava connection timed out."
+        case .invalidOAuthState: return "Invalid OAuth response."
+        case .httpStatus(let c): return "Server error (HTTP \(c))."
         }
     }
 }

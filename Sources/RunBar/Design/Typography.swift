@@ -12,17 +12,37 @@ enum RunBarFont {
         .system(size: size, weight: weight, design: .monospaced)
     }
 
-    /// Gros chiffre (42 km / 70%). Tabular nums + tracking serré.
+    /// Italique serif — pour les mots éditoriaux ("This", "Waiting.", etc.).
+    static func italicSerif(size: CGFloat, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight, design: .serif).italic()
+    }
+
+    // Numerics / display
     static let bigNumber = ui(size: 28, weight: .semibold)
-    /// Pourcentage très large (36pt accent).
     static let percent = ui(size: 36, weight: .semibold)
-    /// Titre header popover.
+
+    // Editorial display — italique serif pour les "mots accent".
+    static let displayWord = italicSerif(size: 22, weight: .regular)
+
+    // Header popover
     static let headerTitle = ui(size: 13, weight: .semibold)
-    /// Label CAPS (sections).
+
+    // Eyebrows / axes / colophons — mono small-caps tracking.
+    static let eyebrow  = mono(size: 9.5, weight: .medium)
+    static let axis     = mono(size: 9, weight: .regular)
+    static let colophon = mono(size: 9, weight: .regular)
     static let capLabel = mono(size: 10)
 }
 
 extension Text {
     /// Chiffres tabulaires pour stabiliser les sauts visuels.
     func tabularNums() -> Text { self.monospacedDigit() }
+
+    /// Eyebrow uppercase + tracking large (mono small-caps).
+    func eyebrowStyle(dark: Bool) -> some View {
+        self.font(RunBarFont.eyebrow)
+            .tracking(1.2)
+            .textCase(.uppercase)
+            .foregroundStyle(RunBarColor.mutedInk(dark: dark))
+    }
 }

@@ -50,7 +50,15 @@ if [ -d "$RESOURCE_BUNDLE" ]; then
 BPLIST
 fi
 
-# 3. Info.plist
+# 3. AppIcon.icns
+ICON_SRC="$ROOT/Sources/RunBar/Resources/AppIcon.icns"
+if [ ! -f "$ICON_SRC" ]; then
+    echo "==> Génération de l'AppIcon (placeholder)"
+    "$ROOT/scripts/assets/build-iconset.sh"
+fi
+cp "$ICON_SRC" "$RES/AppIcon.icns"
+
+# 4. Info.plist
 cat > "$CONTENTS/Info.plist" <<'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
@@ -64,6 +72,8 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <string>RunBar</string>
     <key>CFBundleDisplayName</key>
     <string>RunBar</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
     <key>CFBundleShortVersionString</key>
     <string>0.1.0</string>
     <key>CFBundleVersion</key>
@@ -76,17 +86,62 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <true/>
     <key>NSHighResolutionCapable</key>
     <true/>
+    <key>SUFeedURL</key>
+    <string>https://runbar.vercel.app/appcast.xml</string>
+    <key>SUEnableAutomaticChecks</key>
+    <true/>
+    <key>SUPublicEDKey</key>
+    <string>JJWHXBIxpprgms6vm7YgvHiE4bO99FFE5nvWQvLQmtI=</string>
 </dict>
 </plist>
 PLIST
 
-# 4. Code signing. Par défaut on signe ad-hoc pour produire une app lançable.
+# 5. Sparkle.framework — copié depuis l'artefact SwiftPM. Doit être embarqué
+# dans Contents/Frameworks/ pour que le bundle soit lançable hors développement.
+SPARKLE_XCFW="$ROOT/.build/artifacts/sparkle/Sparkle/Sparkle.xcframework/macos-arm64_x86_64/Sparkle.framework"
+if [ ! -d "$SPARKLE_XCFW" ]; then
+    echo "==> Sparkle.framework introuvable — exécution de swift build pour le télécharger"
+    swift build -c release >/dev/null
+fi
+mkdir -p "$CONTENTS/Frameworks"
+rm -rf "$CONTENTS/Frameworks/Sparkle.framework"
+cp -R "$SPARKLE_XCFW" "$CONTENTS/Frameworks/Sparkle.framework"
+
+# 6. Code signing. Par défaut on signe ad-hoc pour produire une app lançable.
 # Pour éviter que macOS redemande l'accès Keychain à chaque rebuild, utilise
 # une identité stable :
 #   RUNBAR_CODESIGN_IDENTITY="RunBar Local Dev" scripts/package-app.sh
+#
+# IMPORTANT : on signe explicitement de l'intérieur vers l'extérieur. `--deep`
+# ne signe pas correctement les XPC services Sparkle (déprécié par Apple) et
+# ferait échouer la notarisation.
 SIGN_IDENTITY="${RUNBAR_CODESIGN_IDENTITY:--}"
 echo "==> Code signing ($SIGN_IDENTITY)"
-codesign --force --deep --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP_DIR" 2>&1 | tail -3 || true
+
+SPARKLE_FW="$CONTENTS/Frameworks/Sparkle.framework"
+SPARKLE_VERSION="$SPARKLE_FW/Versions/B"
+
+# 6a. XPC services à l'intérieur de Sparkle
+for xpc in "$SPARKLE_VERSION/XPCServices/"*.xpc; do
+    [ -d "$xpc" ] || continue
+    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$xpc" 2>&1 | tail -1
+done
+
+# 6b. Updater.app et Autoupdate (helpers Sparkle)
+codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE_VERSION/Updater.app" 2>&1 | tail -1
+codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE_VERSION/Autoupdate" 2>&1 | tail -1
+
+# 6c. Le framework lui-même
+codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE_FW" 2>&1 | tail -1
+
+# 6d. Resource bundle SwiftPM (s'il existe)
+if [ -d "$MACOS/RunBar_RunBar.bundle" ]; then
+    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$MACOS/RunBar_RunBar.bundle" 2>&1 | tail -1
+fi
+
+# 6e. Le binaire principal et l'app — en dernier
+codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$MACOS/RunBar" 2>&1 | tail -1
+codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP_DIR" 2>&1 | tail -1
 
 echo "==> RunBar.app prêt"
 echo "    → $APP_DIR"

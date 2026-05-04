@@ -74,7 +74,10 @@ enum RunnerTier: String, CaseIterable {
     }
 }
 
-/// Onboarding 6 étapes : Welcome → Unit → Metric → Goal → Strava → Done.
+/// Onboarding 6 étapes — direction éditoriale alignée sur la landing page :
+/// fond ivoire + grain papier, eyebrow mono small-caps, titres italique
+/// display serif, hairlines, accent terra. Garde la chaleur visuelle
+/// (runner pulsant, confettis) sans tomber dans le SaaS générique.
 public struct OnboardingView: View {
     @ObservedObject var store: ActivityStore
     @ObservedObject var coordinator: SettingsCoordinator
@@ -85,6 +88,15 @@ public struct OnboardingView: View {
     @State private var targetKm: Double = 40
     @State private var targetCount: Double = 4
     @State private var targetElev: Double = 800
+    /// Set when we land on the Goal step and the seed came from the user's
+    /// recent Strava history. Used to render the "based on your last weeks"
+    /// banner instead of the generic "use the slider" caption.
+    @State private var suggestionSeeded: Bool = false
+    @State private var suggestionAvgKm: Double? = nil
+    /// Race state — saved on commitRace() in `handleNext`.
+    @State private var raceEnabled: Bool = false
+    @State private var raceName: String = ""
+    @State private var raceDate: Date = Date.now.addingTimeInterval(30 * 24 * 3600)
     @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
 
     private var unit: DistanceUnit {
@@ -101,29 +113,38 @@ public struct OnboardingView: View {
         self.onFinish = onFinish
     }
 
-    private let totalSteps = 6
+    private let totalSteps = 7
 
     public var body: some View {
         ZStack {
             background
 
             VStack(spacing: 0) {
-                progressBar
-                    .padding(.top, 24)
+                topBar
+                    .padding(.top, 22)
                     .padding(.horizontal, 36)
-                    .padding(.bottom, 16)
 
                 Group {
                     switch step {
                     case 0: WelcomeStep().transition(stepTransition)
-                    case 1: UnitStep(unitRaw: $unitRaw).transition(stepTransition)
-                    case 2: MetricStep(selected: $metric, unit: unit).transition(stepTransition)
-                    case 3: GoalStep(metric: metric,
+                    case 1: UnitStep(unitRaw: $unitRaw, stepIndex: 1, total: totalSteps).transition(stepTransition)
+                    case 2: MetricStep(selected: $metric, unit: unit, stepIndex: 2, total: totalSteps).transition(stepTransition)
+                    case 3: ConnectStep(coordinator: coordinator, stepIndex: 3, total: totalSteps).transition(stepTransition)
+                    case 4: GoalStep(metric: metric,
                                      unit: unit,
                                      targetKm: $targetKm,
                                      targetCount: $targetCount,
-                                     targetElev: $targetElev).transition(stepTransition)
-                    case 4: ConnectStep(coordinator: coordinator).transition(stepTransition)
+                                     targetElev: $targetElev,
+                                     suggestionSeeded: suggestionSeeded,
+                                     suggestionAvgKm: suggestionAvgKm,
+                                     stepIndex: 4,
+                                     total: totalSteps).transition(stepTransition)
+                    case 5: RaceStep(unit: unit,
+                                     enabled: $raceEnabled,
+                                     name: $raceName,
+                                     date: $raceDate,
+                                     stepIndex: 5,
+                                     total: totalSteps).transition(stepTransition)
                     default: DoneStep(metric: metric,
                                       unit: unit,
                                       targetKm: targetKm,
@@ -139,49 +160,102 @@ public struct OnboardingView: View {
                     .padding(.vertical, 22)
             }
         }
-        .frame(width: 720, height: 560)
+        .frame(width: 720, height: 580)
         .preferredColorScheme(.light)
     }
 
     // MARK: - Sections
 
     private var background: some View {
-        LinearGradient(
-            colors: [
-                RunBarColor.cream,
-                Color(red: 0.94, green: 0.91, blue: 0.83)
-            ],
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
+        ZStack {
+            Color(red: 0xF7 / 255, green: 0xF4 / 255, blue: 0xEE / 255) // --color-ivory
+            // paper grain
+            GeometryReader { geo in
+                Canvas { ctx, size in
+                    // very subtle dot pattern
+                    let step: CGFloat = 3
+                    var x: CGFloat = 0
+                    while x < size.width {
+                        var y: CGFloat = 0
+                        while y < size.height {
+                            ctx.fill(
+                                Path(ellipseIn: CGRect(x: x, y: y, width: 1, height: 1)),
+                                with: .color(.black.opacity(0.025))
+                            )
+                            y += step
+                        }
+                        x += step
+                    }
+                }
+                .frame(width: geo.size.width, height: geo.size.height)
+            }
+        }
         .ignoresSafeArea()
     }
 
-    private var progressBar: some View {
-        HStack(spacing: 8) {
-            ForEach(0..<totalSteps, id: \.self) { i in
-                Capsule()
-                    .fill(i <= step ? RunBarColor.moss : RunBarColor.moss.opacity(0.15))
-                    .frame(height: 4)
-                    .animation(.easeOut(duration: 0.3), value: step)
+    private var topBar: some View {
+        HStack(alignment: .firstTextBaseline) {
+            // wordmark
+            HStack(spacing: 4) {
+                Text("Run")
+                    .font(.system(size: 16, weight: .medium, design: .serif))
+                    .italic()
+                Text("Bar")
+                    .font(.system(size: 16, weight: .medium))
+                Circle().fill(RunBarColor.terra).frame(width: 5, height: 5)
+                    .offset(y: -6)
             }
+            Spacer()
+            // step counter
+            Text("Step \(min(step + 1, totalSteps)) of \(totalSteps)")
+                .font(.system(size: 10, design: .monospaced))
+                .tracking(1.6)
+                .textCase(.uppercase)
+                .foregroundStyle(RunBarColor.mutedInk(dark: false))
         }
     }
 
-    private var navigationBar: some View {
-        HStack {
-            if step > 0 && step < totalSteps - 1 {
-                Button { withAnimation { step -= 1 } } label: {
-                    Text("onboarding.back", bundle: .module)
-                }
-                .buttonStyle(PressableButtonStyle())
-                .foregroundStyle(.secondary)
-                .font(.system(size: 13))
-            } else {
-                Spacer().frame(height: 1)
+    private var hairlineProgress: some View {
+        GeometryReader { geo in
+            ZStack(alignment: .leading) {
+                Rectangle()
+                    .fill(RunBarColor.faintInk(dark: false))
+                    .frame(height: 1)
+                Rectangle()
+                    .fill(RunBarColor.terra)
+                    .frame(
+                        width: geo.size.width * CGFloat(min(step + 1, totalSteps)) / CGFloat(totalSteps),
+                        height: 1
+                    )
+                    .animation(.easeOut(duration: 0.35), value: step)
             }
-            Spacer()
-            primaryButton
+        }
+        .frame(height: 1)
+    }
+
+    private var navigationBar: some View {
+        VStack(spacing: 14) {
+            hairlineProgress
+
+            HStack {
+                if step > 0 && step < totalSteps - 1 {
+                    Button { withAnimation { step -= 1 } } label: {
+                        HStack(spacing: 6) {
+                            Image(systemName: "arrow.left")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("onboarding.back", bundle: .module)
+                                .underline()
+                        }
+                    }
+                    .buttonStyle(PressableButtonStyle())
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                    .font(.system(size: 13))
+                } else {
+                    Spacer().frame(height: 1)
+                }
+                Spacer()
+                primaryButton
+            }
         }
     }
 
@@ -191,19 +265,18 @@ public struct OnboardingView: View {
         Button(action: handleNext) {
             HStack(spacing: 8) {
                 Text(primaryButtonKey, bundle: .module)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 13, weight: .semibold))
                 if !isLast {
                     Image(systemName: "arrow.right")
-                        .font(.system(size: 12, weight: .semibold))
+                        .font(.system(size: 11, weight: .semibold))
                 }
             }
             .padding(.horizontal, 22)
             .padding(.vertical, 12)
             .background(
-                RoundedRectangle(cornerRadius: 10)
-                    .fill(RunBarColor.slate)
+                Capsule().fill(RunBarColor.slate)
             )
-            .foregroundStyle(RunBarColor.cream)
+            .foregroundStyle(Color(red: 0xFB / 255, green: 0xF9 / 255, blue: 0xF4 / 255)) // paper
         }
         .buttonStyle(PressableButtonStyle())
     }
@@ -212,14 +285,24 @@ public struct OnboardingView: View {
         switch step {
         case 0: return "onboarding.welcome.cta"
         case totalSteps - 1: return "onboarding.done.cta"
-        case 4: return coordinator.stravaConnected ? "onboarding.next" : "onboarding.connect.skip"
+        case 3: return coordinator.stravaConnected ? "onboarding.next" : "onboarding.connect.skip"
+        case 5: return raceEnabled ? "onboarding.next" : "onboarding.race.skip"
         default: return "onboarding.next"
         }
     }
 
     private func handleNext() {
+        // From Strava → Goal: seed a suggested target if we have history.
         if step == 3 {
+            seedSuggestedGoalIfPossible()
+        }
+        // Leaving Goal → Race: commit the goal so race step can update it in-place.
+        if step == 4 {
             commitGoal()
+        }
+        // Leaving Race → Done: persist race fields (or clear them).
+        if step == 5 {
+            commitRace()
         }
         if step == totalSteps - 1 {
             onFinish()
@@ -231,13 +314,44 @@ public struct OnboardingView: View {
     private func commitGoal() {
         switch metric {
         case .distance:
-            // targetKm est déjà en km (le slider stocke en km).
             store.goal = WeeklyGoal(metric: .distance, target: targetKm)
         case .count:
             store.goal = WeeklyGoal(metric: .count, target: targetCount)
         case .elevation:
             store.goal = WeeklyGoal(metric: .elevation, target: targetElev)
         }
+    }
+
+    private func commitRace() {
+        if raceEnabled {
+            let trimmed = raceName.trimmingCharacters(in: .whitespaces)
+            store.goal.raceName = trimmed.isEmpty ? nil : trimmed
+            store.goal.raceDate = raceDate
+        } else {
+            store.goal.raceName = nil
+            store.goal.raceDate = nil
+        }
+    }
+
+    /// Use last 4 ISO weeks of activities to suggest a weekly km target.
+    /// Adds a +10% buffer (rounded to nearest 5) so users push slightly
+    /// above their current pace. No-op if metric ≠ distance, no activities,
+    /// or zero distance over the window.
+    private func seedSuggestedGoalIfPossible() {
+        guard metric == .distance else { return }
+        let cal = Calendar.iso8601Monday
+        let now = Date.now
+        guard let cutoff = cal.date(byAdding: .day, value: -28, to: cal.startOfDay(for: now)) else { return }
+        let recent = store.activities.filter { $0.startDate >= cutoff }
+        guard !recent.isEmpty else { return }
+        let totalKm = recent.reduce(0) { $0 + ($1.distance / 1000.0) }
+        let avgKm = totalKm / 4.0
+        guard avgKm > 0.5 else { return }
+        let raw = ceil(avgKm * 1.1 / 5) * 5
+        let suggested = min(150, max(10, raw))
+        targetKm = suggested
+        suggestionAvgKm = avgKm
+        suggestionSeeded = true
     }
 
     private var stepTransition: AnyTransition {
@@ -254,33 +368,93 @@ private struct WelcomeStep: View {
     @State private var pulse: Bool = false
 
     var body: some View {
-        VStack(spacing: 28) {
+        VStack(spacing: 26) {
             Spacer()
-            ZStack {
-                Circle()
-                    .fill(RunBarColor.moss.opacity(0.12))
-                    .frame(width: 220, height: 220)
-                    .scaleEffect(pulse ? 1.05 : 0.95)
-                    .animation(.easeInOut(duration: 1.6).repeatForever(autoreverses: true), value: pulse)
-                Circle()
-                    .fill(RunBarColor.moss.opacity(0.18))
-                    .frame(width: 160, height: 160)
-                RunnerView(state: .jogging, color: RunBarColor.slate)
-                    .frame(width: 130, height: 130)
+
+            // editorial wordmark, oversized
+            VStack(spacing: 4) {
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text("Run")
+                        .font(.system(size: 76, weight: .medium, design: .serif))
+                        .italic()
+                        .tracking(-3)
+                        .foregroundStyle(RunBarColor.slate)
+                    Text("Bar")
+                        .font(.system(size: 76, weight: .medium))
+                        .tracking(-3)
+                        .foregroundStyle(RunBarColor.slate)
+                    Circle()
+                        .fill(RunBarColor.terra)
+                        .frame(width: 14, height: 14)
+                        .offset(y: -34)
+                }
+                Text("— a runner in your menu bar.")
+                    .font(.system(size: 18, design: .serif))
+                    .italic()
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
             }
+
+            // animated runner under a hairline horizon
+            ZStack {
+                VStack(spacing: 10) {
+                    RunnerView(state: .jogging, color: RunBarColor.slate)
+                        .frame(width: 90, height: 90)
+                        .offset(y: pulse ? -3 : 0)
+                        .animation(.easeInOut(duration: 0.42).repeatForever(autoreverses: true), value: pulse)
+
+                    Rectangle()
+                        .fill(RunBarColor.faintInk(dark: false))
+                        .frame(width: 220, height: 1)
+
+                    HStack(spacing: 16) {
+                        Text("0")
+                            .font(.system(size: 9, design: .monospaced))
+                            .tracking(1.4)
+                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                        Text("·")
+                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                        Text("week")
+                            .font(.system(size: 9, design: .monospaced))
+                            .tracking(1.4)
+                            .textCase(.uppercase)
+                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                        Text("·")
+                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                        Text("∞")
+                            .font(.system(size: 9, design: .monospaced))
+                            .foregroundStyle(RunBarColor.terra)
+                    }
+                }
+            }
+            .padding(.top, 6)
             .onAppear { pulse = true }
 
-            VStack(spacing: 10) {
-                Text("RunBar")
-                    .font(.system(size: 38, weight: .bold))
-                    .tracking(-0.8)
-                Text("onboarding.welcome.subtitle", bundle: .module)
-                    .font(.system(size: 16))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: 360)
-            }
+            // subtitle
+            Text("onboarding.welcome.subtitle", bundle: .module)
+                .font(.system(size: 14))
+                .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 380)
+
             Spacer()
+
+            // colophon
+            HStack(spacing: 14) {
+                Text("MIT · 2026")
+                    .font(.system(size: 9, design: .monospaced))
+                    .tracking(1.6)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false).opacity(0.6))
+                Rectangle()
+                    .fill(RunBarColor.faintInk(dark: false))
+                    .frame(width: 22, height: 1)
+                Text("local-first")
+                    .font(.system(size: 9, design: .monospaced))
+                    .tracking(1.6)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false).opacity(0.6))
+            }
+            .padding(.bottom, 6)
         }
     }
 }
@@ -289,20 +463,25 @@ private struct WelcomeStep: View {
 
 private struct UnitStep: View {
     @Binding var unitRaw: String
+    let stepIndex: Int
+    let total: Int
 
     var body: some View {
-        VStack(spacing: 22) {
+        VStack(spacing: 24) {
             stepHeader(
-                kickerKey: "onboarding.unit.title",
-                titleKey: "onboarding.unit.title",
+                stepIndex: stepIndex,
+                total: total,
+                kicker: "onboarding.unit.title",
+                italicWord: "Choose.",
                 subtitleKey: "onboarding.unit.subtitle"
             )
 
-            HStack(spacing: 16) {
+            HStack(spacing: 14) {
                 unitCard(.km, caption: "settings.general.unit.km")
                 unitCard(.mi, caption: "settings.general.unit.mi")
             }
             .padding(.horizontal, 36)
+
             Spacer()
         }
     }
@@ -313,25 +492,43 @@ private struct UnitStep: View {
         Button {
             withAnimation(.spring(response: 0.3)) { unitRaw = value.rawValue }
         } label: {
-            VStack(spacing: 8) {
-                Text(value == .km ? "10 km" : "6.2 mi")
-                    .font(.system(size: 30, weight: .bold).monospacedDigit())
+            VStack(alignment: .leading, spacing: 12) {
+                // top row: glyph + accent dot
+                HStack {
+                    Text("0\(value == .km ? "1" : "2")")
+                        .font(.system(size: 9, design: .monospaced))
+                        .tracking(1.6)
+                        .textCase(.uppercase)
+                        .foregroundStyle(isOn ? RunBarColor.cream.opacity(0.7) : RunBarColor.mutedInk(dark: false))
+                    Spacer()
+                    Circle()
+                        .fill(isOn ? RunBarColor.terra : Color.clear)
+                        .frame(width: 6, height: 6)
+                }
+                Spacer(minLength: 0)
+                Text(value == .km ? "10" : "6.2")
+                    .font(.system(size: 56, weight: .medium, design: .monospaced))
+                    .tracking(-2)
                     .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
                 Text(caption, bundle: .module)
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
+                    .font(.system(size: 11, design: .monospaced))
+                    .tracking(1.6)
+                    .textCase(.uppercase)
+                    .foregroundStyle(isOn ? RunBarColor.cream.opacity(0.85) : RunBarColor.mutedInk(dark: false))
             }
-            .frame(maxWidth: .infinity, minHeight: 130)
+            .frame(maxWidth: .infinity, minHeight: 180, alignment: .leading)
+            .padding(.horizontal, 18)
+            .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(isOn ? RunBarColor.slate : Color.white.opacity(0.6))
-                    .shadow(color: .black.opacity(isOn ? 0.18 : 0.05), radius: isOn ? 12 : 4, y: isOn ? 6 : 2)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isOn ? RunBarColor.slate : Color.white.opacity(0.55))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(isOn ? RunBarColor.moss : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(isOn ? RunBarColor.slate : RunBarColor.faintInk(dark: false), lineWidth: 1)
             )
-            .scaleEffect(isOn ? 1.03 : 1.0)
+            .shadow(color: .black.opacity(isOn ? 0.18 : 0), radius: isOn ? 16 : 0, y: isOn ? 8 : 0)
+            .scaleEffect(isOn ? 1.02 : 1.0)
         }
         .buttonStyle(PressableButtonStyle())
     }
@@ -342,19 +539,23 @@ private struct UnitStep: View {
 private struct MetricStep: View {
     @Binding var selected: GoalMetric
     let unit: DistanceUnit
+    let stepIndex: Int
+    let total: Int
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 22) {
             stepHeader(
-                kickerKey: "onboarding.metrics.title",
-                titleKey: "onboarding.metrics.title",
+                stepIndex: stepIndex,
+                total: total,
+                kicker: "onboarding.metrics.title",
+                italicWord: "What counts?",
                 subtitleKey: "onboarding.metrics.subtitle"
             )
 
-            HStack(spacing: 14) {
-                metricCard(.distance,  icon: "ruler",      title: "settings.tab.goals", example: distanceExample)
-                metricCard(.count,     icon: "calendar",   title: "popover.outings",    example: "4 / wk")
-                metricCard(.elevation, icon: "mountain.2", title: "settings.display.trail_mode", example: "1000 m+ / wk")
+            HStack(spacing: 12) {
+                metricCard(.distance,  num: "01", icon: "ruler",      title: "settings.tab.goals", example: distanceExample)
+                metricCard(.count,     num: "02", icon: "calendar",   title: "popover.outings",    example: "4 / wk")
+                metricCard(.elevation, num: "03", icon: "mountain.2", title: "settings.display.trail_mode", example: "1000 m+ / wk")
             }
             .padding(.horizontal, 36)
             Spacer()
@@ -367,33 +568,48 @@ private struct MetricStep: View {
     }
 
     @ViewBuilder
-    private func metricCard(_ value: GoalMetric, icon: String, title: LocalizedStringKey, example: String) -> some View {
+    private func metricCard(_ value: GoalMetric, num: String, icon: String, title: LocalizedStringKey, example: String) -> some View {
         let isOn = selected == value
         Button { withAnimation(.spring(response: 0.3)) { selected = value } } label: {
-            VStack(spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Text(num)
+                        .font(.system(size: 9, design: .monospaced))
+                        .tracking(1.6)
+                        .foregroundStyle(isOn ? RunBarColor.cream.opacity(0.7) : RunBarColor.mutedInk(dark: false))
+                    Spacer()
+                    Circle()
+                        .fill(isOn ? RunBarColor.terra : Color.clear)
+                        .frame(width: 6, height: 6)
+                }
+                Spacer(minLength: 6)
                 Image(systemName: icon)
                     .font(.system(size: 26, weight: .light))
                     .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
-                Text(title, bundle: .module)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
-                Text(example)
-                    .font(.system(size: 11).monospaced())
-                    .foregroundStyle(isOn
-                                     ? RunBarColor.cream.opacity(0.75)
-                                     : .secondary)
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title, bundle: .module)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
+                    Text(example)
+                        .font(.system(size: 10, design: .monospaced))
+                        .tracking(1.4)
+                        .textCase(.uppercase)
+                        .foregroundStyle(isOn ? RunBarColor.cream.opacity(0.7) : RunBarColor.mutedInk(dark: false))
+                }
             }
-            .frame(maxWidth: .infinity, minHeight: 130)
+            .frame(maxWidth: .infinity, minHeight: 170, alignment: .leading)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 16)
             .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(isOn ? RunBarColor.slate : Color.white.opacity(0.6))
-                    .shadow(color: .black.opacity(isOn ? 0.18 : 0.05), radius: isOn ? 12 : 4, y: isOn ? 6 : 2)
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(isOn ? RunBarColor.slate : Color.white.opacity(0.55))
             )
             .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(isOn ? RunBarColor.moss : Color.clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(isOn ? RunBarColor.slate : RunBarColor.faintInk(dark: false), lineWidth: 1)
             )
-            .scaleEffect(isOn ? 1.03 : 1.0)
+            .shadow(color: .black.opacity(isOn ? 0.18 : 0), radius: isOn ? 16 : 0, y: isOn ? 8 : 0)
+            .scaleEffect(isOn ? 1.02 : 1.0)
         }
         .buttonStyle(PressableButtonStyle())
     }
@@ -407,51 +623,96 @@ private struct GoalStep: View {
     @Binding var targetKm: Double
     @Binding var targetCount: Double
     @Binding var targetElev: Double
+    let suggestionSeeded: Bool
+    let suggestionAvgKm: Double?
+    let stepIndex: Int
+    let total: Int
 
     private var tier: RunnerTier {
         switch metric {
         case .distance:  return RunnerTier.tier(forKm: targetKm)
-        case .count:     return RunnerTier.tier(forKm: targetCount * 8) // proxy
+        case .count:     return RunnerTier.tier(forKm: targetCount * 8)
         case .elevation: return RunnerTier.tier(forKm: targetElev / 20)
         }
     }
 
     var body: some View {
-        VStack(spacing: 22) {
+        VStack(spacing: 18) {
             stepHeader(
-                kickerKey: "onboarding.goal.title",
-                titleKey: "onboarding.goal.title",
+                stepIndex: stepIndex,
+                total: total,
+                kicker: "onboarding.goal.title",
+                italicWord: "Set the line.",
                 subtitleKey: "onboarding.goal.subtitle"
             )
 
-            VStack(spacing: 6) {
-                HStack(alignment: .firstTextBaseline, spacing: 8) {
-                    Text(formatted)
-                        .font(.system(size: 64, weight: .bold).monospacedDigit())
-                        .tracking(-2)
-                        .foregroundStyle(RunBarColor.slate)
-                        .contentTransition(.numericText())
-                    Text(unitLabel)
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
+            if suggestionSeeded, let avg = suggestionAvgKm {
+                suggestionBanner(avg: avg)
+                    .padding(.horizontal, 48)
             }
-            .padding(.top, 4)
+
+            // big numeric display
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(formatted)
+                    .font(.system(size: 78, weight: .medium, design: .monospaced))
+                    .tracking(-2)
+                    .foregroundStyle(RunBarColor.slate)
+                    .contentTransition(.numericText())
+                Text(unitLabel)
+                    .font(.system(size: 14, design: .monospaced))
+                    .tracking(1.6)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+            }
+            .padding(.top, 2)
 
             sliderForCurrent
+                .padding(.horizontal, 56)
 
             tierBadge
-                .padding(.top, 6)
+                .padding(.horizontal, 48)
+                .padding(.top, 2)
 
             Spacer()
         }
     }
 
     @ViewBuilder
+    private func suggestionBanner(avg: Double) -> some View {
+        let displayAvg = Int(unit.valueFromKilometers(avg).rounded())
+        let displayTarget = Int(unit.valueFromKilometers(targetKm).rounded())
+        HStack(spacing: 12) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(RunBarColor.terra)
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Based on your last 4 weeks")
+                    .font(.system(size: 10, design: .monospaced))
+                    .tracking(1.6)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                Text("Avg \(displayAvg) \(unit.symbol)/wk · suggesting \(displayTarget) \(unit.symbol). Slide to override.")
+                    .font(.system(size: 12))
+                    .foregroundStyle(RunBarColor.slate)
+            }
+            Spacer()
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(RunBarColor.terra.opacity(0.07))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(RunBarColor.terra.opacity(0.25), lineWidth: 1)
+        )
+    }
+
+    @ViewBuilder
     private var sliderForCurrent: some View {
         switch metric {
         case .distance:
-            // Le store reste en km — on présente dans l'unité préférée.
             let displayValue = unit.valueFromKilometers(targetKm)
             let displayMin = unit.valueFromKilometers(10)
             let displayMax = unit.valueFromKilometers(150)
@@ -459,16 +720,13 @@ private struct GoalStep: View {
                 get: { displayValue },
                 set: { targetKm = unit.toKilometers($0) }
             ), in: displayMin...displayMax, step: unit == .km ? 5 : 1)
-                .tint(RunBarColor.moss)
-                .frame(maxWidth: 420)
+                .tint(RunBarColor.terra)
         case .count:
             Slider(value: $targetCount, in: 1...10, step: 1)
-                .tint(RunBarColor.moss)
-                .frame(maxWidth: 420)
+                .tint(RunBarColor.terra)
         case .elevation:
             Slider(value: $targetElev, in: 100...3000, step: 100)
-                .tint(RunBarColor.moss)
-                .frame(maxWidth: 420)
+                .tint(RunBarColor.terra)
         }
     }
 
@@ -486,7 +744,7 @@ private struct GoalStep: View {
     private var unitLabel: String {
         switch metric {
         case .distance:  return unit.symbol
-        case .count:     return "/wk"
+        case .count:     return "/ week"
         case .elevation: return "m+"
         }
     }
@@ -494,28 +752,46 @@ private struct GoalStep: View {
     private var tierBadge: some View {
         HStack(spacing: 14) {
             ZStack {
-                Circle()
-                    .fill(tier.color.opacity(0.18))
-                    .frame(width: 56, height: 56)
+                RoundedRectangle(cornerRadius: 10)
+                    .fill(tier.color.opacity(0.15))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(tier.color.opacity(0.4), lineWidth: 1)
+                    )
                 Image(systemName: tier.symbol)
-                    .font(.system(size: 24, weight: .light))
+                    .font(.system(size: 22, weight: .light))
                     .foregroundStyle(tier.color)
             }
+            .frame(width: 52, height: 52)
             VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 8) {
+                    Text("Tier")
+                        .font(.system(size: 9, design: .monospaced))
+                        .tracking(1.6)
+                        .textCase(.uppercase)
+                        .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                    Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(width: 16, height: 1)
+                }
                 Text(tier.labelKey, bundle: .module)
-                    .font(.system(size: 14, weight: .semibold))
+                    .font(.system(size: 16, weight: .medium, design: .serif))
+                    .italic()
                     .foregroundStyle(RunBarColor.slate)
                 Text(tier.blurb(unit: unit))
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
                     .frame(maxWidth: 320, alignment: .leading)
             }
+            Spacer()
         }
         .padding(.horizontal, 18)
         .padding(.vertical, 14)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.white.opacity(0.7))
+                .fill(Color.white.opacity(0.55))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(RunBarColor.faintInk(dark: false), lineWidth: 1)
         )
         .animation(.spring(response: 0.4), value: tier)
     }
@@ -525,63 +801,231 @@ private struct GoalStep: View {
 
 private struct ConnectStep: View {
     @ObservedObject var coordinator: SettingsCoordinator
+    let stepIndex: Int
+    let total: Int
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 22) {
             stepHeader(
-                kickerKey: "onboarding.connect.title",
-                titleKey: "onboarding.connect.title",
+                stepIndex: stepIndex,
+                total: total,
+                kicker: "onboarding.connect.title",
+                italicWord: "Connect Strava.",
                 subtitleKey: "onboarding.connect.subtitle"
             )
 
-            VStack(spacing: 12) {
+            // editorial card with the connect action
+            VStack(alignment: .leading, spacing: 18) {
+                HStack(spacing: 10) {
+                    AsyncImage(url: URL(string: "https://d3nn82uaxijpm6.cloudfront.net/icon-strava-chrome-192.png")) { img in
+                        img.resizable().aspectRatio(contentMode: .fit)
+                    } placeholder: {
+                        RoundedRectangle(cornerRadius: 5).fill(.quaternary)
+                    }
+                    .frame(width: 22, height: 22)
+                    .clipShape(RoundedRectangle(cornerRadius: 5))
+
+                    Text("Strava")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(RunBarColor.slate)
+
+                    Spacer()
+
+                    Text(coordinator.stravaConnected ? "connected" : "not connected")
+                        .font(.system(size: 9, design: .monospaced))
+                        .tracking(1.6)
+                        .textCase(.uppercase)
+                        .foregroundStyle(coordinator.stravaConnected
+                                         ? RunBarColor.moss
+                                         : RunBarColor.mutedInk(dark: false))
+                }
+
+                Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(height: 1)
+
                 if coordinator.stravaConnected {
                     HStack(spacing: 10) {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(RunBarColor.moss)
                         Text("settings.sources.connected", bundle: .module)
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.system(size: 13))
+                            .foregroundStyle(RunBarColor.slate)
+                        Spacer()
+                        Text("tokens stored · keychain")
+                            .font(.system(size: 9, design: .monospaced))
+                            .tracking(1.6)
+                            .textCase(.uppercase)
+                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
                     }
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 12)
-                    .background(
-                        RoundedRectangle(cornerRadius: 10)
-                            .fill(RunBarColor.moss.opacity(0.12))
-                    )
                 } else {
                     Button(action: { Task { await coordinator.connectStrava() } }) {
-                        HStack(spacing: 10) {
-                            AsyncImage(url: URL(string: "https://d3nn82uaxijpm6.cloudfront.net/icon-strava-chrome-192.png")) { img in
-                                img.resizable().aspectRatio(contentMode: .fit)
-                            } placeholder: { Color.clear }
-                            .frame(width: 22, height: 22)
-                            .clipShape(RoundedRectangle(cornerRadius: 5))
+                        HStack(spacing: 8) {
                             Text("onboarding.connect.cta", bundle: .module)
-                                .font(.system(size: 15, weight: .semibold))
+                                .font(.system(size: 13, weight: .semibold))
+                            Image(systemName: "arrow.up.right")
+                                .font(.system(size: 11, weight: .semibold))
                         }
-                        .padding(.horizontal, 22)
-                        .padding(.vertical, 14)
-                        .background(
-                            RoundedRectangle(cornerRadius: 10)
-                                .fill(Color(red: 0.99, green: 0.30, blue: 0.01))
-                        )
-                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 11)
+                        .background(Capsule().fill(RunBarColor.terra))
+                        .foregroundStyle(Color.white)
                     }
                     .buttonStyle(PressableButtonStyle())
                     .disabled(coordinator.stravaBusy)
                 }
 
                 if let err = coordinator.stravaError {
-                    Text(err).font(.caption).foregroundStyle(.red)
+                    Text(err)
+                        .font(.system(size: 11))
+                        .foregroundStyle(RunBarColor.terra)
                 }
+
+                Text("Opens your browser. Tokens are exchanged via runbar.app — your secret never lives in this app.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
+            .frame(maxWidth: 460)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 20)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.white.opacity(0.55))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(RunBarColor.faintInk(dark: false), lineWidth: 1)
+            )
 
             Spacer()
         }
     }
 }
 
-// MARK: - Step 5 — Done
+// MARK: - Step 5 — Upcoming race (optional)
+
+private struct RaceStep: View {
+    let unit: DistanceUnit
+    @Binding var enabled: Bool
+    @Binding var name: String
+    @Binding var date: Date
+    let stepIndex: Int
+    let total: Int
+
+    private var daysAway: Int {
+        let cal = Calendar.iso8601Monday
+        let today = cal.startOfDay(for: .now)
+        let race = cal.startOfDay(for: date)
+        return cal.dateComponents([.day], from: today, to: race).day ?? 0
+    }
+
+    var body: some View {
+        VStack(spacing: 18) {
+            stepHeader(
+                stepIndex: stepIndex,
+                total: total,
+                kicker: "onboarding.race.title",
+                italicWord: "Race.",
+                subtitleKey: "onboarding.race.subtitle"
+            )
+
+            VStack(alignment: .leading, spacing: 16) {
+                // toggle row
+                HStack {
+                    Image(systemName: "flag.checkered")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(enabled ? RunBarColor.terra : RunBarColor.mutedInk(dark: false))
+                    Text("onboarding.race.enable", bundle: .module)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(RunBarColor.slate)
+                    Spacer()
+                    Toggle("", isOn: $enabled.animation(.spring(response: 0.3)))
+                        .labelsHidden()
+                        .tint(RunBarColor.terra)
+                }
+
+                if enabled {
+                    Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(height: 1)
+
+                    // race name
+                    HStack(spacing: 14) {
+                        Text("Name")
+                            .font(.system(size: 10, design: .monospaced))
+                            .tracking(1.6)
+                            .textCase(.uppercase)
+                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                            .frame(width: 64, alignment: .leading)
+                        TextField("", text: $name, prompt: Text("London Marathon · Boston · …"))
+                            .textFieldStyle(.plain)
+                            .font(.system(size: 14, design: .serif))
+                            .italic()
+                            .foregroundStyle(RunBarColor.slate)
+                    }
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(RunBarColor.faintInk(dark: false), lineWidth: 1)
+                    )
+
+                    // date
+                    HStack(spacing: 14) {
+                        Text("Date")
+                            .font(.system(size: 10, design: .monospaced))
+                            .tracking(1.6)
+                            .textCase(.uppercase)
+                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                            .frame(width: 64, alignment: .leading)
+                        DatePicker("", selection: $date, in: Date.now..., displayedComponents: .date)
+                            .labelsHidden()
+                        Spacer()
+                    }
+
+                    // countdown summary
+                    HStack(spacing: 10) {
+                        Text("\(daysAway)")
+                            .font(.system(size: 24, weight: .medium, design: .monospaced))
+                            .foregroundStyle(RunBarColor.terra)
+                        Text(daysAway == 1 ? "day to go" : "days to go")
+                            .font(.system(size: 11, design: .monospaced))
+                            .tracking(1.6)
+                            .textCase(.uppercase)
+                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                        Spacer()
+                        if daysAway > 30 {
+                            Text("subtle banner · vivid at ≤ 30")
+                                .font(.system(size: 9, design: .monospaced))
+                                .tracking(1.4)
+                                .textCase(.uppercase)
+                                .foregroundStyle(RunBarColor.mutedInk(dark: false).opacity(0.7))
+                        } else {
+                            Text("vivid banner active")
+                                .font(.system(size: 9, design: .monospaced))
+                                .tracking(1.4)
+                                .textCase(.uppercase)
+                                .foregroundStyle(RunBarColor.moss)
+                        }
+                    }
+                    .padding(.top, 4)
+                }
+            }
+            .frame(maxWidth: 460)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 18)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.white.opacity(0.55))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(RunBarColor.faintInk(dark: false), lineWidth: 1)
+            )
+
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Step 6 — Done
 
 private struct DoneStep: View {
     let metric: GoalMetric
@@ -589,65 +1033,107 @@ private struct DoneStep: View {
     let targetKm: Double
     let targetCount: Double
     let targetElev: Double
-    @State private var pop: Bool = false
 
     var body: some View {
-        VStack(spacing: 18) {
+        VStack(spacing: 24) {
             Spacer()
-            ZStack {
-                RoundedRectangle(cornerRadius: 22)
-                    .fill(Color.white.opacity(0.68))
-                    .frame(width: 340, height: 164)
-                    .overlay(alignment: .top) {
-                        HStack(spacing: 12) {
-                            Capsule().fill(RunBarColor.slate.opacity(0.12)).frame(width: 58, height: 20)
-                            Capsule().fill(RunBarColor.slate.opacity(0.12)).frame(width: 40, height: 20)
-                            ZStack {
-                                Capsule().fill(RunBarColor.slate).frame(width: 62, height: 24)
-                                RunnerView(state: .jogging, color: RunBarColor.cream)
-                                    .frame(width: 16, height: 16)
-                            }
-                            Capsule().fill(RunBarColor.slate.opacity(0.12)).frame(width: 32, height: 20)
-                        }
-                        .padding(.top, 18)
-                    }
-                Circle()
-                    .fill(RunBarColor.gold.opacity(0.18))
-                    .frame(width: 116, height: 116)
-                RunnerView(state: .victory, color: RunBarColor.slate)
-                    .frame(width: 90, height: 90)
-                    .scaleEffect(pop ? 1.0 : 0.6)
-                    .animation(.spring(response: 0.5, dampingFraction: 0.6), value: pop)
-                ConfettiView(width: 340, height: 190)
-            }
-            .frame(height: 190)
-            .onAppear { pop = true }
 
-            VStack(spacing: 8) {
-                Text("onboarding.done.title", bundle: .module)
-                    .font(.system(size: 28, weight: .bold))
-                Text(summary)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(RunBarColor.slate)
-                Text("onboarding.done.subtitle", bundle: .module)
-                    .font(.system(size: 14))
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.center)
-                HStack(spacing: 6) {
-                    Image(systemName: "command")
-                    Image(systemName: "shift")
-                    Text("R")
-                        .font(.system(size: 12, weight: .bold).monospaced())
+            // Editorial running scene — hairline track with 5 ticks,
+            // runner planted on the rule, finish flag at the right edge.
+            runnerScene
+                .frame(width: 380, height: 64)
+
+            VStack(spacing: 14) {
+                // editorial title
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text("Done")
+                        .font(.system(size: 44, weight: .medium, design: .serif))
+                        .italic()
+                        .tracking(-1.5)
+                        .foregroundStyle(RunBarColor.slate)
+                    Text(".")
+                        .font(.system(size: 44, weight: .medium, design: .serif))
+                        .foregroundStyle(RunBarColor.terra)
                 }
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(RunBarColor.moss)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
-                .background(Capsule().fill(RunBarColor.moss.opacity(0.12)))
-                .padding(.top, 4)
+
+                Text(summary)
+                    .font(.system(size: 13, design: .monospaced))
+                    .tracking(1.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.slate)
+
+                Text("onboarding.done.subtitle", bundle: .module)
+                    .font(.system(size: 13))
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: 360)
             }
+
             Spacer()
+
+            // Colophon — éditorial, mono small-caps.
+            HStack(spacing: 10) {
+                Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(width: 28, height: 0.6)
+                Text(colophonText)
+                    .font(.system(size: 9.5, design: .monospaced))
+                    .tracking(1.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(width: 28, height: 0.6)
+            }
+            .padding(.bottom, 8)
         }
+    }
+
+    @ViewBuilder
+    private var runnerScene: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let runnerSize: CGFloat = 28
+            let trackY = geo.size.height - 18
+
+            ZStack(alignment: .topLeading) {
+                // 5 ticks
+                HStack(spacing: 0) {
+                    ForEach(0..<5, id: \.self) { i in
+                        Rectangle()
+                            .fill(RunBarColor.faintInk(dark: false))
+                            .frame(width: 0.8, height: 8)
+                        if i < 4 { Spacer(minLength: 0) }
+                    }
+                }
+                .frame(width: width)
+                .offset(y: trackY - 4)
+
+                // Hairline rule
+                Rectangle()
+                    .fill(RunBarColor.faintInk(dark: false))
+                    .frame(width: width, height: 0.8)
+                    .offset(y: trackY)
+
+                // Vermillon progress hairline (full width — week complete)
+                Rectangle()
+                    .fill(RunBarColor.terra)
+                    .frame(width: width - 12, height: 1.2)
+                    .offset(y: trackY)
+
+                // Runner planted near the finish
+                RunnerView(state: .victory, color: RunBarColor.slate, animated: true)
+                    .frame(width: runnerSize, height: runnerSize)
+                    .offset(x: width - runnerSize - 18, y: trackY - runnerSize + 2)
+
+                // Finish flag at far right
+                FinishFlagView(size: 18, dark: false, waving: true)
+                    .frame(width: 18, height: 18)
+                    .offset(x: width - 18, y: trackY - 22)
+            }
+        }
+    }
+
+    private var colophonText: String {
+        let week = Calendar.iso8601Monday.component(.weekOfYear, from: Date())
+        let year = Calendar.current.component(.year, from: Date())
+        return "RUNBAR · WK \(week) / \(year) · READY"
     }
 
     private var summary: String {
@@ -667,18 +1153,49 @@ private struct DoneStep: View {
 // MARK: - Helpers
 
 @ViewBuilder
-private func stepHeader(kickerKey: LocalizedStringKey, titleKey: LocalizedStringKey, subtitleKey: LocalizedStringKey) -> some View {
-    VStack(spacing: 8) {
-        Text(titleKey, bundle: .module)
-            .font(.system(size: 26, weight: .bold))
-            .multilineTextAlignment(.center)
-            .foregroundStyle(RunBarColor.slate)
-        Text(subtitleKey, bundle: .module)
-            .font(.system(size: 13))
-            .foregroundStyle(.secondary)
-            .multilineTextAlignment(.center)
+private func stepHeader(
+    stepIndex: Int,
+    total: Int,
+    kicker: LocalizedStringKey,
+    italicWord: String,
+    subtitleKey: LocalizedStringKey
+) -> some View {
+    VStack(alignment: .center, spacing: 10) {
+        // eyebrow
+        HStack(spacing: 12) {
+            Text(String(format: "Step %02d / %02d", stepIndex + 1, total))
+                .font(.system(size: 10, design: .monospaced))
+                .tracking(2.2)
+                .textCase(.uppercase)
+                .foregroundStyle(RunBarColor.mutedInk(dark: false))
+            Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(width: 18, height: 1)
+            Text(kicker, bundle: .module)
+                .font(.system(size: 10, design: .monospaced))
+                .tracking(2.2)
+                .textCase(.uppercase)
+                .foregroundStyle(RunBarColor.slate)
+        }
+
+        // italic display word + subtitle
+        VStack(spacing: 4) {
+            Text(italicWord)
+                .font(.system(size: 36, weight: .medium, design: .serif))
+                .italic()
+                .tracking(-1.2)
+                .foregroundStyle(RunBarColor.slate)
+            Text(subtitleKey, bundle: .module)
+                .font(.system(size: 13))
+                .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: 420)
+        }
+
+        Rectangle()
+            .fill(RunBarColor.faintInk(dark: false))
+            .frame(width: 80, height: 1)
+            .padding(.top, 6)
     }
-    .padding(.top, 6)
+    .padding(.top, 14)
     .padding(.horizontal, 36)
 }
 

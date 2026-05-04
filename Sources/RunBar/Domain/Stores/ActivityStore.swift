@@ -133,13 +133,13 @@ public enum SeedData {
             cal.date(byAdding: .hour, value: offset * 24 + hours, to: monday) ?? monday
         }
         return [
-            ActivityDTO(id: "seed-1", name: "Footing matin",
+            ActivityDTO(id: "seed-1", name: "Morning run",
                         distance: 8000, movingTime: 45 * 60 + 12, elevationGain: 60,
                         startDate: day(0, hours: 7), type: "Run", source: .seed),
-            ActivityDTO(id: "seed-2", name: "Fractionné",
+            ActivityDTO(id: "seed-2", name: "Intervals",
                         distance: 12_000, movingTime: 58 * 60, elevationGain: 90,
                         startDate: day(2, hours: 18), type: "Run", source: .seed),
-            ActivityDTO(id: "seed-3", name: "Sortie longue",
+            ActivityDTO(id: "seed-3", name: "Long run",
                         distance: 22_000, movingTime: 2 * 3600 + 10 * 60, elevationGain: 350,
                         startDate: day(5, hours: 9), type: "TrailRun", source: .seed),
         ]

@@ -13,7 +13,7 @@ public final class NotificationService {
 
     public func requestAuthorizationIfNeeded() async {
         guard hasBundle else {
-            RunBarLog.app.notice("Notifications désactivées : pas de bundle identifier (lance via .app pour activer)")
+            RunBarLog.app.notice("Notifications disabled: no bundle identifier (launch via .app to enable)")
             return
         }
         let center = UNUserNotificationCenter.current()

@@ -33,6 +33,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         startBackgroundWork()
         registerGlobalHotkey()
         triggerOnboardingIfNeeded()
+        UpdateService.shared.start()
     }
 
     /// Raccourci global ⌘⇧R pour ouvrir le popover — utile quand l'icône menu
@@ -100,7 +101,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
             button.action = #selector(handleClick(_:))
             button.target = self
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
-            NSLog("[RunBar] StatusItem créé frameCount=\(RunnerSprite.frameCount)")
+            NSLog("[RunBar] StatusItem created frameCount=\(RunnerSprite.frameCount)")
         }
         statusItem = item
     }
@@ -123,6 +124,8 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
                                 action: #selector(menuSync), keyEquivalent: "r"))
         menu.addItem(NSMenuItem(title: String(localized: "menu.settings", bundle: .module),
                                 action: #selector(menuSettings), keyEquivalent: ","))
+        menu.addItem(NSMenuItem(title: String(localized: "menu.check_updates", bundle: .module),
+                                action: #selector(menuCheckUpdates), keyEquivalent: ""))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: String(localized: "menu.quit", bundle: .module),
                                 action: #selector(menuQuit), keyEquivalent: "q"))
@@ -132,9 +135,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         statusItem?.menu = nil
     }
 
-    @objc private func menuSync()     { Task { await sync.syncNow() } }
-    @objc private func menuSettings() { settings.bringToFront(); openSettingsWindow() }
-    @objc private func menuQuit()     { NSApplication.shared.terminate(nil) }
+    @objc private func menuSync()          { Task { await sync.syncNow() } }
+    @objc private func menuSettings()      { settings.bringToFront(); openSettingsWindow() }
+    @objc private func menuCheckUpdates()  { UpdateService.shared.checkForUpdates() }
+    @objc private func menuQuit()          { NSApplication.shared.terminate(nil) }
 
     private func openSettingsWindow() {
         // Sur macOS 14+, l'action standard `showSettingsWindow:` ouvre la scene `Settings { }`.
@@ -147,13 +151,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func setupPopover() {
         let pop = NSPopover()
-        pop.contentSize = NSSize(width: 320, height: 420)
+        pop.contentSize = NSSize(width: 320, height: 460)
         pop.behavior = .transient
         pop.animates = true
         pop.contentViewController = NSHostingController(
             rootView: PopoverView(viewModel: popoverVM)
                 .environmentObject(store)
-                .frame(width: 320, height: 420)
+                .frame(width: 320, height: 460)
         )
         popover = pop
 

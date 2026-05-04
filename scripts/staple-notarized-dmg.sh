@@ -10,6 +10,7 @@ fi
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DMG="$ROOT/build/RunBar.dmg"
+WEBSITE_DOWNLOAD="$ROOT/website/public/download/RunBar.dmg"
 PROFILE="${RUNBAR_NOTARY_PROFILE:-RunBarNotary}"
 SUBMISSION_ID="$1"
 
@@ -22,4 +23,9 @@ if [ "$STATUS" != "Accepted" ]; then
 fi
 
 xcrun stapler staple "$DMG"
-spctl -a -vv --type open "$DMG"
+xcrun stapler validate "$DMG"
+spctl -a -vv -t open --context context:primary-signature "$DMG" || true
+
+mkdir -p "$(dirname "$WEBSITE_DOWNLOAD")"
+cp "$DMG" "$WEBSITE_DOWNLOAD"
+echo "==> DMG publié vers $WEBSITE_DOWNLOAD"

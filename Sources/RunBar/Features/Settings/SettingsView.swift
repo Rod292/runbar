@@ -45,11 +45,15 @@ public final class SettingsCoordinator: ObservableObject {
     }
 }
 
-/// Fenêtre de préférences — 5 onglets : Général, Affichage, Sources, Objectifs, À propos.
+/// Fenêtre de préférences — 5 panes, design éditorial aligné avec
+/// la landing page : header numéroté, hairlines, mono small-caps,
+/// accent terra. Les controls restent macOS natifs (Toggle, Picker,
+/// Slider, DatePicker) pour rester at-home sur macOS.
 public struct SettingsView: View {
     @ObservedObject var store: ActivityStore
     @ObservedObject var coordinator: SettingsCoordinator
     @State private var selection: Tab = .general
+    @Environment(\.openWindow) private var openWindow
     @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
     @AppStorage(RunBarPreferences.Key.showGlyph) private var showGlyph: Bool = true
     @AppStorage(RunBarPreferences.Key.showPercent) private var showPercent: Bool = false
@@ -73,6 +77,15 @@ public struct SettingsView: View {
     enum Tab: String, CaseIterable, Identifiable {
         case general, display, sources, goals, about
         var id: Self { self }
+        var num: String {
+            switch self {
+            case .general: return "§ 01"
+            case .display: return "§ 02"
+            case .sources: return "§ 03"
+            case .goals:   return "§ 04"
+            case .about:   return "§ 05"
+            }
+        }
         var labelKey: LocalizedStringKey {
             switch self {
             case .general: return "settings.tab.general"
@@ -103,7 +116,7 @@ public struct SettingsView: View {
                 }
                 .tag(tab)
             }
-            .navigationSplitViewColumnWidth(min: 160, ideal: 170)
+            .navigationSplitViewColumnWidth(min: 168, ideal: 180)
         } detail: {
             ScrollView {
                 Group {
@@ -115,124 +128,281 @@ public struct SettingsView: View {
                     case .about:   aboutPane
                     }
                 }
-                .padding(20)
+                .padding(.horizontal, 28)
+                .padding(.vertical, 24)
                 .frame(maxWidth: .infinity, alignment: .topLeading)
             }
         }
-        .frame(width: 620, height: 440)
-        .navigationTitle(Text("settings.tab.general", bundle: .module))
+        .frame(width: 660, height: 480)
+        .navigationTitle(Text(selection.labelKey, bundle: .module))
     }
 
-    // MARK: Panes
+    // MARK: - Editorial header (per pane)
+
+    private func paneHeader(_ tab: Tab, italicWord: String? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text(tab.num)
+                    .font(.system(size: 10, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(.tertiary)
+                Rectangle().fill(.quaternary).frame(width: 22, height: 1)
+                Text(tab.labelKey, bundle: .module)
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .tracking(2.5)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.secondary)
+            }
+            if let italicWord {
+                Text(italicWord)
+                    .font(.system(size: 26, weight: .medium, design: .serif))
+                    .italic()
+                    .foregroundStyle(.primary)
+                    .padding(.top, 2)
+            }
+            Rectangle()
+                .fill(.quaternary.opacity(0.6))
+                .frame(height: 1)
+                .padding(.top, italicWord == nil ? 6 : 10)
+        }
+        .padding(.bottom, 14)
+    }
+
+    // MARK: - Section card
+
+    private struct PaneSection<Content: View>: View {
+        let label: LocalizedStringKey?
+        let figure: String?
+        let content: Content
+
+        init(_ label: LocalizedStringKey? = nil, figure: String? = nil, @ViewBuilder content: () -> Content) {
+            self.label = label
+            self.figure = figure
+            self.content = content()
+        }
+
+        var body: some View {
+            VStack(alignment: .leading, spacing: 0) {
+                if label != nil || figure != nil {
+                    HStack {
+                        if let label {
+                            Text(label, bundle: .module)
+                                .font(.system(size: 10, design: .monospaced))
+                                .tracking(1.6)
+                                .textCase(.uppercase)
+                                .foregroundStyle(.secondary)
+                        }
+                        Spacer()
+                        if let figure {
+                            Text(figure)
+                                .font(.system(size: 10, design: .monospaced))
+                                .tracking(1.6)
+                                .textCase(.uppercase)
+                                .foregroundStyle(.tertiary)
+                        }
+                    }
+                    .padding(.bottom, 10)
+                }
+                VStack(alignment: .leading, spacing: 14) { content }
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 14)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 10)
+                            .fill(Color.primary.opacity(0.025))
+                    )
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10)
+                            .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+                    )
+            }
+        }
+    }
+
+    // MARK: - General pane
 
     private var generalPane: some View {
-        Form {
-            Picker(selection: $unitRaw) {
-                Text("settings.general.unit.km", bundle: .module).tag(DistanceUnit.km.rawValue)
-                Text("settings.general.unit.mi", bundle: .module).tag(DistanceUnit.mi.rawValue)
-            } label: {
-                Text("settings.general.unit", bundle: .module)
-            }
-            .pickerStyle(.segmented)
+        VStack(alignment: .leading, spacing: 22) {
+            paneHeader(.general, italicWord: "Preferences.")
 
-            Toggle(isOn: $autoSync) {
-                Text("settings.general.autosync", bundle: .module)
+            PaneSection("settings.general.unit", figure: "fig. a") {
+                Picker(selection: $unitRaw) {
+                    Text("settings.general.unit.km", bundle: .module).tag(DistanceUnit.km.rawValue)
+                    Text("settings.general.unit.mi", bundle: .module).tag(DistanceUnit.mi.rawValue)
+                } label: { EmptyView() }
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
-            Toggle(isOn: $notifyVictory) {
-                Text("settings.general.notify_victory", bundle: .module)
+
+            PaneSection("settings.general.behavior", figure: "fig. b") {
+                row {
+                    Text("settings.general.autosync", bundle: .module)
+                        .font(.system(size: 13))
+                    Spacer()
+                    Toggle("", isOn: $autoSync).labelsHidden()
+                }
+                hairline
+                row {
+                    Text("settings.general.notify_victory", bundle: .module)
+                        .font(.system(size: 13))
+                    Spacer()
+                    Toggle("", isOn: $notifyVictory).labelsHidden()
+                }
             }
+
+            colophon("Local-first · No ads · MIT")
         }
-        .formStyle(.grouped)
     }
+
+    // MARK: - Display pane
 
     private var displayPane: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            Form {
-                Toggle(isOn: $showGlyph) {
+        VStack(alignment: .leading, spacing: 22) {
+            paneHeader(.display, italicWord: "How it shows.")
+
+            PaneSection("settings.display.icon", figure: "fig. a") {
+                row {
                     Text("settings.display.show_glyph", bundle: .module)
+                        .font(.system(size: 13))
+                    Spacer()
+                    Toggle("", isOn: $showGlyph).labelsHidden()
                 }
-                Toggle(isOn: $showPercent) {
+                hairline
+                row {
                     Text("settings.display.show_percent", bundle: .module)
+                        .font(.system(size: 13))
+                    Spacer()
+                    Toggle("", isOn: $showPercent).labelsHidden()
                 }
             }
-            .formStyle(.grouped)
 
-            VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 6) {
+            PaneSection("settings.display.preview", figure: "live") {
+                HStack(spacing: 10) {
                     if showGlyph {
                         RunnerView(state: .jogging)
-                            .frame(width: 20, height: 20)
+                            .frame(width: 22, height: 22)
                     }
                     if showPercent {
-                        Text("70%").font(.system(size: 12).monospaced())
+                        Text("70%")
+                            .font(.system(size: 12, design: .monospaced))
+                            .foregroundStyle(.secondary)
                     }
+                    if !showGlyph && !showPercent {
+                        Text("(empty)")
+                            .font(.system(size: 11, design: .monospaced))
+                            .foregroundStyle(.tertiary)
+                    }
+                    Spacer()
+                    Text("menubar · 22pt")
+                        .font(.system(size: 10, design: .monospaced))
+                        .tracking(1.4)
+                        .textCase(.uppercase)
+                        .foregroundStyle(.tertiary)
                 }
-                .padding(12)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary))
+                .padding(.horizontal, 4)
             }
         }
     }
+
+    // MARK: - Sources pane
 
     private var sourcesPane: some View {
         let comingSoon = String(localized: "settings.sources.coming_soon", bundle: .module)
-        let alwaysOn = String(localized: "settings.sources.always_active", bundle: .module)
+        let alwaysOn   = String(localized: "settings.sources.always_active", bundle: .module)
         let countTemplate = String(localized: "settings.sources.local_data.subtitle", bundle: .module)
-        return VStack(alignment: .leading, spacing: 8) {
-            stravaRow
-            sourceRow(name: "Apple Health",    status: comingSoon, canConnect: false)
-            sourceRow(name: "Garmin Connect",  status: comingSoon, canConnect: false)
-            sourceRow(name: "Manual entry",    status: alwaysOn,   canConnect: false)
-            if let err = coordinator.stravaError {
-                Text(err).font(.caption).foregroundStyle(.red).padding(.top, 4)
+
+        return VStack(alignment: .leading, spacing: 22) {
+            paneHeader(.sources, italicWord: "Where the data comes from.")
+
+            PaneSection("settings.sources.providers", figure: "fig. a") {
+                stravaRow
+                hairline
+                sourceRow(name: "Apple Health",   status: comingSoon, dotColor: .secondary, available: false)
+                hairline
+                sourceRow(name: "Garmin Connect", status: comingSoon, dotColor: .secondary, available: false)
+                hairline
+                sourceRow(name: "Manual entry",   status: alwaysOn,   dotColor: RunBarColor.gold, available: true)
+
+                if let err = coordinator.stravaError {
+                    Text(err)
+                        .font(.caption)
+                        .foregroundStyle(RunBarColor.terra)
+                        .padding(.top, 4)
+                }
             }
 
-            Divider().padding(.vertical, 8)
+            PaneSection("settings.sources.diagnostic.title", figure: "fig. b") {
+                HStack(spacing: 0) {
+                    diagnosticMetric(
+                        title: String(localized: "settings.sources.diagnostic.strava", bundle: .module),
+                        value: coordinator.stravaConnected
+                            ? String(localized: "settings.sources.connected", bundle: .module)
+                            : String(localized: "settings.sources.disconnected", bundle: .module),
+                        color: coordinator.stravaConnected ? RunBarColor.moss : RunBarColor.terra
+                    )
+                    verticalHairline
+                    diagnosticMetric(
+                        title: String(localized: "settings.general.autosync", bundle: .module),
+                        value: autoSync
+                            ? String(localized: "common.on", bundle: .module)
+                            : String(localized: "common.off", bundle: .module),
+                        color: autoSync ? RunBarColor.moss : Color.secondary
+                    )
+                    verticalHairline
+                    diagnosticMetric(
+                        title: String(localized: "settings.sources.diagnostic.local", bundle: .module),
+                        value: "\(store.activities.count)",
+                        color: .primary
+                    )
+                }
+            }
 
-            diagnosticPanel
-
-            HStack {
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("settings.sources.local_data.title", bundle: .module)
-                        .font(.system(size: 13, weight: .medium))
+            PaneSection("settings.sources.local_data.title", figure: "fig. c") {
+                HStack(alignment: .firstTextBaseline) {
                     Text(String(format: countTemplate, store.activities.count))
-                        .font(.caption).foregroundStyle(.secondary)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button(role: .destructive) {
+                        store.clear()
+                    } label: {
+                        Text("settings.sources.local_data.clear", bundle: .module)
+                    }
+                    .controlSize(.small)
+                    .buttonStyle(PressableButtonStyle())
                 }
-                Spacer()
-                Button(role: .destructive) {
-                    store.clear()
-                } label: {
-                    Text("settings.sources.local_data.clear", bundle: .module)
-                }
-                .controlSize(.small)
-                .buttonStyle(PressableButtonStyle())
             }
-            .padding(.vertical, 8)
-            .padding(.horizontal, 12)
-            .background(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
         }
     }
 
     private var stravaRow: some View {
-        HStack {
+        HStack(spacing: 12) {
             AsyncImage(url: URL(string: "https://d3nn82uaxijpm6.cloudfront.net/icon-strava-chrome-192.png")) { image in
                 image.resizable().aspectRatio(contentMode: .fit)
             } placeholder: {
-                Color.clear
+                RoundedRectangle(cornerRadius: 4)
+                    .fill(.quaternary)
             }
-            .frame(width: 18, height: 18)
-            .clipShape(RoundedRectangle(cornerRadius: 4))
+            .frame(width: 20, height: 20)
+            .clipShape(RoundedRectangle(cornerRadius: 5))
 
-            Circle()
-                .fill(coordinator.stravaConnected ? RunBarColor.moss : Color.secondary.opacity(0.4))
-                .frame(width: 8, height: 8)
-            Text("Strava").font(.system(size: 13, weight: .medium))
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 7) {
+                    Circle()
+                        .fill(coordinator.stravaConnected ? RunBarColor.moss : Color.secondary.opacity(0.4))
+                        .frame(width: 7, height: 7)
+                    Text("Strava").font(.system(size: 13, weight: .medium))
+                }
+                Text(coordinator.stravaConnected
+                     ? LocalizedStringKey("settings.sources.connected")
+                     : LocalizedStringKey("settings.sources.disconnected"),
+                     bundle: .module)
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .tracking(1.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.tertiary)
+            }
             Spacer()
-            Text(coordinator.stravaConnected
-                 ? LocalizedStringKey("settings.sources.connected")
-                 : LocalizedStringKey("settings.sources.disconnected"),
-                 bundle: .module)
-                .font(.caption).foregroundStyle(.secondary)
             if coordinator.stravaBusy {
                 ProgressView().controlSize(.small)
             } else if coordinator.stravaConnected {
@@ -251,83 +421,58 @@ public struct SettingsView: View {
                 }
                 .controlSize(.small)
                 .buttonStyle(.borderedProminent)
-                .tint(RunBarColor.moss)
+                .tint(RunBarColor.terra)
             }
         }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
     }
 
-    private var diagnosticPanel: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            Text("settings.sources.diagnostic.title", bundle: .module)
-                .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
-                .textCase(.uppercase)
-                .tracking(0.4)
-            HStack(spacing: 0) {
-                diagnosticMetric(
-                    title: String(localized: "settings.sources.diagnostic.strava", bundle: .module),
-                    value: coordinator.stravaConnected
-                        ? String(localized: "settings.sources.connected", bundle: .module)
-                        : String(localized: "settings.sources.disconnected", bundle: .module),
-                    color: coordinator.stravaConnected ? RunBarColor.moss : RunBarColor.terra
+    private func sourceRow(name: String, status: String, dotColor: Color, available: Bool) -> some View {
+        HStack(spacing: 12) {
+            RoundedRectangle(cornerRadius: 5)
+                .fill(.quaternary)
+                .frame(width: 20, height: 20)
+                .overlay(
+                    Image(systemName: available ? "checkmark" : "clock")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.tertiary)
                 )
-                Divider().padding(.horizontal, 12)
-                diagnosticMetric(
-                    title: String(localized: "settings.general.autosync", bundle: .module),
-                    value: autoSync
-                        ? String(localized: "common.on", bundle: .module)
-                        : String(localized: "common.off", bundle: .module),
-                    color: autoSync ? RunBarColor.moss : Color.secondary
-                )
-                Divider().padding(.horizontal, 12)
-                diagnosticMetric(
-                    title: String(localized: "settings.sources.diagnostic.local", bundle: .module),
-                    value: "\(store.activities.count)",
-                    color: RunBarColor.slate
-                )
+            VStack(alignment: .leading, spacing: 2) {
+                HStack(spacing: 7) {
+                    Circle().fill(dotColor.opacity(0.7)).frame(width: 7, height: 7)
+                    Text(name).font(.system(size: 13, weight: .medium))
+                }
+                Text(status)
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .tracking(1.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.tertiary)
             }
+            Spacer()
         }
-        .padding(.vertical, 10)
-        .padding(.horizontal, 12)
-        .background(RoundedRectangle(cornerRadius: 8).fill(.quaternary.opacity(0.45)))
-        .overlay(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
     }
 
     private func diagnosticMetric(title: String, value: String, color: Color) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title)
-                .font(.system(size: 10.5))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 10, design: .monospaced))
+                .tracking(1.4)
+                .textCase(.uppercase)
+                .foregroundStyle(.tertiary)
             Text(value)
-                .font(.system(size: 13, weight: .semibold).monospacedDigit())
+                .font(.system(size: 14, weight: .medium, design: .monospaced))
                 .foregroundStyle(color)
                 .lineLimit(1)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    private func sourceRow(name: String, status: String, canConnect: Bool) -> some View {
-        HStack {
-            Circle()
-                .fill(canConnect ? RunBarColor.gold : Color.secondary.opacity(0.4))
-                .frame(width: 8, height: 8)
-            Text(name).font(.system(size: 13, weight: .medium))
-            Spacer()
-            Text(status).font(.caption).foregroundStyle(.secondary)
-        }
-        .padding(.vertical, 8)
-        .padding(.horizontal, 12)
-        .background(RoundedRectangle(cornerRadius: 8).strokeBorder(.quaternary))
-    }
+    // MARK: - Goals pane
 
     private var goalsPane: some View {
         let metric = store.goal.metric
         let target = displayTargetValue(store.goal.target, metric: metric)
-        let range = targetRange(metric: metric)
-        let step = targetStep(metric: metric)
+        let range  = targetRange(metric: metric)
+        let step   = targetStep(metric: metric)
         let targetBinding = Binding<Double>(
             get: { displayTargetValue(store.goal.target, metric: store.goal.metric) },
             set: { newDisplayValue in
@@ -335,79 +480,133 @@ public struct SettingsView: View {
                 sliderGoal = store.goal.target
             }
         )
-        return Form {
-            Picker(selection: Binding(
-                get: { store.goal.metric },
-                set: {
-                    store.goal.metric = $0
-                    store.goal.target = defaultTarget(for: $0)
-                    sliderGoal = store.goal.target
-                }
-            )) {
-                ForEach(GoalMetric.allCases, id: \.self) { metric in
-                    Text(metric.label).tag(metric)
-                }
-            } label: {
-                Text("settings.goals.metric", bundle: .module)
+        return VStack(alignment: .leading, spacing: 22) {
+            paneHeader(.goals, italicWord: "Your weekly line.")
+
+            PaneSection("settings.goals.metric", figure: "fig. a") {
+                Picker(selection: Binding(
+                    get: { store.goal.metric },
+                    set: {
+                        store.goal.metric = $0
+                        store.goal.target = defaultTarget(for: $0)
+                        sliderGoal = store.goal.target
+                    }
+                )) {
+                    ForEach(GoalMetric.allCases, id: \.self) { metric in
+                        Text(metric.label).tag(metric)
+                    }
+                } label: { EmptyView() }
+                .pickerStyle(.segmented)
+                .labelsHidden()
             }
 
-            Section {
-                VStack(alignment: .leading) {
-                    HStack {
+            PaneSection("settings.goals.section", figure: "fig. b") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(alignment: .firstTextBaseline) {
                         Text("settings.goals.weekly_target", bundle: .module)
+                            .font(.system(size: 13))
                         Spacer()
                         Text("\(Int(target.rounded())) \(targetUnit(metric: metric))")
-                            .font(.system(size: 13, weight: .semibold).monospaced())
+                            .font(.system(size: 14, weight: .medium, design: .monospaced))
+                            .foregroundStyle(RunBarColor.terra)
                     }
-                    Slider(value: targetBinding, in: range, step: step) {
-                        EmptyView()
-                    }
+                    Slider(value: targetBinding, in: range, step: step) { EmptyView() }
                 }
-                Picker(selection: Binding(
-                    get: { store.goal.resetWeekday },
-                    set: { store.goal.resetWeekday = $0 }
-                )) {
-                    Text("Lundi").tag(2)
-                    Text("Dimanche").tag(1)
-                } label: {
+                hairline
+                row {
                     Text("settings.goals.reset_day", bundle: .module)
+                        .font(.system(size: 13))
+                    Spacer()
+                    Picker(selection: Binding(
+                        get: { store.goal.resetWeekday },
+                        set: { store.goal.resetWeekday = $0 }
+                    )) {
+                        Text("Monday").tag(2)
+                        Text("Sunday").tag(1)
+                    } label: { EmptyView() }
+                    .labelsHidden()
+                    .frame(maxWidth: 140)
                 }
-                Toggle(isOn: $trailMode) {
+                hairline
+                row {
                     Text("settings.display.trail_mode", bundle: .module)
+                        .font(.system(size: 13))
+                    Spacer()
+                    Toggle("", isOn: $trailMode).labelsHidden()
                 }
-            } header: {
-                Text("settings.goals.section", bundle: .module)
             }
 
-            Section {
-                TextField(text: Binding(
-                    get: { store.goal.raceName ?? "" },
-                    set: { store.goal.raceName = $0.isEmpty ? nil : $0 }
-                )) {
+            PaneSection("settings.goals.race_section", figure: "fig. c") {
+                row {
                     Text("settings.goals.race_name", bundle: .module)
+                        .font(.system(size: 13))
+                    Spacer()
+                    TextField("", text: Binding(
+                        get: { store.goal.raceName ?? "" },
+                        set: { store.goal.raceName = $0.isEmpty ? nil : $0 }
+                    ))
+                    .textFieldStyle(.roundedBorder)
+                    .frame(maxWidth: 220)
                 }
-                Toggle(isOn: Binding(
-                    get: { raceEnabled },
-                    set: { enabled in
-                        raceEnabled = enabled
-                        store.goal.raceDate = enabled ? (store.goal.raceDate ?? Date.now.addingTimeInterval(30 * 24 * 3600)) : nil
-                    }
-                )) {
+                hairline
+                row {
                     Text("settings.goals.race_date", bundle: .module)
+                        .font(.system(size: 13))
+                    Spacer()
+                    Toggle("", isOn: Binding(
+                        get: { raceEnabled },
+                        set: { enabled in
+                            raceEnabled = enabled
+                            store.goal.raceDate = enabled
+                                ? (store.goal.raceDate ?? Date.now.addingTimeInterval(30 * 24 * 3600))
+                                : nil
+                        }
+                    )).labelsHidden()
                 }
                 if raceEnabled {
-                    DatePicker(selection: Binding(
-                        get: { store.goal.raceDate ?? .now },
-                        set: { store.goal.raceDate = $0 }
-                    ), in: Date.now..., displayedComponents: .date) {
+                    hairline
+                    row {
                         Text("settings.goals.race_date", bundle: .module)
+                            .font(.system(size: 13))
+                            .foregroundStyle(.secondary)
+                        Spacer()
+                        DatePicker("", selection: Binding(
+                            get: { store.goal.raceDate ?? .now },
+                            set: { store.goal.raceDate = $0 }
+                        ), in: Date.now..., displayedComponents: .date)
+                        .labelsHidden()
+                    }
+                    if let days = store.goal.daysUntilRace(), days >= 0 {
+                        hairline
+                        HStack(alignment: .firstTextBaseline, spacing: 8) {
+                            Text("\(days)")
+                                .font(.system(size: 22, weight: .medium, design: .monospaced))
+                                .foregroundStyle(RunBarColor.terra)
+                            Text(days == 1 ? "day to go" : "days to go")
+                                .font(.system(size: 11, design: .monospaced))
+                                .tracking(1.4)
+                                .textCase(.uppercase)
+                                .foregroundStyle(.secondary)
+                            Spacer()
+                            if days > 30 {
+                                Text("Subtle banner · gets vivid at ≤ 30")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .tracking(1.2)
+                                    .textCase(.uppercase)
+                                    .foregroundStyle(.tertiary)
+                            } else {
+                                Text("Banner active · vivid mode")
+                                    .font(.system(size: 10, design: .monospaced))
+                                    .tracking(1.2)
+                                    .textCase(.uppercase)
+                                    .foregroundStyle(RunBarColor.moss)
+                            }
+                        }
+                        .padding(.top, 2)
                     }
                 }
-            } header: {
-                Text("settings.goals.race_section", bundle: .module)
             }
         }
-        .formStyle(.grouped)
     }
 
     private func displayTargetValue(_ stored: Double, metric: GoalMetric) -> Double {
@@ -449,38 +648,133 @@ public struct SettingsView: View {
         }
     }
 
+    // MARK: - About pane
+
     private var aboutPane: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 14) {
+        VStack(alignment: .leading, spacing: 22) {
+            paneHeader(.about, italicWord: "RunBar.")
+
+            // Identity card
+            HStack(alignment: .top, spacing: 18) {
                 ZStack {
-                    RoundedRectangle(cornerRadius: 12)
-                        .fill(.quaternary)
+                    RoundedRectangle(cornerRadius: 14)
+                        .fill(.quaternary.opacity(0.5))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .strokeBorder(.quaternary, lineWidth: 0.5)
+                        )
                     RunnerView(state: .jogging, color: RunBarColor.moss)
-                        .frame(width: 40, height: 40)
+                        .frame(width: 44, height: 44)
                 }
-                .frame(width: 56, height: 56)
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("RunBar").font(.system(size: 16, weight: .semibold))
+                .frame(width: 72, height: 72)
+
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("RunBar")
+                        .font(.system(size: 22, weight: .medium, design: .serif))
                     Text(String(format: String(localized: "settings.about.version", bundle: .module), "0.1.0"))
-                        .font(.system(size: 12).monospaced())
+                        .font(.system(size: 11, design: .monospaced))
+                        .tracking(1.2)
+                        .foregroundStyle(.tertiary)
+                    Text("settings.about.tagline", bundle: .module)
+                        .font(.system(size: 13))
                         .foregroundStyle(.secondary)
+                        .padding(.top, 2)
+                }
+                Spacer()
+            }
+            .padding(18)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 12)
+                    .fill(Color.primary.opacity(0.025))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+            )
+
+            PaneSection("settings.about.actions", figure: "fig. a") {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack {
+                        Button {
+                            NSWorkspace.shared.open(URL(string: "https://runbar.app/download/RunBar.dmg")!)
+                        } label: {
+                            HStack(spacing: 7) {
+                                Image(systemName: "arrow.down.circle")
+                                Text("settings.about.check_updates", bundle: .module)
+                            }
+                        }
+                        .controlSize(.small)
+                        .buttonStyle(PressableButtonStyle())
+
+                        Spacer()
+
+                        Button {
+                            NSWorkspace.shared.open(URL(string: "https://github.com/Rod292/runbar")!)
+                        } label: {
+                            HStack(spacing: 6) {
+                                Image(systemName: "chevron.left.forwardslash.chevron.right")
+                                Text("Source")
+                            }
+                        }
+                        .controlSize(.small)
+                        .buttonStyle(PressableButtonStyle())
+                    }
+
+                    HStack {
+                        Button {
+                            UserDefaults.standard.set(false, forKey: "runbar.onboardingDone")
+                            openWindow(id: "onboarding")
+                        } label: {
+                            HStack(spacing: 7) {
+                                Image(systemName: "arrow.counterclockwise")
+                                Text("Restart onboarding")
+                            }
+                        }
+                        .controlSize(.small)
+                        .buttonStyle(PressableButtonStyle())
+
+                        Spacer()
+                    }
                 }
             }
-            Text("settings.about.tagline", bundle: .module)
-                .font(.system(size: 13))
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: 360, alignment: .leading)
-            Button {
-                NSWorkspace.shared.open(URL(string: "https://runbar.app/download/RunBar.dmg")!)
-            } label: {
-                HStack(spacing: 7) {
-                    Image(systemName: "arrow.down.circle")
-                    Text("settings.about.check_updates", bundle: .module)
-                }
-            }
-            .controlSize(.small)
-            .buttonStyle(PressableButtonStyle())
+
+            colophon("MIT · 2026 · Made with care")
         }
+    }
+
+    // MARK: - Tiny helpers
+
+    @ViewBuilder
+    private func row<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        HStack(alignment: .center, spacing: 12) { content() }
+            .frame(minHeight: 26)
+    }
+
+    private var hairline: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.08))
+            .frame(height: 0.5)
+    }
+
+    private var verticalHairline: some View {
+        Rectangle()
+            .fill(Color.primary.opacity(0.08))
+            .frame(width: 0.5)
+            .padding(.horizontal, 12)
+    }
+
+    private func colophon(_ text: String) -> some View {
+        HStack {
+            Spacer()
+            Text(text)
+                .font(.system(size: 10, design: .monospaced))
+                .tracking(1.6)
+                .textCase(.uppercase)
+                .foregroundStyle(.tertiary)
+            Spacer()
+        }
+        .padding(.top, 8)
     }
 }
 

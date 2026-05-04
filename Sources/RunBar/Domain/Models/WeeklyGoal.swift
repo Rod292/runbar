@@ -9,16 +9,16 @@ public enum GoalMetric: String, CaseIterable, Codable, Sendable {
     public var label: String {
         switch self {
         case .distance:  return "Distance"
-        case .count:     return "Nombre de sorties"
-        case .elevation: return "Dénivelé positif"
+        case .count:     return "Run count"
+        case .elevation: return "Elevation"
         }
     }
 
     public var unit: String {
         switch self {
         case .distance:  return "km"
-        case .count:     return "sorties"
-        case .elevation: return "m D+"
+        case .count:     return "runs"
+        case .elevation: return "m up"
         }
     }
 }

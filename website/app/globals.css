@@ -1,0 +1,96 @@
+@import "tailwindcss";
+
+/* Tell Tailwind v4 where to look for class names */
+@source "../app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+
+/* Design tokens (CSS-first config). Each color/font/tracking var is
+   auto-promoted to its matching utility class by Tailwind v4. */
+@theme {
+  --color-ivory: #F7F4EE;
+  --color-paper: #FBF9F4;
+  --color-ink: #0F0F0E;
+  --color-ink-soft: #46463F;
+  --color-ink-mute: #8A887E;
+  --color-hairline: #DDD7CB;
+  --color-vermillon: #E5523D;
+  --color-vermillon-deep: #B83C28;
+  --color-moss: #1F2A22;
+
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Inter, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas,
+    monospace;
+  --font-display: "Times New Roman", Georgia, serif;
+
+  --tracking-tightest: -0.045em;
+  --tracking-crammed: -0.06em;
+}
+
+/* ───────── Base ───────── */
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+body {
+  background: #F7F4EE;
+  color: #0F0F0E;
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+}
+
+::selection {
+  background: #E5523D;
+  color: #FBF9F4;
+}
+
+/* ───────── Utilities (custom) ───────── */
+.noise-bg {
+  background-image:
+    radial-gradient(rgba(15, 15, 14, 0.025) 1px, transparent 1px);
+  background-size: 3px 3px;
+}
+
+.hairline {
+  border-color: #DDD7CB;
+}
+
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: -moz-crisp-edges;
+  image-rendering: crisp-edges;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .reveal {
+    animation: reveal 1s cubic-bezier(0.2, 0.7, 0.2, 1) both;
+  }
+  @keyframes reveal {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+}
+
+/* ───────── Runner sprite cycle ───────── */
+@keyframes runner-cycle {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 100% 0;
+  }
+}

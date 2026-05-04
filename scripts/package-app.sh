@@ -86,7 +86,7 @@ PLIST
 #   RUNBAR_CODESIGN_IDENTITY="RunBar Local Dev" scripts/package-app.sh
 SIGN_IDENTITY="${RUNBAR_CODESIGN_IDENTITY:--}"
 echo "==> Code signing ($SIGN_IDENTITY)"
-codesign --force --deep --sign "$SIGN_IDENTITY" "$APP_DIR" 2>&1 | tail -3 || true
+codesign --force --deep --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP_DIR" 2>&1 | tail -3 || true
 
 echo "==> RunBar.app prêt"
 echo "    → $APP_DIR"

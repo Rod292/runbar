@@ -95,6 +95,20 @@ Pour une distribution publique, il faudra signer avec Developer ID puis notarise
 le `.dmg`. L'auto-update à distance demande ensuite un appcast signé, par exemple
 avec Sparkle.
 
+Après avoir configuré `notarytool` avec un profil Keychain `RunBarNotary` :
+
+```sh
+RUNBAR_CODESIGN_IDENTITY="Developer ID Application: Rodrigue Pers (7YG2H7L32J)" scripts/make-dmg.sh
+scripts/notarize-dmg.sh
+```
+
+Si Apple laisse une soumission longtemps en attente, récupère son ID puis relance
+le stapling plus tard :
+
+```sh
+scripts/staple-notarized-dmg.sh <submission-id>
+```
+
 ## Limites connues
 
 - **OAuth en `swift run`** : RunBar ouvre Strava dans le navigateur et écoute temporairement `http://localhost:47862/callback`. Le callback est protégé par un paramètre `state` et expire après 120 secondes.

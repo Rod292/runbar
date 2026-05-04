@@ -28,9 +28,36 @@ public actor StravaService: StravaServiceProtocol {
         }
     }
 
-    /// Access token (durée 6h). Stocké en mémoire seulement.
-    private var accessToken: String?
-    private var accessTokenExpiry: Date?
+    /// Access token (durée 6h). Persisté en Keychain pour survivre aux
+    /// restarts — utile pour pré-seeder en dev sans passer par OAuth.
+    private var accessToken: String? {
+        get { Keychain.get(account: "access_token") }
+        set {
+            if let newValue {
+                try? Keychain.set(newValue, account: "access_token")
+            } else {
+                Keychain.remove(account: "access_token")
+            }
+        }
+    }
+
+    private var accessTokenExpiry: Date? {
+        get {
+            guard
+                let raw = Keychain.get(account: "access_token_expiry"),
+                let ts = Double(raw)
+            else { return nil }
+            return Date(timeIntervalSince1970: ts)
+        }
+        set {
+            if let newValue {
+                let ts = String(newValue.timeIntervalSince1970)
+                try? Keychain.set(ts, account: "access_token_expiry")
+            } else {
+                Keychain.remove(account: "access_token_expiry")
+            }
+        }
+    }
 
     public func isAuthenticated() async -> Bool {
         UserDefaults.standard.bool(forKey: connectedKey)
@@ -50,6 +77,8 @@ public actor StravaService: StravaServiceProtocol {
         self.refreshToken = nil
         self.accessToken = nil
         self.accessTokenExpiry = nil
+        Keychain.remove(account: "access_token")
+        Keychain.remove(account: "access_token_expiry")
     }
 
     public func fetchActivities(since: Date) async throws -> [ActivityDTO] {
@@ -120,35 +149,35 @@ public actor StravaService: StravaServiceProtocol {
     }
 
     private func exchangeCodeForTokens(code: String) async throws -> TokenResponse {
-        try await postTokens(params: [
-            "client_id":     Secrets.stravaClientID,
-            "client_secret": Secrets.stravaClientSecret,
-            "code":          code,
-            "grant_type":    "authorization_code",
-        ])
+        try await callBackend(path: "/api/strava/exchange", payload: ["code": code])
     }
 
     private func refreshTokens(refreshToken: String) async throws -> TokenResponse {
-        try await postTokens(params: [
-            "client_id":     Secrets.stravaClientID,
-            "client_secret": Secrets.stravaClientSecret,
-            "refresh_token": refreshToken,
-            "grant_type":    "refresh_token",
-        ])
+        try await callBackend(
+            path: "/api/strava/refresh",
+            payload: ["refresh_token": refreshToken]
+        )
     }
 
-    private func postTokens(params: [String: String]) async throws -> TokenResponse {
-        var req = URLRequest(url: URL(string: "https://www.strava.com/oauth/token")!)
+    /// Le backend (Next.js sur `Secrets.backendBaseURL`) détient le
+    /// `client_secret` et fait l'appel à `https://www.strava.com/oauth/token`.
+    /// Il renvoie tel quel le payload de Strava (access_token, refresh_token,
+    /// expires_at, athlete, …).
+    private func callBackend(path: String, payload: [String: String]) async throws -> TokenResponse {
+        guard let url = URL(string: Secrets.backendBaseURL + path) else {
+            throw StravaError.missingConfiguration
+        }
+        var req = URLRequest(url: url)
         req.httpMethod = "POST"
-        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
-        let body = params
-            .map { "\($0.key)=\($0.value.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")" }
-            .joined(separator: "&")
-        req.httpBody = body.data(using: .utf8)
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: payload, options: [])
+
         let (data, resp) = try await URLSession.shared.data(for: req)
         guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
             let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
-            RunBarLog.strava.error("token endpoint failed: HTTP \(code) — \(String(data: data, encoding: .utf8) ?? "")")
+            RunBarLog.strava.error(
+                "backend token endpoint failed: HTTP \(code) — \(String(data: data, encoding: .utf8) ?? "")"
+            )
             throw StravaError.httpStatus(code)
         }
         return try JSONDecoder().decode(TokenResponse.self, from: data)
@@ -206,7 +235,7 @@ public enum StravaError: Error, LocalizedError {
         switch self {
         case .notImplemented:    return "Connexion Strava à venir."
         case .missingConfiguration:
-            return "Configuration Strava manquante. Définis RUNBAR_STRAVA_CLIENT_ID et RUNBAR_STRAVA_CLIENT_SECRET."
+            return "Configuration Strava manquante. Définis RUNBAR_STRAVA_CLIENT_ID (env ou defaults). Le secret OAuth vit côté backend."
         case .notAuthenticated:  return "Pas connecté à Strava."
         case .oauthFailed:       return "Échec de l'autorisation."
         case .oauthTimeout:      return "Connexion Strava expirée."

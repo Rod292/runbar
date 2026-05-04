@@ -17,6 +17,9 @@ xcrun notarytool submit "$DMG" --keychain-profile "$PROFILE" --wait
 
 echo "==> Staple ticket"
 xcrun stapler staple "$DMG"
+xcrun stapler validate "$DMG"
 
-echo "==> Gatekeeper check"
-spctl -a -vv --type open "$DMG"
+WEBSITE_DOWNLOAD="$ROOT/website/public/download/RunBar.dmg"
+mkdir -p "$(dirname "$WEBSITE_DOWNLOAD")"
+cp "$DMG" "$WEBSITE_DOWNLOAD"
+echo "==> DMG publié vers $WEBSITE_DOWNLOAD"

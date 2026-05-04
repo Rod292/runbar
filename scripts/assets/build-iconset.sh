@@ -4,12 +4,19 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
+# Source de vérité du logo. Si présent on l'utilise tel quel, sinon fallback
+# sur le placeholder généré.
+LOGO_SRC="$ROOT/scripts/assets/source-icon.png"
 SOURCE_PNG="$ROOT/build/AppIcon-1024.png"
 ICONSET_DIR="$ROOT/build/AppIcon.iconset"
 ICNS_OUT="$ROOT/Sources/RunBar/Resources/AppIcon.icns"
 
-if [ ! -f "$SOURCE_PNG" ]; then
-    echo "==> Génération du PNG source"
+mkdir -p "$ROOT/build"
+if [ -f "$LOGO_SRC" ]; then
+    echo "==> Source logo trouvée — redimensionnement à 1024"
+    sips -z 1024 1024 "$LOGO_SRC" --out "$SOURCE_PNG" >/dev/null
+elif [ ! -f "$SOURCE_PNG" ]; then
+    echo "==> Génération du PNG placeholder"
     swift "$ROOT/scripts/assets/generate-icon.swift" "$SOURCE_PNG"
 fi
 

@@ -63,6 +63,12 @@ type Props = {
   variant?: Variant;
   /** Override the default lean (-6° on running states, 0° elsewhere). */
   lean?: number;
+  /**
+   * Lock the sprite to a specific frame index (0-based). Skips the running
+   * animation — useful for specimen sheets and contact strips where you want
+   * to display all frames side-by-side.
+   */
+  frame?: number;
   className?: string;
 };
 
@@ -71,27 +77,68 @@ export function RunnerSprite({
   state = "jogging",
   variant = "ink",
   lean,
+  frame,
   className = "",
 }: Props) {
   const cfg = CYCLES[state];
   const sheet = variant === "paper" ? cfg.sheet.paper : cfg.sheet.ink;
   const tilt = lean ?? cfg.lean;
-  const duration = cfg.frameCount / cfg.fps;
+  const isStatic = frame !== undefined;
 
-  return (
+  const baseStyle: React.CSSProperties = {
+    width: size,
+    height: size,
+    backgroundImage: `url(${sheet})`,
+    backgroundSize: `${size * cfg.frameCount}px ${size}px`,
+    backgroundRepeat: "no-repeat",
+    transform: `rotate(${tilt}deg)`,
+    imageRendering: "auto",
+  };
+
+  if (isStatic) {
+    const safe = ((frame % cfg.frameCount) + cfg.frameCount) % cfg.frameCount;
+    return (
+      <span
+        aria-hidden
+        className={`inline-block ${className}`}
+        style={{
+          ...baseStyle,
+          backgroundPosition: `${-safe * size}px 0`,
+        }}
+      />
+    );
+  }
+
+  const duration = cfg.frameCount / cfg.fps;
+  const sprite = (
     <span
       aria-hidden
-      className={`inline-block ${className}`}
+      className="inline-block"
       style={{
-        width: size,
-        height: size,
-        backgroundImage: `url(${sheet})`,
-        backgroundSize: `${size * cfg.frameCount}px ${size}px`,
-        backgroundRepeat: "no-repeat",
-        transform: `rotate(${tilt}deg)`,
-        imageRendering: "auto",
+        ...baseStyle,
         animation: `runner-cycle ${duration}s steps(${cfg.frameCount}, jump-none) infinite`,
       }}
     />
   );
+
+  // Victory: layer a vertical bounce over the frame cycle so the figure reads
+  // as airborne. The wrapper's height matches the sprite's so the bounce
+  // doesn't shift downstream layout.
+  if (state === "victory") {
+    return (
+      <span
+        aria-hidden
+        className={`inline-block ${className}`}
+        style={{
+          width: size,
+          height: size,
+          animation: `runner-jump ${duration}s ease-in-out infinite`,
+        }}
+      >
+        {sprite}
+      </span>
+    );
+  }
+
+  return <span className={`inline-block ${className}`} aria-hidden>{sprite}</span>;
 }

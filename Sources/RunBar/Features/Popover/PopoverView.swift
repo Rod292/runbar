@@ -267,10 +267,19 @@ public struct PopoverView: View {
 
                 Spacer()
 
-                Text("\(pctLabel)%")
-                    .font(.system(size: 18, weight: .semibold).monospacedDigit())
-                    .tracking(-0.4)
-                    .foregroundStyle(mode == .victory ? RunBarColor.vermillonDeep : RunBarColor.inkSoft(dark: isDark))
+                VStack(alignment: .trailing, spacing: 2) {
+                    Text("\(pctLabel)%")
+                        .font(.system(size: 18, weight: .semibold).monospacedDigit())
+                        .tracking(-0.4)
+                        .foregroundStyle(mode == .victory ? RunBarColor.vermillonDeep : RunBarColor.inkSoft(dark: isDark))
+                    // State label — explique l'animation du runner aux nouveaux
+                    // utilisateurs ("Warming up", "Sprinting", etc.).
+                    Text(viewModel.runnerState.label)
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .tracking(0.9)
+                        .textCase(.uppercase)
+                        .foregroundStyle(accent)
+                }
             }
 
             // Dataline mono — éditorial.

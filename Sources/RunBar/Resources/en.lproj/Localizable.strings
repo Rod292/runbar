@@ -30,8 +30,8 @@
 "popover.history.down" = "-%@ %@ vs previous week";
 
 /* ── Runner state labels ────────────────────── */
-"runner.state.idle" = "At rest";
-"runner.state.jogging" = "On track";
+"runner.state.idle" = "Warming up";
+"runner.state.jogging" = "Jogging";
 "runner.state.sprinting" = "Sprinting";
 "runner.state.tired" = "Falling behind";
 "runner.state.victory" = "Goal reached";

@@ -94,3 +94,13 @@ body {
     background-position: 100% 0;
   }
 }
+
+/* Vertical bounce for the victory cycle. The frames already show a jump
+ * (crouch → leap → land), this overlay reinforces it with a real arc so the
+ * figure reads as airborne instead of stuck to the floor. Sync'd to the
+ * sprite cycle duration via animation-duration on the wrapper. */
+@keyframes runner-jump {
+  0%   { transform: translateY(0); }
+  50%  { transform: translateY(-22%); }
+  100% { transform: translateY(0); }
+}

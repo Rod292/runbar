@@ -282,6 +282,7 @@ public enum PopoverStatusKind: Sendable {
 
 public extension Notification.Name {
     static let runbarClosePopover = Notification.Name("com.rodrigue.runbar.close-popover")
+    static let runbarStravaConnected = Notification.Name("com.rodrigue.runbar.strava-connected")
 }
 
 #if DEBUG

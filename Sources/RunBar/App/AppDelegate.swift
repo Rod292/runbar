@@ -55,6 +55,13 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func startBackgroundWork() {
         configureAutoSync()
         Task { await sync.syncNow() }
+        // Déclenche une sync immédiate dès qu'OAuth Strava réussit, pour ne pas
+        // attendre le timer auto-sync (30 min) après la première connexion.
+        NotificationCenter.default.addObserver(
+            forName: .runbarStravaConnected, object: nil, queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in await self?.sync.syncNow() }
+        }
     }
 
     private func configureAutoSync() {
@@ -256,6 +263,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func refreshIcon() {
         guard let button = statusItem?.button else { return }
         applyIcon(to: button, image: RunnerBitmap.image(for: currentState, subframe: frameIndex))
+        // Tooltip — explique l'état courant ("Warming up", "Sprinting", etc.)
+        // pour les nouveaux utilisateurs qui voient une animation sans contexte.
+        let pctText = "\(Int(round(popoverVM.progress * 100)))%"
+        button.toolTip = "RunBar — \(currentState.label) · \(pctText)"
     }
 
     private func applyIcon(to button: NSStatusBarButton, image: NSImage?) {

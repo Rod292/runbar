@@ -22,10 +22,23 @@ public final class UpdateService: NSObject {
     }
 
     public func start() {
+        guard hasValidBundle else {
+            NSLog("[RunBar] Sparkle disabled: not running from a .app bundle (dev mode)")
+            return
+        }
         controller.startUpdater()
     }
 
     public func checkForUpdates() {
+        guard hasValidBundle else { return }
         controller.checkForUpdates(nil)
+    }
+
+    /// Sparkle exige un vrai bundle `.app` avec `SUFeedURL` dans l'Info.plist.
+    /// En `swift run` / lancement direct du binaire, on no-op proprement.
+    private var hasValidBundle: Bool {
+        guard Bundle.main.bundleIdentifier != nil else { return false }
+        guard Bundle.main.object(forInfoDictionaryKey: "SUFeedURL") != nil else { return false }
+        return true
     }
 }

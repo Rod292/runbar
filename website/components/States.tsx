@@ -13,6 +13,7 @@ type StateMeta = {
   num: string;
   name: string;
   state: RunnerStateName;
+  frames: string;
   fps: string;
   trigger: string;
   mood: string;
@@ -22,48 +23,53 @@ type StateMeta = {
 const STATES: StateMeta[] = [
   {
     num: "01",
-    name: "Idle",
+    name: "Warming up",
     state: "idle",
+    frames: "6 frames",
     fps: "3 fps",
-    trigger: "within goal",
-    mood: "calm",
-    caption: "You're on track. Nothing to do.",
+    trigger: "week begins",
+    mood: "bracing",
+    caption: "High knees on the spot. The week hasn't started yet.",
   },
   {
     num: "02",
     name: "Jogging",
     state: "jogging",
+    frames: "8 frames",
     fps: "6 fps",
     trigger: "steady week",
     mood: "neutral",
-    caption: "Steady pace, calm week.",
+    caption: "Forward stride, even tempo. On pace.",
   },
   {
     num: "03",
     name: "Sprinting",
     state: "sprinting",
+    frames: "8 frames",
     fps: "9 fps",
     trigger: "just logged a run",
     mood: "charged",
-    caption: "Fresh kilometers in the bank. The figure leans forward.",
+    caption: "Same cycle, faster. Fresh kilometers in the bank.",
   },
   {
     num: "04",
     name: "Tired",
     state: "tired",
+    frames: "6 frames",
     fps: "4 fps",
     trigger: "falling behind",
     mood: "muted",
-    caption: "A little behind your goal.",
+    caption: "Slumped shoulders, head down. Behind on the goal.",
   },
   {
     num: "05",
     name: "Victory",
     state: "victory",
+    frames: "6 frames",
     fps: "6 fps",
     trigger: "goal cleared",
     mood: "loud",
-    caption: "Goal cleared. Confetti optional.",
+    caption: "Arms up, mid-jump. Goal cleared.",
   },
 ];
 
@@ -109,9 +115,10 @@ export function States() {
             </span>
           </div>
           <p className="text-[13px] leading-[1.6] text-ink-soft">
-            The little runner follows your rhythm — speeding up after a run,
-            slowing if you fall behind, raising arms when you cross the line.
-            One sheet, five poses, eight frames each.
+            The little runner follows your rhythm — warming up at week start,
+            jogging through the middle, sprinting after a fresh run, slumping
+            if you fall behind, raising arms when you cross the line. Four
+            hand-drawn cycles. Six to eight frames each.
           </p>
         </div>
       </div>
@@ -133,7 +140,7 @@ export function States() {
           </span>
           <span className="dot bg-hairline" aria-hidden />
           <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
-            8-frame cycle
+            four cycles · 6–8 frames
           </span>
         </div>
         <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
@@ -172,14 +179,16 @@ function StateCell({
         <RunnerSprite size={76} state={meta.state} variant="ink" />
       </div>
 
-      {/* Data layer: fps · trigger · mood */}
+      {/* Data layer: fps · frames · trigger · mood */}
       <div className="mt-2 border-t border-hairline pt-2">
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span className="font-mono text-[10px] tracking-tight text-ink">
             {meta.fps}
           </span>
           <span className="text-ink-mute">·</span>
-          <span className="text-[10px] text-ink-soft">{meta.trigger}</span>
+          <span className="font-mono text-[10px] tracking-tight text-ink-soft">
+            {meta.frames}
+          </span>
           <span className="text-ink-mute">·</span>
           <span className="text-[10px] italic text-ink-soft">{meta.mood}</span>
         </div>
@@ -192,9 +201,9 @@ function StateCell({
 }
 
 function SprintingHero({ meta }: { meta: StateMeta }) {
-  // 8-frame strip — eight static idle sprites tiled to suggest the cycle.
-  // (Each RunnerSprite at state="idle" renders a single frame; we use that
-  // as the shorthand "frame" for the second-read delight.)
+  // 8-frame strip — the actual jogging cycle, frame-by-frame. Sprinting
+  // reuses the jogging sprite sheet (faster fps), so showing the 8 jogging
+  // poses here is the truthful contact sheet for both states.
   const FRAMES = 8;
 
   return (
@@ -245,7 +254,7 @@ function SprintingHero({ meta }: { meta: StateMeta }) {
               key={i}
               className="flex flex-1 items-center justify-center bg-ivory py-1.5"
             >
-              <RunnerSprite size={28} state="idle" variant="ink" lean={0} />
+              <RunnerSprite size={28} state="jogging" variant="ink" frame={i} lean={0} />
             </div>
           ))}
         </div>
@@ -256,6 +265,10 @@ function SprintingHero({ meta }: { meta: StateMeta }) {
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
           <span className="font-mono text-[10px] tracking-tight text-ink">
             {meta.fps}
+          </span>
+          <span className="text-ink-mute">·</span>
+          <span className="font-mono text-[10px] tracking-tight text-ink-soft">
+            {meta.frames}
           </span>
           <span className="text-ink-mute">·</span>
           <span className="text-[10px] text-ink-soft">{meta.trigger}</span>

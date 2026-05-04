@@ -12,3 +12,4 @@ DerivedData/
 *.xcworkspace/
 .netrc
 *.bak
+.vercel

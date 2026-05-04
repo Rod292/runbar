@@ -6,16 +6,16 @@
         <description>Mises à jour RunBar</description>
         <language>fr</language>
         <item>
-            <title>Version 0.1.5</title>
-            <pubDate>Mon, 04 May 2026 21:38:18 +0000</pubDate>
-            <sparkle:version>0.1.5</sparkle:version>
-            <sparkle:shortVersionString>0.1.5</sparkle:shortVersionString>
+            <title>Version 0.1.7</title>
+            <pubDate>Mon, 04 May 2026 22:07:32 +0000</pubDate>
+            <sparkle:version>0.1.7</sparkle:version>
+            <sparkle:shortVersionString>0.1.7</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[Fix Tahoe : nouveau bundle identifier pour sortir de l'état ControlCenter corrompu, migration automatique des préférences existantes, et correction OAuth Strava avec redirect_uri localhost pendant l'échange du code.]]></description>
+            <description><![CDATA[Clarifie la synchronisation Strava quand le compte connecté ne renvoie aucune activité : RunBar affiche maintenant un état explicite No Strava runs found et logge le nombre d'activités importées.]]></description>
             <enclosure
-                url="https://runbar.vercel.app/download/RunBar-0.1.5.dmg"
-                sparkle:edSignature="XH55tUkc3TLkHWxLV55JtEbXLGH1hOT0cJvCXUaMTZU3HsdT/PXf/aO0Czvf7kRJ4YiwlN6UyZ69yxwq87ywBg=="
-                length="2235136"
+                url="https://runbar.vercel.app/download/RunBar-0.1.7.dmg"
+                sparkle:edSignature="ilwhNefsohYybiP8V7+6hoHWb++5sitJzUXIIynaE1nRbK4tWrVu9GVPlbP2g45AMYsIT/1xjyWXRwAAY4lABQ=="
+                length="2244069"
                 type="application/octet-stream" />
         </item>
     </channel>

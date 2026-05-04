@@ -82,7 +82,10 @@ private final class LocalCallbackHandler: @unchecked Sendable {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 16 * 1024) { [weak self] data, _, _, _ in
             guard let self else { return }
             let parsed = Self.parseCallback(data: data)
-            // On répond toujours quelque chose, succès ou échec.
+            // On répond seulement que l'autorisation Strava est revenue au
+            // listener local. L'échange final du code se fait ensuite dans
+            // `StravaService`; cette page ne doit pas promettre que les tokens
+            // sont déjà stockés.
             connection.send(content: Self.responsePayload(success: parsed.code != nil),
                             completion: .contentProcessed { _ in connection.cancel() })
             guard parsed.state == self.expectedState else {
@@ -136,10 +139,10 @@ private final class LocalCallbackHandler: @unchecked Sendable {
 
     private static func responsePayload(success: Bool) -> Data {
         let eyebrow = success ? "Step 04 of 06 · Strava" : "Step 04 of 06 · Strava"
-        let italicWord = success ? "Connected." : "Failed."
-        let supportingTitle = success ? "Tokens stored." : "Try again from RunBar."
+        let italicWord = success ? "Authorized." : "Failed."
+        let supportingTitle = success ? "Finishing in RunBar." : "Try again from RunBar."
         let body = success
-            ? "You can close this tab and head back to your menu bar."
+            ? "RunBar is exchanging the code and will come back to the front when it is done."
             : "Something went wrong on our side. Re-open the popover and tap Connect Strava."
         let accent = success ? "#2D7A3E" : "#C75D2C"
         let html = """

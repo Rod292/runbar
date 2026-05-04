@@ -32,6 +32,7 @@ public struct PopoverView: View {
 
         VStack(spacing: 0) {
             header()
+            onboardingResumeBanner
             statusBanner
             if let days = goal.daysUntilRace(), days >= 0 {
                 raceCountdownBanner(
@@ -124,6 +125,40 @@ public struct PopoverView: View {
     // MARK: Status banner
 
     @ViewBuilder
+    private var onboardingResumeBanner: some View {
+        if !onboardingDone {
+            Button {
+                NSApp.activate(ignoringOtherApps: true)
+                openWindow(id: "onboarding")
+            } label: {
+                HStack(spacing: 9) {
+                    Image(systemName: "figure.run.circle")
+                        .font(.system(size: 13, weight: .semibold))
+                        .frame(width: 18)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text("popover.onboarding.resume_title", bundle: .module)
+                            .font(.system(size: 11.5, weight: .semibold))
+                        Text("popover.onboarding.resume_detail", bundle: .module)
+                            .font(.system(size: 10.5))
+                            .lineLimit(1)
+                    }
+                    Spacer(minLength: 8)
+                    Image(systemName: "arrow.up.forward")
+                        .font(.system(size: 10, weight: .semibold))
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 44)
+                .foregroundStyle(RunBarColor.ink(dark: isDark))
+                .background(RunBarColor.moss.opacity(isDark ? 0.18 : 0.10))
+                .overlay(alignment: .bottom) {
+                    Rectangle().fill(RunBarColor.hairline(dark: isDark)).frame(height: 0.6)
+                }
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    @ViewBuilder
     private var statusBanner: some View {
         let kind = viewModel.statusKind
         if kind != .ready {
@@ -152,7 +187,7 @@ public struct PopoverView: View {
                             .foregroundStyle(RunBarColor.ivory)
                     }
                     .buttonStyle(.plain)
-                } else if kind == .error {
+                } else if kind == .error || kind == .noActivities {
                     Button(action: { viewModel.syncNow() }) {
                         Image(systemName: "arrow.clockwise")
                             .font(.system(size: 11, weight: .semibold))
@@ -178,13 +213,14 @@ public struct PopoverView: View {
         case .error: return "exclamationmark.triangle.fill"
         case .syncing: return "arrow.triangle.2.circlepath"
         case .waitingForSync: return "clock"
+        case .noActivities: return "magnifyingglass"
         case .ready: return "checkmark.circle.fill"
         }
     }
 
     private func statusColor(_ kind: PopoverStatusKind) -> Color {
         switch kind {
-        case .needsConnection, .waitingForSync: return RunBarColor.gold
+        case .needsConnection, .waitingForSync, .noActivities: return RunBarColor.gold
         case .error: return RunBarColor.vermillonDeep
         case .syncing, .ready: return RunBarColor.vermillon
         }
@@ -449,10 +485,7 @@ public struct PopoverView: View {
                 .font(.system(size: 22, weight: .regular, design: .serif).italic())
                 .foregroundStyle(RunBarColor.ink(dark: isDark))
 
-            Text(viewModel.stravaConnected
-                 ? LocalizedStringKey("popover.no_outing_subtitle")
-                 : LocalizedStringKey("popover.connect_strava_cta"),
-                 bundle: .module)
+            Text(emptySubtitleKey, bundle: .module)
                 .font(.system(size: 11))
                 .multilineTextAlignment(.center)
                 .lineLimit(nil)
@@ -485,6 +518,16 @@ public struct PopoverView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 12)
+    }
+
+    private var emptySubtitleKey: LocalizedStringKey {
+        if !viewModel.stravaConnected {
+            return LocalizedStringKey("popover.connect_strava_cta")
+        }
+        if viewModel.statusKind == .noActivities {
+            return LocalizedStringKey("popover.no_strava_activities_subtitle")
+        }
+        return LocalizedStringKey("popover.no_outing_subtitle")
     }
 
     // MARK: Footer — colophon

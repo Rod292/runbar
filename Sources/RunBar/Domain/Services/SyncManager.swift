@@ -8,6 +8,7 @@ public final class SyncManager: ObservableObject {
     @Published public var isSyncing: Bool = false
     @Published public var lastSync: Date? = nil
     @Published public var lastError: String? = nil
+    @Published public var lastImportedActivityCount: Int? = nil
 
     private let store: ActivityStore
     private let strava: StravaServiceProtocol
@@ -47,15 +48,19 @@ public final class SyncManager: ObservableObject {
             guard isAuth else {
                 RunBarLog.sync.notice("Sync skipped — Strava not authenticated (stub)")
                 lastError = nil
+                lastImportedActivityCount = nil
                 return
             }
             let dtos = try await strava.fetchActivities(since: syncStart)
+            RunBarLog.sync.notice("Fetched \(dtos.count) Strava activit\(dtos.count == 1 ? "y" : "ies") since \(syncStart)")
             store.reconcile(source: .strava, since: syncStart, with: dtos)
             lastSync = .now
             lastError = nil
+            lastImportedActivityCount = dtos.count
         } catch {
             RunBarLog.sync.error("Sync failed: \(error.localizedDescription)")
             lastError = error.localizedDescription
+            lastImportedActivityCount = nil
         }
     }
 }

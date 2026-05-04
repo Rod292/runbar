@@ -6,6 +6,7 @@
 "popover.outings" = "RUNS";
 "popover.no_outing_yet" = "No run yet";
 "popover.no_outing_subtitle" = "The runner is waiting at the start line. First run kicks it off.";
+"popover.no_strava_activities_subtitle" = "Strava returned no runs for this account.";
 "popover.connect_strava_cta" = "Connect Strava";
 "popover.race_in_n_days" = "Race in %d day(s)";
 "popover.last_sync_now" = "Synced just now";
@@ -22,7 +23,11 @@
 "popover.status.syncing_detail" = "Reading your latest runs.";
 "popover.status.waiting_title" = "No confirmed sync";
 "popover.status.waiting_detail" = "Run a sync to verify the data.";
+"popover.status.no_activities_title" = "No Strava runs found";
+"popover.status.no_activities_detail" = "Check that this is the account with your activities.";
 "popover.status.ready_title" = "Data up to date";
+"popover.onboarding.resume_title" = "Continue setup";
+"popover.onboarding.resume_detail" = "Finish onboarding whenever you are ready.";
 "popover.history.title" = "8 weeks";
 "popover.history.waiting" = "Building history";
 "popover.history.stable" = "Stable";

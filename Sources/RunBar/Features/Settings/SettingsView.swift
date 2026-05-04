@@ -34,12 +34,14 @@ public final class SettingsCoordinator: ObservableObject {
         do {
             try await strava.startOAuth()
             await refreshStravaStatus()
+            NSApp.activate(ignoringOtherApps: true)
             if stravaConnected {
                 // Déclenche la sync immédiate (l'AppDelegate écoute ce signal
                 // pour appeler `syncNow()` sans attendre le timer auto-sync).
                 NotificationCenter.default.post(name: .runbarStravaConnected, object: nil)
             }
         } catch {
+            NSApp.activate(ignoringOtherApps: true)
             stravaError = error.localizedDescription
         }
     }

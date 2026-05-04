@@ -17,14 +17,22 @@ public final class PopoverViewModel: ObservableObject {
     @Published public var lastSync: Date? = nil
     @Published public var isSyncing: Bool = false
     @Published public var lastError: String? = nil
+    @Published public var lastImportedActivityCount: Int? = nil
 
-    public var settingsCoordinator: SettingsCoordinator?
+    public var settingsCoordinator: SettingsCoordinator? {
+        didSet {
+            settingsCancellable = settingsCoordinator?.objectWillChange.sink { [weak self] _ in
+                Task { @MainActor in self?.objectWillChange.send() }
+            }
+        }
+    }
 
     private let store: ActivityStore
     private let calculator = GoalCalculator()
     private let syncManager: SyncManager
     private let snapshots: SnapshotStore?
     private var cancellables = Set<AnyCancellable>()
+    private var settingsCancellable: AnyCancellable?
 
     public init(store: ActivityStore, syncManager: SyncManager, snapshots: SnapshotStore? = nil) {
         self.store = store
@@ -163,6 +171,11 @@ public final class PopoverViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: \.lastError, on: self)
             .store(in: &cancellables)
+
+        syncManager.$lastImportedActivityCount
+            .receive(on: DispatchQueue.main)
+            .assign(to: \.lastImportedActivityCount, on: self)
+            .store(in: &cancellables)
     }
 
     // MARK: Derived
@@ -221,6 +234,7 @@ public final class PopoverViewModel: ObservableObject {
         if let lastError, !lastError.isEmpty { return .error }
         if isSyncing { return .syncing }
         if lastSync == nil { return .waitingForSync }
+        if lastImportedActivityCount == 0 && store.activities.isEmpty { return .noActivities }
         return .ready
     }
 
@@ -234,6 +248,8 @@ public final class PopoverViewModel: ObservableObject {
             return String(localized: "popover.status.syncing_title", bundle: .module)
         case .waitingForSync:
             return String(localized: "popover.status.waiting_title", bundle: .module)
+        case .noActivities:
+            return String(localized: "popover.status.no_activities_title", bundle: .module)
         case .ready:
             return String(localized: "popover.status.ready_title", bundle: .module)
         }
@@ -249,6 +265,8 @@ public final class PopoverViewModel: ObservableObject {
             return String(localized: "popover.status.syncing_detail", bundle: .module)
         case .waitingForSync:
             return String(localized: "popover.status.waiting_detail", bundle: .module)
+        case .noActivities:
+            return String(localized: "popover.status.no_activities_detail", bundle: .module)
         case .ready:
             return lastSyncLabel
         }
@@ -312,6 +330,7 @@ public enum PopoverStatusKind: Sendable {
     case error
     case syncing
     case waitingForSync
+    case noActivities
     case ready
 }
 

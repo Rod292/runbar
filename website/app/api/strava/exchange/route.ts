@@ -10,12 +10,12 @@ export const dynamic = "force-dynamic";
  * callback) for access + refresh tokens. The Strava `client_secret` lives
  * here as a Vercel env var and never leaves the server.
  *
- * Request:  { "code": "<authorization_code>", "redirect_uri": "http://localhost:47862/callback" }
+ * Request:  { "code": "<authorization_code>" }
  * Response: Strava's token payload, forwarded as-is on success.
  */
 export async function POST(req: Request) {
-  const clientId = process.env.STRAVA_CLIENT_ID;
-  const clientSecret = process.env.STRAVA_CLIENT_SECRET;
+  const clientId = requiredEnv(process.env.STRAVA_CLIENT_ID);
+  const clientSecret = requiredEnv(process.env.STRAVA_CLIENT_SECRET);
   if (!clientId || !clientSecret) {
     return NextResponse.json(
       {
@@ -27,7 +27,7 @@ export async function POST(req: Request) {
     );
   }
 
-  let payload: { code?: unknown; redirect_uri?: unknown };
+  let payload: { code?: unknown };
   try {
     payload = await req.json();
   } catch {
@@ -45,27 +45,15 @@ export async function POST(req: Request) {
     );
   }
 
-  const redirectURI = payload.redirect_uri;
-
   const stravaResp = await fetch("https://www.strava.com/oauth/token", {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams(
-      typeof redirectURI === "string" && redirectURI.trim() !== ""
-        ? {
-            client_id: clientId,
-            client_secret: clientSecret,
-            code,
-            grant_type: "authorization_code",
-            redirect_uri: redirectURI,
-          }
-        : {
-            client_id: clientId,
-            client_secret: clientSecret,
-            code,
-            grant_type: "authorization_code",
-          },
-    ),
+    body: new URLSearchParams({
+      client_id: clientId,
+      client_secret: clientSecret,
+      code,
+      grant_type: "authorization_code",
+    }),
   });
 
   const body = await stravaResp.text();
@@ -73,4 +61,11 @@ export async function POST(req: Request) {
     status: stravaResp.status,
     headers: { "Content-Type": "application/json" },
   });
+}
+
+function requiredEnv(value: string | undefined): string | undefined {
+  if (!value) return undefined;
+  const trimmed = value.trim();
+  if (!trimmed || trimmed === "\"\"" || trimmed === "''") return undefined;
+  return trimmed.replace(/^['"]|['"]$/g, "");
 }

@@ -11,22 +11,44 @@ public enum RunnerSprite {
     /// Vrai si on a réussi à charger les frames depuis le bundle.
     public static var isAvailable: Bool { !rawFrames.isEmpty }
 
-    /// Inclinaison appliquée à toutes les frames pour donner l'impression de
-    /// course. Positive = penché vers l'avant (sens de la course = droite).
-    private static let leanDegrees: CGFloat = -6
+    /// Inclinaison utilisée pour donner l'impression de course (négatif = vers
+    /// l'avant). Appliquée par SwiftUI côté `RunnerView` pour préserver la
+    /// résolution Retina, et au moment du baking NSImage menu bar (où le
+    /// rendu se fait à 22pt template, donc la perte de qualité est invisible).
+    public static let leanDegrees: CGFloat = -6
 
-    /// Frames brutes (résolution native), pré-inclinées vers l'avant.
-    private static let rawFrames: [NSImage] = (1...8).compactMap { i in
-        guard let url = Bundle.module.url(forResource: "frame-\(i)", withExtension: "png"),
-              let img = NSImage(contentsOf: url) else { return nil }
-        return leaned(img, degrees: leanDegrees)
+    /// Frames brutes — agrégat multi-résolutions (@1x + @2x + @3x) chargé
+    /// comme une seule NSImage. macOS choisit alors la meilleure rep selon
+    /// le scale factor de l'écran, sans rasterisation prématurée.
+    private static let rawFrames: [NSImage] = (1...8).map { i in
+        loadMultiResolution(baseName: "frame-\(i)") ?? NSImage()
     }
 
-    /// Rotation autour du centre de l'image, en gardant l'alpha. La rotation
-    /// est légère (~6°), donc on conserve la même bbox sans couper la silhouette
-    /// (les frames ont du padding transparent autour).
-    private static func leaned(_ image: NSImage, degrees: CGFloat) -> NSImage {
-        let size = image.size
+    private static func loadMultiResolution(baseName: String) -> NSImage? {
+        let img = NSImage()
+        for scale in [1, 2, 3] {
+            let resourceName = scale == 1 ? baseName : "\(baseName)@\(scale)x"
+            guard let url = Bundle.module.url(forResource: resourceName, withExtension: "png"),
+                  let data = try? Data(contentsOf: url),
+                  let rep = NSBitmapImageRep(data: data) else { continue }
+            rep.size = NSSize(
+                width: CGFloat(rep.pixelsWide) / CGFloat(scale),
+                height: CGFloat(rep.pixelsHigh) / CGFloat(scale)
+            )
+            img.addRepresentation(rep)
+        }
+        guard !img.representations.isEmpty else { return nil }
+        if let smallest = img.representations.min(by: { $0.size.width < $1.size.width }) {
+            img.size = smallest.size
+        }
+        return img
+    }
+
+    /// Rotation autour du centre de l'image, en gardant l'alpha. Appliquée
+    /// uniquement à la version baked menu bar (22pt). Côté SwiftUI on passe
+    /// par `.rotationEffect()` pour préserver la qualité Retina.
+    private static func leaned(_ image: NSImage, degrees: CGFloat, pointSize: CGFloat) -> NSImage {
+        let size = NSSize(width: pointSize, height: pointSize)
         let result = NSImage(size: size)
         result.lockFocus()
         NSGraphicsContext.current?.imageInterpolation = .high
@@ -47,16 +69,25 @@ public enum RunnerSprite {
     /// Image template à la taille demandée pour une frame de course donnée.
     /// `frame` est mod-borné dans `[0, 8)`. Retourne `nil` si les assets sont
     /// absents — le caller doit alors retomber sur le rendu parametric.
+    /// La rotation `leanDegrees` est bakée dans la bitmap menu bar.
     public static func image(frame: Int, pointSize: CGFloat) -> NSImage? {
         guard !rawFrames.isEmpty else { return nil }
         let safe = ((frame % rawFrames.count) + rawFrames.count) % rawFrames.count
         let key = Key(frame: safe, pointSize: Int(pointSize.rounded()))
         if let cached = cache[key] { return cached }
-        guard let copy = rawFrames[safe].copy() as? NSImage else { return nil }
-        copy.size = NSSize(width: pointSize, height: pointSize)
-        copy.isTemplate = true
-        cache[key] = copy
-        return copy
+        let leaned = leaned(rawFrames[safe], degrees: leanDegrees, pointSize: pointSize)
+        leaned.isTemplate = true
+        cache[key] = leaned
+        return leaned
+    }
+
+    /// Image brute multi-rep, sans inclinaison ni resize forcé. Utilisée
+    /// par SwiftUI (`RunnerView`) qui préfère gérer rotation et scaling
+    /// vectoriellement — ce qui élimine la pixellisation sur Retina.
+    public static func rawImage(frame: Int) -> NSImage? {
+        guard !rawFrames.isEmpty else { return nil }
+        let safe = ((frame % rawFrames.count) + rawFrames.count) % rawFrames.count
+        return rawFrames[safe]
     }
 
     /// Nombre de frames du cycle de course (8 si les assets sont chargés, 0 sinon).

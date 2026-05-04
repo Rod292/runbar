@@ -13,10 +13,11 @@ public enum RunnerSprite {
     /// Vrai si on a réussi à charger les frames jogging (le minimum requis).
     public static var isAvailable: Bool { !joggingFrames.isEmpty }
 
-    /// Inclinaison appliquée aux poses de course (jogging/sprinting). Les
-    /// autres états sont rendus tels quels — leurs poses sont déjà debout
-    /// (idle/victory) ou pré-affaissées (tired).
+    /// Inclinaison appliquée à jogging. Sprinting reçoit un lean plus marqué
+    /// (`sprintLeanDegrees`) pour lire "court plus fort" malgré le partage
+    /// du même sprite sheet. Idle/tired/victory restent à 0°.
     public static let runningLeanDegrees: CGFloat = -6
+    public static let sprintLeanDegrees: CGFloat = -11
 
     // MARK: - Cycles
 
@@ -44,7 +45,8 @@ public enum RunnerSprite {
 
     private static func leanDegrees(for state: RunnerState) -> CGFloat {
         switch state {
-        case .jogging, .sprinting: return runningLeanDegrees
+        case .jogging:                return runningLeanDegrees
+        case .sprinting:              return sprintLeanDegrees
         case .idle, .tired, .victory: return 0
         }
     }

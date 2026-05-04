@@ -233,8 +233,18 @@ function SprintingHero({ meta }: { meta: StateMeta }) {
         </div>
       </div>
 
-      {/* Center: enlarged runner */}
-      <div className="my-3 flex flex-1 items-center justify-center">
+      {/* Center: enlarged runner with editorial speed lines behind */}
+      <div className="relative my-3 flex flex-1 items-center justify-center">
+        {/* Speed lines — three horizontal dashes trailing left of the figure,
+            tapering opacity. Pure decoration, sprinting cell only. */}
+        <div
+          aria-hidden
+          className="pointer-events-none absolute left-1/2 top-1/2 -translate-x-[110px] -translate-y-1/2 flex flex-col gap-2"
+        >
+          <span className="block h-[2px] w-12 rounded-full bg-vermillon/55" />
+          <span className="block h-[2px] w-16 translate-x-2 rounded-full bg-vermillon/30" />
+          <span className="block h-[2px] w-10 -translate-x-2 rounded-full bg-vermillon/40" />
+        </div>
         <RunnerSprite size={132} state={meta.state} variant="ink" />
       </div>
 

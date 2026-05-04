@@ -276,7 +276,10 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         let validImage = image?.isUsableStatusImage == true ? image : fallbackStatusImage()
         let percent = "\(Int(round(popoverVM.progress * 100)))%"
 
-        let streak = popoverVM.currentStreak
+        // Menu bar utilise le run streak (convention Strava : semaines avec
+        // au moins 1 sortie). Le badge popover utilise le goal-completion
+        // streak (plus strict, aspirationnel).
+        let streak = popoverVM.currentRunStreak
         let streakActive = wantsStreak && streak >= 2
         let streakSuffix = streakActive ? "🔥\(streak)" : ""
 

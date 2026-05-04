@@ -33,8 +33,38 @@ public final class PopoverViewModel: ObservableObject {
         bind()
     }
 
+    /// Streak "goal completion" — semaines consécutives où la cible (km/runs/D+)
+    /// est atteinte. Strict, aspirationnel — affiché dans le badge popover.
     public var currentStreak: Int {
         snapshots?.currentStreak ?? 0
+    }
+
+    /// Streak "activité" — semaines consécutives avec au moins 1 sortie,
+    /// indépendamment du goal. Convention Strava — affiché dans le menu bar.
+    public var currentRunStreak: Int {
+        let cal = Calendar.iso8601Monday
+        let thisMonday = Date.now.startOfWeek(weekday: goal.resetWeekday)
+        var streak = 0
+        var weekStart = thisMonday
+
+        // Si la semaine en cours n'a pas encore eu de sortie, on démarre la
+        // semaine précédente — la streak ne se "casse" pas tant que la
+        // semaine en cours n'est pas terminée.
+        if activitiesThisWeek.isEmpty {
+            weekStart = cal.date(byAdding: .day, value: -7, to: weekStart) ?? weekStart
+        }
+
+        while streak < 250 { // safety cap
+            let weekEnd = cal.date(byAdding: .day, value: 7, to: weekStart) ?? weekStart
+            let hasActivity = store.activities.contains { $0.startDate >= weekStart && $0.startDate < weekEnd }
+            if hasActivity {
+                streak += 1
+                weekStart = cal.date(byAdding: .day, value: -7, to: weekStart) ?? weekStart
+            } else {
+                break
+            }
+        }
+        return streak
     }
 
     public var recentSnapshots: [WeeklySnapshot] {

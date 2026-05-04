@@ -41,7 +41,9 @@ const CYCLES: Record<RunnerStateName, CycleConfig> = {
     sheet: { ink: "/runner/sprite.png", paper: "/runner/sprite-white.png" },
     frameCount: 8,
     fps: 9,
-    lean: -6,
+    // Plus marqué que jogging (-6°) pour différencier visuellement deux états
+    // qui partagent le même sprite sheet.
+    lean: -11,
   },
   tired: {
     sheet: { ink: "/runner/sprite-tired.png", paper: "/runner/sprite-tired-white.png" },
@@ -85,6 +87,15 @@ export function RunnerSprite({
   const tilt = lean ?? cfg.lean;
   const isStatic = frame !== undefined;
 
+  // Sprinting: layered drop-shadows behind (left of) the figure create a
+  // ghost-trail suggesting forward speed. Multiple offsets stack visibly when
+  // the sprite is large enough; on a 28px contact-strip frame, the trail is
+  // imperceptible (which is fine — it shouldn't clutter small renderings).
+  const trail =
+    state === "sprinting"
+      ? "drop-shadow(-3px 0 0 rgba(15,15,14,0.10)) drop-shadow(-7px 0 0 rgba(15,15,14,0.05)) drop-shadow(-12px 0 0 rgba(15,15,14,0.03))"
+      : undefined;
+
   const baseStyle: React.CSSProperties = {
     width: size,
     height: size,
@@ -93,6 +104,7 @@ export function RunnerSprite({
     backgroundRepeat: "no-repeat",
     transform: `rotate(${tilt}deg)`,
     imageRendering: "auto",
+    filter: trail,
   };
 
   if (isStatic) {

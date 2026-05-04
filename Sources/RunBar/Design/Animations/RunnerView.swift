@@ -61,9 +61,13 @@ public struct RunnerView: View {
         // pioche la repr Retina au moment du rendu — pas de pré-scaling pixellisé.
         // Le lean (jogging/sprinting uniquement) est appliqué vectoriellement.
         if let nsImage = RunnerSprite.rawImage(state: state, frame: safe) {
-            let lean: Double = (state == .jogging || state == .sprinting)
-                ? Double(RunnerSprite.runningLeanDegrees)
-                : 0
+            let lean: Double = {
+                switch state {
+                case .jogging:   return Double(RunnerSprite.runningLeanDegrees)
+                case .sprinting: return Double(RunnerSprite.sprintLeanDegrees)
+                default:         return 0
+                }
+            }()
             Image(nsImage: nsImage)
                 .resizable()
                 .renderingMode(.template)

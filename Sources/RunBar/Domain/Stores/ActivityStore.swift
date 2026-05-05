@@ -103,6 +103,40 @@ public final class ActivityStore: ObservableObject {
         loadActivities()
     }
 
+    /// Supprime toutes les activités d'une source donnée (typiquement `.strava`).
+    /// Utilisé à la déconnexion : Strava API Agreement exige de supprimer les
+    /// données de l'utilisateur sur révocation. Les autres sources (seed, future
+    /// HealthKit) sont préservées.
+    public func clear(source: ActivitySource) {
+        let sourceRaw = source.rawValue
+        let context = container.mainContext
+        let descriptor = FetchDescriptor<Activity>(
+            predicate: #Predicate { $0.sourceRaw == sourceRaw }
+        )
+        let existing = (try? context.fetch(descriptor)) ?? []
+        for activity in existing { context.delete(activity) }
+        try? context.save()
+        loadActivities()
+    }
+
+    /// Purge les activités d'une source plus anciennes qu'un cutoff. Strava API
+    /// Agreement: pas plus de 7 jours de Strava Data en cache. L'historique
+    /// long est conservé via `WeeklySnapshot` (agrégats dérivés).
+    public func purge(source: ActivitySource, olderThan cutoff: Date) {
+        let sourceRaw = source.rawValue
+        let context = container.mainContext
+        let descriptor = FetchDescriptor<Activity>(
+            predicate: #Predicate { activity in
+                activity.sourceRaw == sourceRaw && activity.startDate < cutoff
+            }
+        )
+        let existing = (try? context.fetch(descriptor)) ?? []
+        guard !existing.isEmpty else { return }
+        for activity in existing { context.delete(activity) }
+        try? context.save()
+        loadActivities()
+    }
+
     private func loadActivities() {
         let context = container.mainContext
         let descriptor = FetchDescriptor<Activity>(

@@ -180,15 +180,7 @@ public struct PopoverView: View {
                 }
                 Spacer(minLength: 8)
                 if kind == .needsConnection {
-                    Button(action: { viewModel.connectStrava() }) {
-                        Text("settings.sources.connect", bundle: .runBarResources)
-                            .font(.system(size: 10.5, weight: .semibold))
-                            .padding(.horizontal, 8)
-                            .padding(.vertical, 5)
-                            .background(Capsule().fill(RunBarColor.mossDeep))
-                            .foregroundStyle(RunBarColor.ivory)
-                    }
-                    .buttonStyle(.plain)
+                    StravaConnectButton(size: .compact, action: { viewModel.connectStrava() })
                 } else if kind == .error || kind == .noActivities {
                     Button(action: { viewModel.syncNow() }) {
                         Image(systemName: "arrow.clockwise")
@@ -658,7 +650,10 @@ public struct PopoverView: View {
                             timeLabel: viewModel.timeLabel(for: run),
                             dark: isDark,
                             highlight: mode == .victory && idx == runs.count - 1,
-                            accent: RunBarColor.vermillon
+                            accent: RunBarColor.vermillon,
+                            stravaURL: run.source == .strava
+                                ? URL(string: "https://www.strava.com/activities/\(run.id)")
+                                : nil
                         )
                         if idx < runs.count - 1 {
                             Rectangle()
@@ -692,26 +687,8 @@ public struct PopoverView: View {
                 .frame(maxWidth: 260)
 
             if !viewModel.stravaConnected {
-                Button(action: { viewModel.connectStrava() }) {
-                    HStack(spacing: 6) {
-                        AsyncImage(url: URL(string: "https://d3nn82uaxijpm6.cloudfront.net/icon-strava-chrome-192.png")) { img in
-                            img.resizable().aspectRatio(contentMode: .fit)
-                        } placeholder: { Color.clear }
-                        .frame(width: 14, height: 14)
-                        .clipShape(RoundedRectangle(cornerRadius: 3))
-                        Text("popover.connect_strava_cta", bundle: .runBarResources)
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 8)
-                    .background(
-                        RoundedRectangle(cornerRadius: 7)
-                            .fill(RunBarColor.mossDeep)
-                    )
-                    .foregroundStyle(RunBarColor.ivory)
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 6)
+                StravaConnectButton(size: .compact, action: { viewModel.connectStrava() })
+                    .padding(.top, 6)
             }
         }
         .frame(maxWidth: .infinity)
@@ -736,11 +713,15 @@ public struct PopoverView: View {
             Circle()
                 .fill(viewModel.lastError != nil ? RunBarColor.vermillonDeep : RunBarColor.vermillon)
                 .frame(width: 5, height: 5)
-            Text(viewModel.lastSyncLabel.uppercased() + " · STRAVA")
+            Text(viewModel.lastSyncLabel.uppercased())
                 .font(.system(size: 9, weight: .regular, design: .monospaced))
                 .tracking(0.8)
                 .lineLimit(1)
                 .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+            Text("·")
+                .font(.system(size: 9, design: .monospaced))
+                .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+            PoweredByStravaTag()
             Spacer()
             Button(action: { viewModel.syncNow() }) {
                 HStack(spacing: 5) {

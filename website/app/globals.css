@@ -104,3 +104,51 @@ body {
   50%  { transform: translateY(-22%); }
   100% { transform: translateY(0); }
 }
+
+/* Legal pages typography (Privacy, Terms, Contact). Editorial spacing,
+ * serif accents on h2, vermillon underline on links. Kept close to the
+ * landing tone but with comfortable reading width. */
+.prose-legal h2 {
+  margin-top: 2.25rem;
+  margin-bottom: 0.5rem;
+  font-family: var(--font-display, ui-serif, Georgia, serif);
+  font-size: 1.25rem;
+  font-style: italic;
+  font-weight: 500;
+  color: #0F0F0E;
+}
+.prose-legal p {
+  margin-bottom: 1rem;
+}
+.prose-legal ul,
+.prose-legal ol {
+  margin: 0.5rem 0 1.25rem 1.25rem;
+  padding-left: 0;
+  list-style-position: outside;
+}
+.prose-legal ul { list-style-type: disc; }
+.prose-legal ol { list-style-type: decimal; }
+.prose-legal li {
+  margin-bottom: 0.4rem;
+}
+.prose-legal code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-size: 0.875em;
+  background: rgba(15, 15, 14, 0.05);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+}
+.prose-legal a {
+  color: #0F0F0E;
+  text-decoration: underline;
+  text-decoration-color: #E5523D;
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 4px;
+}
+.prose-legal a:hover {
+  color: #B83C28;
+}
+.prose-legal strong {
+  color: #0F0F0E;
+  font-weight: 600;
+}

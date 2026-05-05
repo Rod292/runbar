@@ -14,9 +14,11 @@ public final class SettingsCoordinator: ObservableObject {
     @Published public var stravaUsesUserAccount: Bool = StravaUserCredentialsStore.isUserManaged
 
     public let strava: StravaServiceProtocol
+    private let store: ActivityStore?
 
-    public init(strava: StravaServiceProtocol) {
+    public init(strava: StravaServiceProtocol, store: ActivityStore? = nil) {
         self.strava = strava
+        self.store = store
         Task { await refreshStravaStatus() }
     }
 
@@ -53,6 +55,10 @@ public final class SettingsCoordinator: ObservableObject {
 
     public func disconnectStrava() async {
         await strava.disconnect()
+        // Strava API Agreement: "ensure that all Personal Data pertaining to
+        // that user is deleted from your Developer Applications" upon
+        // revocation. On supprime toutes les activités Strava locales.
+        store?.clear(source: .strava)
         await refreshStravaStatus()
     }
 
@@ -492,14 +498,9 @@ public struct SettingsView: View {
                 .controlSize(.small)
                 .buttonStyle(PressableButtonStyle())
             } else {
-                Button {
+                StravaConnectButton(size: .compact, action: {
                     Task { await coordinator.connectStrava() }
-                } label: {
-                    Text("settings.sources.connect", bundle: .runBarResources)
-                }
-                .controlSize(.small)
-                .buttonStyle(.borderedProminent)
-                .tint(RunBarColor.terra)
+                })
             }
         }
     }

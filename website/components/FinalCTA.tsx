@@ -82,12 +82,18 @@ export function FinalCTA() {
           <div className="flex items-center gap-3">
             <span className="font-display italic text-paper">Run</span>
             <span className="font-medium text-paper">Bar</span>
-            <span>· v0.1.2 · 2026</span>
+            <span>· v0.1.13 · 2026</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <a href="#showcase" className="hover:text-paper">Overview</a>
             <a href="#features" className="hover:text-paper">States</a>
             <a href="#why" className="hover:text-paper">Manifesto</a>
+            <a href="/privacy" className="hover:text-paper">Privacy</a>
+            <a href="/terms" className="hover:text-paper">Terms</a>
+            <a href="/contact" className="hover:text-paper">Contact</a>
+            <span className="text-[10px] uppercase tracking-[0.18em] text-[#FC5200]">
+              Powered by Strava
+            </span>
           </div>
         </div>
       </div>

@@ -36,13 +36,16 @@ public final class SyncManager: ObservableObject {
         isSyncing = true
         defer { isSyncing = false }
 
-        // 2 ans — donne du recul aux streaks et reste très peu coûteux en
-        // requêtes (à per_page=200, 2 ans × 300 runs/an = ~3 requêtes).
+        // Strava API Agreement: "No Strava Data shall remain in your cache
+        // longer than seven days." On fetch + reconcile une fenêtre roulante de
+        // 7 jours uniquement. L'historique long est conservé via
+        // `WeeklySnapshot` (agrégats km/target par semaine), qui sont des
+        // données dérivées calculées par RunBar — pas de la Strava Data brute.
         let syncStart = Calendar.iso8601Monday.date(
             byAdding: .day,
-            value: -730,
-            to: Date.now.startOfWeek()
-        ) ?? Date.now.startOfWeek()
+            value: -7,
+            to: Date.now
+        ) ?? Date.now
         do {
             let isAuth = await strava.isAuthenticated()
             guard isAuth else {
@@ -53,6 +56,9 @@ public final class SyncManager: ObservableObject {
             }
             let dtos = try await strava.fetchActivities(since: syncStart)
             RunBarLog.sync.notice("Fetched \(dtos.count) Strava activit\(dtos.count == 1 ? "y" : "ies") since \(syncStart)")
+            // Purge d'abord les activités > 7 jours (rétention Strava ToS),
+            // puis reconcile la fenêtre fraîchement fetchée.
+            store.purge(source: .strava, olderThan: syncStart)
             store.reconcile(source: .strava, since: syncStart, with: dtos)
             lastSync = .now
             lastError = nil

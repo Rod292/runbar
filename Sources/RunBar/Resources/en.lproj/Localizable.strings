@@ -64,14 +64,14 @@
 "settings.coach.test" = "Test";
 "settings.coach.remove" = "Remove key";
 "settings.coach.get_key" = "Get a key →";
-"settings.coach.privacy_disclaimer" = "When the coach is enabled, Runbar sends weekly aggregates to the chosen provider: distance, run count, elevation, target, progress, days left in the week, the last four weeks of distance totals, your goal streak, and (if set) your race name and days until race. No activity names, no timestamps, no GPS data, no personal identifiers are sent. The API key is stored in your macOS Keychain.";
+"settings.coach.privacy_disclaimer" = "When the coach is enabled, RunBar sends derived weekly aggregates to the chosen provider: distance, run count, elevation, target, progress %, days left in the week, last four weeks of distance totals, goal streak, and (if set) race name and days until race. No activity names, no timestamps, no GPS data, no personal identifiers. The API key is stored in your macOS Keychain.\n\nStrava data note: per the Strava API Agreement, RunBar must not share Strava Data with third parties or use it for AI model training. The values above are derived aggregates (sums and ratios computed locally), not raw Strava records. We recommend a paid Gemini API tier — Google's free tier may use your prompts to improve their models, paid tiers do not.";
 
 /* ── Onboarding — Coach step ────────────────── */
 "onboarding.coach.title" = "Optional · AI coach";
 "onboarding.coach.subtitle" = "Bring your own key. Skip if you don't want it.";
 "onboarding.coach.provider_label" = "Default provider";
 "onboarding.coach.get_key" = "Get a Gemini key →";
-"onboarding.coach.privacy" = "Runbar sends only weekly aggregates (distance, runs, target, progress, race countdown). No activity names, timestamps, or GPS data. Key stored in macOS Keychain.";
+"onboarding.coach.privacy" = "RunBar sends derived weekly aggregates only (distance, runs, target, progress, race countdown). No activity names, timestamps, or GPS data. The Strava API Agreement forbids sharing raw Strava data with third parties — these aggregates are computed locally. Key stored in macOS Keychain. We recommend a paid Gemini tier (free tier may use prompts for model improvement).";
 "onboarding.coach.skip" = "Skip";
 
 /* ── Runner state labels ────────────────────── */

@@ -40,8 +40,8 @@ public enum DistanceUnit: String, CaseIterable, Identifiable, Sendable {
 
     public var symbol: String {
         switch self {
-        case .km: return String(localized: "distance.km", bundle: .module)
-        case .mi: return String(localized: "distance.mi", bundle: .module)
+        case .km: return String(localized: "distance.km", bundle: .runBarResources)
+        case .mi: return String(localized: "distance.mi", bundle: .runBarResources)
         }
     }
 
@@ -88,7 +88,7 @@ public enum DistanceFormatter {
         let value = u.value(fromMeters: meters)
         let formatted = number(value, fractionDigits: fractionDigits)
         let key: String.LocalizationValue = u == .km ? "distance.format.km" : "distance.format.mi"
-        return String(localized: key, bundle: .module).replacingOccurrences(of: "%@", with: formatted)
+        return String(localized: key, bundle: .runBarResources).replacingOccurrences(of: "%@", with: formatted)
     }
 
     /// Comme `string(meters:)` mais à partir d'une distance déjà en km.

@@ -37,7 +37,7 @@ public struct PopoverView: View {
             if let days = goal.daysUntilRace(), days >= 0 {
                 raceCountdownBanner(
                     days: days,
-                    name: goal.raceName ?? String(localized: "settings.goals.race_section", bundle: .module),
+                    name: goal.raceName ?? String(localized: "settings.goals.race_section", bundle: .runBarResources),
                     accent: accent
                 )
             }
@@ -136,9 +136,9 @@ public struct PopoverView: View {
                         .font(.system(size: 13, weight: .semibold))
                         .frame(width: 18)
                     VStack(alignment: .leading, spacing: 1) {
-                        Text("popover.onboarding.resume_title", bundle: .module)
+                        Text("popover.onboarding.resume_title", bundle: .runBarResources)
                             .font(.system(size: 11.5, weight: .semibold))
-                        Text("popover.onboarding.resume_detail", bundle: .module)
+                        Text("popover.onboarding.resume_detail", bundle: .runBarResources)
                             .font(.system(size: 10.5))
                             .lineLimit(1)
                     }
@@ -179,7 +179,7 @@ public struct PopoverView: View {
                 Spacer(minLength: 8)
                 if kind == .needsConnection {
                     Button(action: { viewModel.connectStrava() }) {
-                        Text("settings.sources.connect", bundle: .module)
+                        Text("settings.sources.connect", bundle: .runBarResources)
                             .font(.system(size: 10.5, weight: .semibold))
                             .padding(.horizontal, 8)
                             .padding(.vertical, 5)
@@ -232,7 +232,7 @@ public struct PopoverView: View {
     private func raceCountdownBanner(days: Int, name: String, accent: Color) -> some View {
         let imminent = days <= 30
         let tone = imminent ? RunBarColor.vermillon : RunBarColor.mutedInk(dark: isDark)
-        let template = String(localized: "popover.race_in_n_days", bundle: .module)
+        let template = String(localized: "popover.race_in_n_days", bundle: .runBarResources)
 
         HStack(spacing: 10) {
             Image(systemName: "flag.checkered")
@@ -337,11 +337,11 @@ public struct PopoverView: View {
         let kicker: String
         switch mode {
         case .victory:
-            kicker = String(localized: "week.status.complete", bundle: .module)
+            kicker = String(localized: "week.status.complete", bundle: .runBarResources)
         case .empty:
-            kicker = String(localized: "week.status.start", bundle: .module)
+            kicker = String(localized: "week.status.start", bundle: .runBarResources)
         case .normal:
-            kicker = String(localized: "week.status.in_progress", bundle: .module)
+            kicker = String(localized: "week.status.in_progress", bundle: .runBarResources)
         }
         let runText  = "\(DistanceFormatter.number(value)) \(unit.symbol) RUN"
         let leftText = "\(DistanceFormatter.number(remaining)) \(unit.symbol) TO GO"
@@ -485,7 +485,7 @@ public struct PopoverView: View {
                 .font(.system(size: 22, weight: .regular, design: .serif).italic())
                 .foregroundStyle(RunBarColor.ink(dark: isDark))
 
-            Text(emptySubtitleKey, bundle: .module)
+            Text(emptySubtitleKey, bundle: .runBarResources)
                 .font(.system(size: 11))
                 .multilineTextAlignment(.center)
                 .lineLimit(nil)
@@ -501,7 +501,7 @@ public struct PopoverView: View {
                         } placeholder: { Color.clear }
                         .frame(width: 14, height: 14)
                         .clipShape(RoundedRectangle(cornerRadius: 3))
-                        Text("popover.connect_strava_cta", bundle: .module)
+                        Text("popover.connect_strava_cta", bundle: .runBarResources)
                             .font(.system(size: 12, weight: .semibold))
                     }
                     .padding(.horizontal, 14)
@@ -843,7 +843,7 @@ private struct WeeklyHistoryStrip: View {
 
     private var insight: String {
         guard ordered.count >= 2 else {
-            return String(localized: "popover.history.waiting", bundle: .module)
+            return String(localized: "popover.history.waiting", bundle: .runBarResources)
         }
         let previous = ordered.dropLast().last
         guard let previous else { return "" }
@@ -851,12 +851,12 @@ private struct WeeklyHistoryStrip: View {
             ? unit.valueFromKilometers(ordered.last?.achieved ?? 0) - unit.valueFromKilometers(previous.achieved)
             : (ordered.last?.achieved ?? 0) - previous.achieved
         if abs(delta) < 0.1 {
-            return String(localized: "popover.history.stable", bundle: .module)
+            return String(localized: "popover.history.stable", bundle: .runBarResources)
         }
         let key = delta > 0 ? "popover.history.up" : "popover.history.down"
         let value = abs(delta)
         let symbol = goal.metric == .distance ? unit.symbol : goal.metric.unit
-        return String(format: String(localized: String.LocalizationValue(key), bundle: .module), DistanceFormatter.number(value), symbol)
+        return String(format: String(localized: String.LocalizationValue(key), bundle: .runBarResources), DistanceFormatter.number(value), symbol)
     }
 
     private func shortWeek(_ date: Date) -> String {

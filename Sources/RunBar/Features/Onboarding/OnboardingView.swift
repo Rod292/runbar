@@ -26,7 +26,7 @@ enum RunnerTier: String, CaseIterable {
     }
 
     var label: String {
-        String(localized: String.LocalizationValue(labelKeyRaw), bundle: .module)
+        String(localized: String.LocalizationValue(labelKeyRaw), bundle: .runBarResources)
     }
 
     private var labelKeyRaw: String {
@@ -41,16 +41,16 @@ enum RunnerTier: String, CaseIterable {
     func blurb(unit: DistanceUnit) -> String {
         switch self {
         case .discovery:
-            return String(format: String(localized: "onboarding.tier.discovery.dynamic", bundle: .module),
+            return String(format: String(localized: "onboarding.tier.discovery.dynamic", bundle: .runBarResources),
                           Int(unit.valueFromKilometers(10).rounded()), unit.symbol)
         case .regular:
-            return String(format: String(localized: "onboarding.tier.regular.dynamic", bundle: .module),
+            return String(format: String(localized: "onboarding.tier.regular.dynamic", bundle: .runBarResources),
                           Int(unit.valueFromKilometers(25).rounded()), unit.symbol)
         case .engaged:
-            return String(format: String(localized: "onboarding.tier.engaged.dynamic", bundle: .module),
+            return String(format: String(localized: "onboarding.tier.engaged.dynamic", bundle: .runBarResources),
                           Int(unit.valueFromKilometers(50).rounded()), unit.symbol)
         case .endurance:
-            return String(format: String(localized: "onboarding.tier.endurance.dynamic", bundle: .module),
+            return String(format: String(localized: "onboarding.tier.endurance.dynamic", bundle: .runBarResources),
                           Int(unit.valueFromKilometers(80).rounded()), unit.symbol)
         }
     }
@@ -243,7 +243,7 @@ public struct OnboardingView: View {
                         HStack(spacing: 6) {
                             Image(systemName: "arrow.left")
                                 .font(.system(size: 11, weight: .semibold))
-                            Text("onboarding.back", bundle: .module)
+                            Text("onboarding.back", bundle: .runBarResources)
                                 .underline()
                         }
                     }
@@ -264,7 +264,7 @@ public struct OnboardingView: View {
         let isLast = step == totalSteps - 1
         Button(action: handleNext) {
             HStack(spacing: 8) {
-                Text(primaryButtonKey, bundle: .module)
+                Text(primaryButtonKey, bundle: .runBarResources)
                     .font(.system(size: 13, weight: .semibold))
                 if !isLast {
                     Image(systemName: "arrow.right")
@@ -430,7 +430,7 @@ private struct WelcomeStep: View {
             .onAppear { pulse = true }
 
             // subtitle
-            Text("onboarding.welcome.subtitle", bundle: .module)
+            Text("onboarding.welcome.subtitle", bundle: .runBarResources)
                 .font(.system(size: 14))
                 .foregroundStyle(RunBarColor.mutedInk(dark: false))
                 .multilineTextAlignment(.center)
@@ -510,7 +510,7 @@ private struct UnitStep: View {
                     .font(.system(size: 56, weight: .medium, design: .monospaced))
                     .tracking(-2)
                     .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
-                Text(caption, bundle: .module)
+                Text(caption, bundle: .runBarResources)
                     .font(.system(size: 11, design: .monospaced))
                     .tracking(1.6)
                     .textCase(.uppercase)
@@ -587,7 +587,7 @@ private struct MetricStep: View {
                     .font(.system(size: 26, weight: .light))
                     .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(title, bundle: .module)
+                    Text(title, bundle: .runBarResources)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(isOn ? RunBarColor.cream : RunBarColor.slate)
                     Text(example)
@@ -772,7 +772,7 @@ private struct GoalStep: View {
                         .foregroundStyle(RunBarColor.mutedInk(dark: false))
                     Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(width: 16, height: 1)
                 }
-                Text(tier.labelKey, bundle: .module)
+                Text(tier.labelKey, bundle: .runBarResources)
                     .font(.system(size: 16, weight: .medium, design: .serif))
                     .italic()
                     .foregroundStyle(RunBarColor.slate)
@@ -849,14 +849,14 @@ private struct ConnectStep: View {
             HStack(spacing: 10) {
                 Image(systemName: "checkmark.circle.fill")
                     .foregroundStyle(RunBarColor.moss)
-                Text("settings.sources.connected", bundle: .module)
+                Text("settings.sources.connected", bundle: .runBarResources)
                     .font(.system(size: 13))
                     .foregroundStyle(RunBarColor.slate)
                 Spacer()
                 Text(coordinator.stravaUsesUserAccount
                      ? LocalizedStringKey("onboarding.connect.byo.success_own")
                      : LocalizedStringKey("onboarding.connect.byo.success_shared"),
-                     bundle: .module)
+                     bundle: .runBarResources)
                     .font(.system(size: 9, design: .monospaced))
                     .tracking(1.6)
                     .textCase(.uppercase)
@@ -873,7 +873,7 @@ private struct ConnectStep: View {
         VStack(alignment: .leading, spacing: 12) {
             stravaHeaderRow(connected: false)
 
-            Text("onboarding.connect.byo.intro", bundle: .module)
+            Text("onboarding.connect.byo.intro", bundle: .runBarResources)
                 .font(.system(size: 12))
                 .foregroundStyle(RunBarColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
@@ -891,7 +891,7 @@ private struct ConnectStep: View {
                 HStack(spacing: 6) {
                     Image(systemName: "arrow.up.forward.square")
                         .font(.system(size: 11))
-                    Text("onboarding.connect.byo.open_strava", bundle: .module)
+                    Text("onboarding.connect.byo.open_strava", bundle: .runBarResources)
                         .font(.system(size: 12, weight: .medium))
                 }
                 .padding(.horizontal, 12)
@@ -904,7 +904,7 @@ private struct ConnectStep: View {
             Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(height: 1).padding(.vertical, 2)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text("onboarding.connect.byo.client_id", bundle: .module)
+                Text("onboarding.connect.byo.client_id", bundle: .runBarResources)
                     .font(.system(size: 10, design: .monospaced))
                     .tracking(1.4)
                     .textCase(.uppercase)
@@ -913,7 +913,7 @@ private struct ConnectStep: View {
                     .textFieldStyle(.roundedBorder)
                     .font(.system(size: 13, design: .monospaced))
 
-                Text("onboarding.connect.byo.client_secret", bundle: .module)
+                Text("onboarding.connect.byo.client_secret", bundle: .runBarResources)
                     .font(.system(size: 10, design: .monospaced))
                     .tracking(1.4)
                     .textCase(.uppercase)
@@ -931,7 +931,7 @@ private struct ConnectStep: View {
                         if saving {
                             ProgressView().controlSize(.small)
                         } else {
-                            Text("onboarding.connect.byo.save_and_connect", bundle: .module)
+                            Text("onboarding.connect.byo.save_and_connect", bundle: .runBarResources)
                                 .font(.system(size: 13, weight: .semibold))
                             Image(systemName: "arrow.up.right")
                                 .font(.system(size: 11, weight: .semibold))
@@ -953,7 +953,7 @@ private struct ConnectStep: View {
                     .foregroundStyle(RunBarColor.terra)
             }
 
-            Text("onboarding.connect.byo.later_hint", bundle: .module)
+            Text("onboarding.connect.byo.later_hint", bundle: .runBarResources)
                 .font(.system(size: 11))
                 .foregroundStyle(RunBarColor.mutedInk(dark: false))
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -994,7 +994,7 @@ private struct ConnectStep: View {
                 .font(.system(size: 10, weight: .medium, design: .monospaced))
                 .foregroundStyle(RunBarColor.terra)
                 .frame(width: 14, alignment: .leading)
-            Text(textKey, bundle: .module)
+            Text(textKey, bundle: .runBarResources)
                 .font(.system(size: 12))
                 .foregroundStyle(RunBarColor.slate)
                 .fixedSize(horizontal: false, vertical: true)
@@ -1059,7 +1059,7 @@ private struct RaceStep: View {
                     Image(systemName: "flag.checkered")
                         .font(.system(size: 14, weight: .medium))
                         .foregroundStyle(enabled ? RunBarColor.terra : RunBarColor.mutedInk(dark: false))
-                    Text("onboarding.race.enable", bundle: .module)
+                    Text("onboarding.race.enable", bundle: .runBarResources)
                         .font(.system(size: 13, weight: .medium))
                         .foregroundStyle(RunBarColor.slate)
                     Spacer()
@@ -1187,7 +1187,7 @@ private struct DoneStep: View {
                     .textCase(.uppercase)
                     .foregroundStyle(RunBarColor.slate)
 
-                Text("onboarding.done.subtitle", bundle: .module)
+                Text("onboarding.done.subtitle", bundle: .runBarResources)
                     .font(.system(size: 13))
                     .foregroundStyle(RunBarColor.mutedInk(dark: false))
                     .multilineTextAlignment(.center)
@@ -1266,11 +1266,11 @@ private struct DoneStep: View {
         case .distance:
             let value = DistanceFormatter.number(unit.valueFromKilometers(targetKm), fractionDigits: 0)
             let key = unit == .km ? "onboarding.goal.summary_km" : "onboarding.goal.summary_mi"
-            return String(format: String(localized: String.LocalizationValue(key), bundle: .module), value)
+            return String(format: String(localized: String.LocalizationValue(key), bundle: .runBarResources), value)
         case .count:
-            return String(format: String(localized: "onboarding.goal.summary_count", bundle: .module), Int(targetCount))
+            return String(format: String(localized: "onboarding.goal.summary_count", bundle: .runBarResources), Int(targetCount))
         case .elevation:
-            return String(format: String(localized: "onboarding.goal.summary_elevation", bundle: .module), Int(targetElev))
+            return String(format: String(localized: "onboarding.goal.summary_elevation", bundle: .runBarResources), Int(targetElev))
         }
     }
 }
@@ -1294,7 +1294,7 @@ private func stepHeader(
                 .textCase(.uppercase)
                 .foregroundStyle(RunBarColor.mutedInk(dark: false))
             Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(width: 18, height: 1)
-            Text(kicker, bundle: .module)
+            Text(kicker, bundle: .runBarResources)
                 .font(.system(size: 10, design: .monospaced))
                 .tracking(2.2)
                 .textCase(.uppercase)
@@ -1308,7 +1308,7 @@ private func stepHeader(
                 .italic()
                 .tracking(-1.2)
                 .foregroundStyle(RunBarColor.slate)
-            Text(subtitleKey, bundle: .module)
+            Text(subtitleKey, bundle: .runBarResources)
                 .font(.system(size: 13))
                 .foregroundStyle(RunBarColor.mutedInk(dark: false))
                 .multilineTextAlignment(.center)

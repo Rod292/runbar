@@ -57,7 +57,7 @@ public enum RunnerSprite {
         let img = NSImage()
         for scale in [1, 2, 3] {
             let resourceName = scale == 1 ? baseName : "\(baseName)@\(scale)x"
-            guard let url = Bundle.module.url(forResource: resourceName, withExtension: "png"),
+            guard let url = Bundle.runBarResources.url(forResource: resourceName, withExtension: "png"),
                   let data = try? Data(contentsOf: url),
                   let rep = NSBitmapImageRep(data: data) else { continue }
             rep.size = NSSize(

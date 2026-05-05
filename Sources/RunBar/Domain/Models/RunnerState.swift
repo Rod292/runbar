@@ -46,6 +46,6 @@ public enum RunnerState: String, CaseIterable, Codable, Sendable {
         case .tired:     key = "runner.state.tired"
         case .victory:   key = "runner.state.victory"
         }
-        return String(localized: key, bundle: .module)
+        return String(localized: key, bundle: .runBarResources)
     }
 }

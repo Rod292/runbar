@@ -151,7 +151,7 @@ public struct SettingsView: View {
         NavigationSplitView {
             List(Tab.allCases, selection: $selection) { tab in
                 Label {
-                    Text(tab.labelKey, bundle: .module)
+                    Text(tab.labelKey, bundle: .runBarResources)
                 } icon: {
                     Image(systemName: tab.systemImage)
                 }
@@ -175,7 +175,7 @@ public struct SettingsView: View {
             }
         }
         .frame(width: 660, height: 480)
-        .navigationTitle(Text(selection.labelKey, bundle: .module))
+        .navigationTitle(Text(selection.labelKey, bundle: .runBarResources))
         .sheet(isPresented: $byoSheetPresented) {
             StravaByoSheet(coordinator: coordinator) {
                 byoSheetPresented = false
@@ -193,7 +193,7 @@ public struct SettingsView: View {
                     .tracking(2)
                     .foregroundStyle(.tertiary)
                 Rectangle().fill(.quaternary).frame(width: 22, height: 1)
-                Text(tab.labelKey, bundle: .module)
+                Text(tab.labelKey, bundle: .runBarResources)
                     .font(.system(size: 10.5, design: .monospaced))
                     .tracking(2.5)
                     .textCase(.uppercase)
@@ -232,7 +232,7 @@ public struct SettingsView: View {
                 if label != nil || figure != nil {
                     HStack {
                         if let label {
-                            Text(label, bundle: .module)
+                            Text(label, bundle: .runBarResources)
                                 .font(.system(size: 10, design: .monospaced))
                                 .tracking(1.6)
                                 .textCase(.uppercase)
@@ -273,8 +273,8 @@ public struct SettingsView: View {
 
             PaneSection("settings.general.unit", figure: "fig. a") {
                 Picker(selection: $unitRaw) {
-                    Text("settings.general.unit.km", bundle: .module).tag(DistanceUnit.km.rawValue)
-                    Text("settings.general.unit.mi", bundle: .module).tag(DistanceUnit.mi.rawValue)
+                    Text("settings.general.unit.km", bundle: .runBarResources).tag(DistanceUnit.km.rawValue)
+                    Text("settings.general.unit.mi", bundle: .runBarResources).tag(DistanceUnit.mi.rawValue)
                 } label: { EmptyView() }
                 .pickerStyle(.segmented)
                 .labelsHidden()
@@ -282,14 +282,14 @@ public struct SettingsView: View {
 
             PaneSection("settings.general.behavior", figure: "fig. b") {
                 row {
-                    Text("settings.general.autosync", bundle: .module)
+                    Text("settings.general.autosync", bundle: .runBarResources)
                         .font(.system(size: 13))
                     Spacer()
                     Toggle("", isOn: $autoSync).labelsHidden()
                 }
                 hairline
                 row {
-                    Text("settings.general.notify_victory", bundle: .module)
+                    Text("settings.general.notify_victory", bundle: .runBarResources)
                         .font(.system(size: 13))
                     Spacer()
                     Toggle("", isOn: $notifyVictory).labelsHidden()
@@ -308,14 +308,14 @@ public struct SettingsView: View {
 
             PaneSection("settings.display.icon", figure: "fig. a") {
                 row {
-                    Text("settings.display.show_glyph", bundle: .module)
+                    Text("settings.display.show_glyph", bundle: .runBarResources)
                         .font(.system(size: 13))
                     Spacer()
                     Toggle("", isOn: $showGlyph).labelsHidden()
                 }
                 hairline
                 row {
-                    Text("settings.display.show_percent", bundle: .module)
+                    Text("settings.display.show_percent", bundle: .runBarResources)
                         .font(.system(size: 13))
                     Spacer()
                     Toggle("", isOn: $showPercent).labelsHidden()
@@ -370,9 +370,9 @@ public struct SettingsView: View {
     // MARK: - Sources pane
 
     private var sourcesPane: some View {
-        let comingSoon = String(localized: "settings.sources.coming_soon", bundle: .module)
-        let alwaysOn   = String(localized: "settings.sources.always_active", bundle: .module)
-        let countTemplate = String(localized: "settings.sources.local_data.subtitle", bundle: .module)
+        let comingSoon = String(localized: "settings.sources.coming_soon", bundle: .runBarResources)
+        let alwaysOn   = String(localized: "settings.sources.always_active", bundle: .runBarResources)
+        let countTemplate = String(localized: "settings.sources.local_data.subtitle", bundle: .runBarResources)
 
         return VStack(alignment: .leading, spacing: 22) {
             paneHeader(.sources, italicWord: "Where the data comes from.")
@@ -399,23 +399,23 @@ public struct SettingsView: View {
             PaneSection("settings.sources.diagnostic.title", figure: "fig. b") {
                 HStack(spacing: 0) {
                     diagnosticMetric(
-                        title: String(localized: "settings.sources.diagnostic.strava", bundle: .module),
+                        title: String(localized: "settings.sources.diagnostic.strava", bundle: .runBarResources),
                         value: coordinator.stravaConnected
-                            ? String(localized: "settings.sources.connected", bundle: .module)
-                            : String(localized: "settings.sources.disconnected", bundle: .module),
+                            ? String(localized: "settings.sources.connected", bundle: .runBarResources)
+                            : String(localized: "settings.sources.disconnected", bundle: .runBarResources),
                         color: coordinator.stravaConnected ? RunBarColor.moss : RunBarColor.terra
                     )
                     verticalHairline
                     diagnosticMetric(
-                        title: String(localized: "settings.general.autosync", bundle: .module),
+                        title: String(localized: "settings.general.autosync", bundle: .runBarResources),
                         value: autoSync
-                            ? String(localized: "common.on", bundle: .module)
-                            : String(localized: "common.off", bundle: .module),
+                            ? String(localized: "common.on", bundle: .runBarResources)
+                            : String(localized: "common.off", bundle: .runBarResources),
                         color: autoSync ? RunBarColor.moss : Color.secondary
                     )
                     verticalHairline
                     diagnosticMetric(
-                        title: String(localized: "settings.sources.diagnostic.local", bundle: .module),
+                        title: String(localized: "settings.sources.diagnostic.local", bundle: .runBarResources),
                         value: "\(store.activities.count)",
                         color: .primary
                     )
@@ -431,7 +431,7 @@ public struct SettingsView: View {
                     Button(role: .destructive) {
                         store.clear()
                     } label: {
-                        Text("settings.sources.local_data.clear", bundle: .module)
+                        Text("settings.sources.local_data.clear", bundle: .runBarResources)
                     }
                     .controlSize(.small)
                     .buttonStyle(PressableButtonStyle())
@@ -461,7 +461,7 @@ public struct SettingsView: View {
                 Text(coordinator.stravaConnected
                      ? LocalizedStringKey("settings.sources.connected")
                      : LocalizedStringKey("settings.sources.disconnected"),
-                     bundle: .module)
+                     bundle: .runBarResources)
                     .font(.system(size: 10.5, design: .monospaced))
                     .tracking(1.4)
                     .textCase(.uppercase)
@@ -474,7 +474,7 @@ public struct SettingsView: View {
                 Button {
                     Task { await coordinator.disconnectStrava() }
                 } label: {
-                    Text("settings.sources.disconnect", bundle: .module)
+                    Text("settings.sources.disconnect", bundle: .runBarResources)
                 }
                 .controlSize(.small)
                 .buttonStyle(PressableButtonStyle())
@@ -482,7 +482,7 @@ public struct SettingsView: View {
                 Button {
                     Task { await coordinator.connectStrava() }
                 } label: {
-                    Text("settings.sources.connect", bundle: .module)
+                    Text("settings.sources.connect", bundle: .runBarResources)
                 }
                 .controlSize(.small)
                 .buttonStyle(.borderedProminent)
@@ -497,7 +497,7 @@ public struct SettingsView: View {
     private var byoStravaSection: some View {
         PaneSection("settings.sources.byo.label", figure: "advanced") {
             VStack(alignment: .leading, spacing: 10) {
-                Text("settings.sources.byo.blurb", bundle: .module)
+                Text("settings.sources.byo.blurb", bundle: .runBarResources)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -509,7 +509,7 @@ public struct SettingsView: View {
                     Text(coordinator.stravaUsesUserAccount
                          ? LocalizedStringKey("settings.sources.byo.status.active")
                          : LocalizedStringKey("settings.sources.byo.status.inactive"),
-                         bundle: .module)
+                         bundle: .runBarResources)
                         .font(.system(size: 10.5, design: .monospaced))
                         .tracking(1.4)
                         .textCase(.uppercase)
@@ -521,7 +521,7 @@ public struct SettingsView: View {
                         Text(coordinator.stravaUsesUserAccount
                              ? LocalizedStringKey("settings.sources.byo.manage")
                              : LocalizedStringKey("settings.sources.byo.configure"),
-                             bundle: .module)
+                             bundle: .runBarResources)
                     }
                     .controlSize(.small)
                     .buttonStyle(PressableButtonStyle())
@@ -607,7 +607,7 @@ public struct SettingsView: View {
             PaneSection("settings.goals.section", figure: "fig. b") {
                 VStack(alignment: .leading, spacing: 10) {
                     HStack(alignment: .firstTextBaseline) {
-                        Text("settings.goals.weekly_target", bundle: .module)
+                        Text("settings.goals.weekly_target", bundle: .runBarResources)
                             .font(.system(size: 13))
                         Spacer()
                         Text("\(Int(target.rounded())) \(targetUnit(metric: metric))")
@@ -618,7 +618,7 @@ public struct SettingsView: View {
                 }
                 hairline
                 row {
-                    Text("settings.goals.reset_day", bundle: .module)
+                    Text("settings.goals.reset_day", bundle: .runBarResources)
                         .font(.system(size: 13))
                     Spacer()
                     Picker(selection: Binding(
@@ -633,7 +633,7 @@ public struct SettingsView: View {
                 }
                 hairline
                 row {
-                    Text("settings.display.trail_mode", bundle: .module)
+                    Text("settings.display.trail_mode", bundle: .runBarResources)
                         .font(.system(size: 13))
                     Spacer()
                     Toggle("", isOn: $trailMode).labelsHidden()
@@ -642,7 +642,7 @@ public struct SettingsView: View {
 
             PaneSection("settings.goals.race_section", figure: "fig. c") {
                 row {
-                    Text("settings.goals.race_name", bundle: .module)
+                    Text("settings.goals.race_name", bundle: .runBarResources)
                         .font(.system(size: 13))
                     Spacer()
                     TextField("", text: Binding(
@@ -654,7 +654,7 @@ public struct SettingsView: View {
                 }
                 hairline
                 row {
-                    Text("settings.goals.race_date", bundle: .module)
+                    Text("settings.goals.race_date", bundle: .runBarResources)
                         .font(.system(size: 13))
                     Spacer()
                     Toggle("", isOn: Binding(
@@ -670,7 +670,7 @@ public struct SettingsView: View {
                 if raceEnabled {
                     hairline
                     row {
-                        Text("settings.goals.race_date", bundle: .module)
+                        Text("settings.goals.race_date", bundle: .runBarResources)
                             .font(.system(size: 13))
                             .foregroundStyle(.secondary)
                         Spacer()
@@ -775,11 +775,11 @@ public struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("RunBar")
                         .font(.system(size: 22, weight: .medium, design: .serif))
-                    Text(String(format: String(localized: "settings.about.version", bundle: .module), "0.1.0"))
+                    Text(String(format: String(localized: "settings.about.version", bundle: .runBarResources), "0.1.0"))
                         .font(.system(size: 11, design: .monospaced))
                         .tracking(1.2)
                         .foregroundStyle(.tertiary)
-                    Text("settings.about.tagline", bundle: .module)
+                    Text("settings.about.tagline", bundle: .runBarResources)
                         .font(.system(size: 13))
                         .foregroundStyle(.secondary)
                         .padding(.top, 2)
@@ -805,7 +805,7 @@ public struct SettingsView: View {
                         } label: {
                             HStack(spacing: 7) {
                                 Image(systemName: "arrow.down.circle")
-                                Text("settings.about.check_updates", bundle: .module)
+                                Text("settings.about.check_updates", bundle: .runBarResources)
                             }
                         }
                         .controlSize(.small)
@@ -929,13 +929,13 @@ struct StravaByoSheet: View {
                     .tracking(2)
                     .foregroundStyle(.tertiary)
                 Rectangle().fill(.quaternary).frame(width: 22, height: 1)
-                Text("settings.sources.byo.sheet.eyebrow", bundle: .module)
+                Text("settings.sources.byo.sheet.eyebrow", bundle: .runBarResources)
                     .font(.system(size: 10.5, design: .monospaced))
                     .tracking(2.5)
                     .textCase(.uppercase)
                     .foregroundStyle(.secondary)
             }
-            Text("settings.sources.byo.sheet.title", bundle: .module)
+            Text("settings.sources.byo.sheet.title", bundle: .runBarResources)
                 .font(.system(size: 26, weight: .medium, design: .serif))
                 .italic()
             Rectangle()
@@ -950,7 +950,7 @@ struct StravaByoSheet: View {
 
     private var instructions: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("settings.sources.byo.sheet.intro", bundle: .module)
+            Text("settings.sources.byo.sheet.intro", bundle: .runBarResources)
                 .font(.system(size: 13))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -968,7 +968,7 @@ struct StravaByoSheet: View {
             } label: {
                 HStack(spacing: 7) {
                     Image(systemName: "arrow.up.forward.square")
-                    Text("settings.sources.byo.sheet.open_strava", bundle: .module)
+                    Text("settings.sources.byo.sheet.open_strava", bundle: .runBarResources)
                 }
             }
             .controlSize(.small)
@@ -982,7 +982,7 @@ struct StravaByoSheet: View {
                 .font(.system(size: 11, weight: .medium, design: .monospaced))
                 .foregroundStyle(RunBarColor.terra)
                 .frame(width: 18, alignment: .leading)
-            Text(textKey, bundle: .module)
+            Text(textKey, bundle: .runBarResources)
                 .font(.system(size: 12.5))
                 .foregroundStyle(.primary.opacity(0.85))
                 .fixedSize(horizontal: false, vertical: true)
@@ -991,14 +991,14 @@ struct StravaByoSheet: View {
 
     private var credentialsForm: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("settings.sources.byo.sheet.form_title", bundle: .module)
+            Text("settings.sources.byo.sheet.form_title", bundle: .runBarResources)
                 .font(.system(size: 10, design: .monospaced))
                 .tracking(1.6)
                 .textCase(.uppercase)
                 .foregroundStyle(.secondary)
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("settings.sources.byo.sheet.client_id", bundle: .module)
+                Text("settings.sources.byo.sheet.client_id", bundle: .runBarResources)
                     .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
                 TextField("", text: $clientID, prompt: Text("123456"))
@@ -1007,7 +1007,7 @@ struct StravaByoSheet: View {
             }
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("settings.sources.byo.sheet.client_secret", bundle: .module)
+                Text("settings.sources.byo.sheet.client_secret", bundle: .runBarResources)
                     .font(.system(size: 11.5))
                     .foregroundStyle(.secondary)
                 SecureField("", text: $clientSecret, prompt: Text("a1b2c3…"))
@@ -1038,7 +1038,7 @@ struct StravaByoSheet: View {
                         saving = false
                     }
                 } label: {
-                    Text("settings.sources.byo.sheet.reset", bundle: .module)
+                    Text("settings.sources.byo.sheet.reset", bundle: .runBarResources)
                 }
                 .controlSize(.regular)
                 .buttonStyle(PressableButtonStyle())
@@ -1047,7 +1047,7 @@ struct StravaByoSheet: View {
             Button {
                 dismiss()
             } label: {
-                Text("settings.sources.byo.sheet.cancel", bundle: .module)
+                Text("settings.sources.byo.sheet.cancel", bundle: .runBarResources)
             }
             .controlSize(.regular)
             .buttonStyle(PressableButtonStyle())
@@ -1067,7 +1067,7 @@ struct StravaByoSheet: View {
                 if saving {
                     ProgressView().controlSize(.small)
                 } else {
-                    Text("settings.sources.byo.sheet.save", bundle: .module)
+                    Text("settings.sources.byo.sheet.save", bundle: .runBarResources)
                 }
             }
             .controlSize(.regular)

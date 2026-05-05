@@ -206,26 +206,26 @@ public final class PopoverViewModel: ObservableObject {
     public var lastSyncLabel: String {
         // Pas connecté → on n'invente pas un "Synced just now" mensonger.
         if !stravaConnected {
-            return String(localized: "popover.status.connect_title", bundle: .module)
+            return String(localized: "popover.status.connect_title", bundle: .runBarResources)
         }
         if let lastError, !lastError.isEmpty {
-            return String(localized: "popover.last_sync_failed", bundle: .module)
+            return String(localized: "popover.last_sync_failed", bundle: .runBarResources)
         }
         guard let last = lastSync else {
             // Connecté mais jamais syncé encore.
-            return String(localized: "popover.status.waiting_title", bundle: .module)
+            return String(localized: "popover.status.waiting_title", bundle: .runBarResources)
         }
         let secs = Date.now.timeIntervalSince(last)
         if secs < 60 {
-            return String(localized: "popover.last_sync_now", bundle: .module)
+            return String(localized: "popover.last_sync_now", bundle: .runBarResources)
         }
         let minutes = Int(secs / 60)
         if minutes < 60 {
-            let template = String(localized: "popover.last_sync_min", bundle: .module)
+            let template = String(localized: "popover.last_sync_min", bundle: .runBarResources)
             return String(format: template, minutes)
         }
         let hours = minutes / 60
-        let template = String(localized: "popover.last_sync_hour", bundle: .module)
+        let template = String(localized: "popover.last_sync_hour", bundle: .runBarResources)
         return String(format: template, hours)
     }
 
@@ -241,32 +241,32 @@ public final class PopoverViewModel: ObservableObject {
     public var statusTitle: String {
         switch statusKind {
         case .needsConnection:
-            return String(localized: "popover.status.connect_title", bundle: .module)
+            return String(localized: "popover.status.connect_title", bundle: .runBarResources)
         case .error:
-            return String(localized: "popover.status.error_title", bundle: .module)
+            return String(localized: "popover.status.error_title", bundle: .runBarResources)
         case .syncing:
-            return String(localized: "popover.status.syncing_title", bundle: .module)
+            return String(localized: "popover.status.syncing_title", bundle: .runBarResources)
         case .waitingForSync:
-            return String(localized: "popover.status.waiting_title", bundle: .module)
+            return String(localized: "popover.status.waiting_title", bundle: .runBarResources)
         case .noActivities:
-            return String(localized: "popover.status.no_activities_title", bundle: .module)
+            return String(localized: "popover.status.no_activities_title", bundle: .runBarResources)
         case .ready:
-            return String(localized: "popover.status.ready_title", bundle: .module)
+            return String(localized: "popover.status.ready_title", bundle: .runBarResources)
         }
     }
 
     public var statusDetail: String {
         switch statusKind {
         case .needsConnection:
-            return String(localized: "popover.status.connect_detail", bundle: .module)
+            return String(localized: "popover.status.connect_detail", bundle: .runBarResources)
         case .error:
-            return lastError ?? String(localized: "popover.status.error_detail", bundle: .module)
+            return lastError ?? String(localized: "popover.status.error_detail", bundle: .runBarResources)
         case .syncing:
-            return String(localized: "popover.status.syncing_detail", bundle: .module)
+            return String(localized: "popover.status.syncing_detail", bundle: .runBarResources)
         case .waitingForSync:
-            return String(localized: "popover.status.waiting_detail", bundle: .module)
+            return String(localized: "popover.status.waiting_detail", bundle: .runBarResources)
         case .noActivities:
-            return String(localized: "popover.status.no_activities_detail", bundle: .module)
+            return String(localized: "popover.status.no_activities_detail", bundle: .runBarResources)
         case .ready:
             return lastSyncLabel
         }

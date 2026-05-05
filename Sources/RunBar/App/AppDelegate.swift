@@ -192,14 +192,14 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func showContextMenu() {
         let menu = NSMenu()
-        menu.addItem(NSMenuItem(title: String(localized: "menu.sync_now", bundle: .module),
+        menu.addItem(NSMenuItem(title: String(localized: "menu.sync_now", bundle: .runBarResources),
                                 action: #selector(menuSync), keyEquivalent: "r"))
-        menu.addItem(NSMenuItem(title: String(localized: "menu.settings", bundle: .module),
+        menu.addItem(NSMenuItem(title: String(localized: "menu.settings", bundle: .runBarResources),
                                 action: #selector(menuSettings), keyEquivalent: ","))
-        menu.addItem(NSMenuItem(title: String(localized: "menu.check_updates", bundle: .module),
+        menu.addItem(NSMenuItem(title: String(localized: "menu.check_updates", bundle: .runBarResources),
                                 action: #selector(menuCheckUpdates), keyEquivalent: ""))
         menu.addItem(.separator())
-        menu.addItem(NSMenuItem(title: String(localized: "menu.quit", bundle: .module),
+        menu.addItem(NSMenuItem(title: String(localized: "menu.quit", bundle: .runBarResources),
                                 action: #selector(menuQuit), keyEquivalent: "q"))
         for item in menu.items { item.target = self }
         statusItem?.menu = menu

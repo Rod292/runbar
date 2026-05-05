@@ -30,31 +30,16 @@ chmod +x "$MACOS/RunBar"
 # install_name_tool casserait le code signing.
 install_name_tool -add_rpath "@executable_path/../Frameworks" "$MACOS/RunBar" 2>/dev/null || true
 
-# 2. Resource bundle SwiftPM (frames PNG). Doit rester à côté du binaire dans
-# MacOS/ pour que `Bundle.module` le trouve. On lui injecte un Info.plist
-# minimal sinon codesign --deep le rejette ("bundle format unrecognized").
+# 2. Resource bundle SwiftPM (frames PNG + Localizable.strings).
+#
+# RunBar uses `Bundle.runBarResources`, not SwiftPM's generated `Bundle.module`
+# accessor. The generated accessor points to the app bundle root, but Apple
+# code signing rejects extra root-level app contents, so the resources belong
+# in the standard `Contents/Resources` directory.
 RESOURCE_BUNDLE=".build/release/RunBar_RunBar.bundle"
 if [ -d "$RESOURCE_BUNDLE" ]; then
-    DEST_BUNDLE="$MACOS/RunBar_RunBar.bundle"
+    DEST_BUNDLE="$RES/RunBar_RunBar.bundle"
     cp -R "$RESOURCE_BUNDLE" "$DEST_BUNDLE"
-    cat > "$DEST_BUNDLE/Info.plist" <<'BPLIST'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleIdentifier</key>
-    <string>com.rodrigue.runbar.resources</string>
-    <key>CFBundleName</key>
-    <string>RunBar_RunBar</string>
-    <key>CFBundlePackageType</key>
-    <string>BNDL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.1.10</string>
-    <key>CFBundleVersion</key>
-    <string>11</string>
-</dict>
-</plist>
-BPLIST
 fi
 
 # 3. AppIcon.icns
@@ -84,9 +69,9 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.healthcare-fitness</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.10</string>
+    <string>0.1.11</string>
     <key>CFBundleVersion</key>
-    <string>11</string>
+    <string>12</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>
@@ -143,12 +128,7 @@ codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE
 # 6c. Le framework lui-même
 codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$SPARKLE_FW" 2>&1 | tail -1
 
-# 6d. Resource bundle SwiftPM (s'il existe)
-if [ -d "$MACOS/RunBar_RunBar.bundle" ]; then
-    codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$MACOS/RunBar_RunBar.bundle" 2>&1 | tail -1
-fi
-
-# 6e. Le binaire principal et l'app — en dernier
+# 6d. Le binaire principal et l'app — en dernier
 codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$MACOS/RunBar" 2>&1 | tail -1
 codesign --force --options runtime --timestamp --sign "$SIGN_IDENTITY" "$APP_DIR" 2>&1 | tail -1
 

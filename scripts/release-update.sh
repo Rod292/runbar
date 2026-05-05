@@ -79,8 +79,8 @@ cat > "$APPCAST" <<APPCAST_EOF
     <channel>
         <title>RunBar</title>
         <link>$PUBLIC_BASE/appcast.xml</link>
-        <description>Mises à jour RunBar</description>
-        <language>fr</language>
+        <description>RunBar updates</description>
+        <language>en</language>
         <item>
             <title>Version $SHORT_VERSION</title>
             <pubDate>$PUBDATE</pubDate>

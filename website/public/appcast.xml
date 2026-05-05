@@ -3,19 +3,21 @@
     <channel>
         <title>RunBar</title>
         <link>https://runbar.vercel.app/appcast.xml</link>
-        <description>Mises à jour RunBar</description>
-        <language>fr</language>
+        <description>RunBar updates</description>
+        <language>en</language>
         <item>
             <title>Version 0.1.12</title>
-            <pubDate>Tue, 05 May 2026 12:07:03 +0000</pubDate>
+            <pubDate>Tue, 05 May 2026 12:56:03 +0000</pubDate>
             <sparkle:version>13</sparkle:version>
             <sparkle:shortVersionString>0.1.12</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[Cette release ajoute deux nouveautés majeures :
+            <description><![CDATA[RunBar reads your last four weeks and proposes a weekly target you can actually hold — and ships an optional AI coach for two-line check-ins.
 
-• Suggestions de target hebdo. Runbar regarde tes 4 dernières semaines et propose un target plus juste chaque lundi, avec garde-fous : pas plus de +20% par semaine, et baisse suggérée si tu n'atteins pas régulièrement.
-• Modification rapide du target depuis le popover : clic sur le label km → menu avec ±2 / ±5 et 'Edit in Settings'.
-• Assistant IA optionnel. Tu fournis ta clé API (Gemini 2.5 Flash Lite par défaut, stockée dans le Keychain). Messages contextuels courts au début et à la fin de semaine. Désactivé tant que la clé n'est pas saisie.]]></description>
+• Weekly target suggestions. Each Monday RunBar evaluates your last four ISO weeks and proposes a fresh target. Capped at +20% per week. Suggests a more realistic lower target if you've been below 70% for two weeks running.
+• Quick target edit. Click the 'of XX km' label in the popover for a menu with ±2 / ±5 km shortcuts and a path to Settings.
+• Optional AI coach. Bring your own API key (Gemini 2.5 Flash Lite by default — free tier covers daily use). Two-to-four lines, factual and warm, only based on real facts from your week. Disabled until you connect it.
+• Onboarding. New optional step lets you paste a Gemini key during first launch (skippable).
+• Privacy. The AI coach only sees weekly aggregates — distance, runs, elevation, target, progress, days left, four-week distance history, streak, race countdown. Never activity names, timestamps, or GPS data.]]></description>
             <enclosure
                 url="https://runbar.vercel.app/download/RunBar-0.1.12.dmg"
                 sparkle:edSignature="NrKa0w8fZuR2uEN31/KwIc0PDyp7HzqKdvru8PxwQjZ+Hbg3Mq3eP8hnDIAT5cFr0bmcQXCcuXdYQcjZbYuODA=="

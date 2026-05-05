@@ -19,7 +19,7 @@
 
 ## What it does
 
-A coureur animé lives in your menu bar and reflects your weekly running progress at a glance — no app to open, no dashboard to check.
+An animated runner lives in your menu bar and reflects your weekly running progress at a glance — no app to open, no dashboard to check.
 
 - **Live state in the menu bar.** Five runner states — idle, jogging, sprinting after a fresh upload, falling behind mid-week, victory when you cross the line.
 - **Smart weekly target.** RunBar reads your last four weeks and proposes a weekly goal that grows with you (capped at +20%, suggests a more honest target if you're consistently below). Adjust it on the fly from the popover with ±2 / ±5 km shortcuts.
@@ -58,7 +58,7 @@ cd runbar
 swift run RunBar
 ```
 
-Strava credentials are needed to sync. See [`RUNNING.md`](./RUNNING.md) for the full dev setup (BYO Strava app, webhook receiver, packaging, notarisation).
+Strava credentials are needed to sync. See [`RUNNING.md`](./RUNNING.md) for the full dev setup (BYO Strava app, webhook receiver, packaging, notarization).
 
 ## Stack
 

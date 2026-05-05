@@ -49,9 +49,9 @@ if [ -d "$RESOURCE_BUNDLE" ]; then
     <key>CFBundlePackageType</key>
     <string>BNDL</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.8</string>
+    <string>0.1.9</string>
     <key>CFBundleVersion</key>
-    <string>9</string>
+    <string>10</string>
 </dict>
 </plist>
 BPLIST
@@ -84,9 +84,9 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.healthcare-fitness</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.8</string>
+    <string>0.1.9</string>
     <key>CFBundleVersion</key>
-    <string>9</string>
+    <string>10</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>

@@ -19,7 +19,7 @@ public enum RunBarPreferences {
     }
 
     public static var showStreak: Bool {
-        UserDefaults.standard.object(forKey: Key.showStreak) as? Bool ?? true
+        UserDefaults.standard.object(forKey: Key.showStreak) as? Bool ?? false
     }
 
     public static var autoSync: Bool {

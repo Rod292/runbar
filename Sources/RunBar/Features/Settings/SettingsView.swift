@@ -96,7 +96,7 @@ public struct SettingsView: View {
     @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
     @AppStorage(RunBarPreferences.Key.showGlyph) private var showGlyph: Bool = true
     @AppStorage(RunBarPreferences.Key.showPercent) private var showPercent: Bool = false
-    @AppStorage(RunBarPreferences.Key.showStreak) private var showStreak: Bool = true
+    @AppStorage(RunBarPreferences.Key.showStreak) private var showStreak: Bool = false
     @AppStorage(RunBarPreferences.Key.autoSync) private var autoSync: Bool = true
     @AppStorage(RunBarPreferences.Key.notifyVictory) private var notifyVictory: Bool = true
     @AppStorage(RunBarPreferences.Key.trailMode) private var trailMode: Bool = false

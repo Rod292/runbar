@@ -146,7 +146,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         // namespace "Item-N" partagé avec d'autres apps, et `com.apple.controlcenter`
         // peut avoir une clé `NSStatusItem Visible Item-N = 0` qui écrase notre
         // `isVisible = true`. Avec un nom dédié, on a notre propre slot.
-        item.autosaveName = "RunBarMenuBarItem"
+        item.autosaveName = "RunBarMenuBarItemV2"
         item.isVisible = true
         if let button = item.button {
             applyIcon(to: button, image: RunnerBitmap.image(for: currentState, subframe: 0))
@@ -337,7 +337,11 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     private func applyIcon(to button: NSStatusBarButton, image: NSImage?) {
         let wantsGlyph = RunBarPreferences.showGlyph
         let wantsPercent = RunBarPreferences.showPercent
-        let wantsStreak = RunBarPreferences.showStreak
+        // Tahoe is very sensitive to menu bar items that resize after launch:
+        // once Strava syncs a long streak, Control Center can push the item
+        // into an offscreen/hidden slot. Keep the status item compact and let
+        // the popover/settings show richer progress details.
+        let wantsStreak = false
         let validImage = image?.isUsableStatusImage == true ? image : fallbackStatusImage()
         let percent = "\(Int(round(popoverVM.progress * 100)))%"
 

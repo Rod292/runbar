@@ -1,80 +1,69 @@
-# RunBar
+<div align="center">
+  <img src="https://raw.githubusercontent.com/Rod292/runbar/main/website/public/og-image.png" alt="RunBar — A runner in your menu bar" width="640" />
+</div>
 
-> Mac menu-bar app pour runners. Un bonhomme animé court vers la ligne d'arrivée selon ton objectif hebdo. Sync Strava → progression visuelle. Inspiration RunCat × Apple Fitness × terroir trail breton.
+<p align="center">
+  <strong>A runner in your menu bar.</strong><br/>
+  Strava tells you what you did. RunBar tells you where you stand — right now.
+</p>
 
-![Swift 5.10](https://img.shields.io/badge/Swift-5.10-orange.svg)
-![macOS 14+](https://img.shields.io/badge/macOS-14%2B-blue.svg)
+<p align="center">
+  <a href="https://runbar.vercel.app/download/RunBar.dmg"><strong>↓ Download for macOS</strong></a>
+  &nbsp;·&nbsp;
+  <a href="https://runbar.vercel.app">runbar.vercel.app</a>
+  &nbsp;·&nbsp;
+  macOS 14+ · Apple Silicon &amp; Intel · Free
+</p>
 
-## Pourquoi
+---
 
-Strava raconte ce que tu as fait. RunBar te dit où tu en es **maintenant**, en un coup d'œil, sans ouvrir une app. Un coureur dans la barre de menu reflète ton état hebdo : tranquille, dans les clous, en sprint après une nouvelle sortie, fatigué si tu prends du retard, victorieux quand tu franchis la ligne.
+## What it does
 
-## Features
+A coureur animé lives in your menu bar and reflects your weekly running progress at a glance — no app to open, no dashboard to check.
 
-- 🏃 **Coureur animé** dans la menu bar (5 états — idle, jogging, sprinting, tired, victory)
-- 📊 **Popover 320×420** : stats de la semaine, piste avec ligne d'arrivée, liste des sorties
-- 🔥 **Streaks** : compteur de semaines consécutives à 100%, badge flamme dans le header
-- 🏁 **Race countdown** : si une course est configurée, banner J-X dans le popover quand <30 jours
-- ⚙️ **Settings macOS-natives** : objectif, métrique (km / sorties / D+), apparence, sources
-- 🎉 **Onboarding 5 étapes** avec gamification (tier de coureur — Découverte → Endurance)
-- 🔔 **Notifications** : objectif atteint (avec son), récap dominical 21h
-- 🔄 **Sync Strava** OAuth + polling auto, avec receiver webhook local pour debug
-- 💾 **SwiftData** persistence locale
-- 🌓 **Light/dark** mode auto
+- **Live state in the menu bar.** Five runner states — idle, jogging, sprinting after a fresh upload, falling behind mid-week, victory when you cross the line.
+- **Smart weekly target.** RunBar reads your last four weeks and proposes a weekly goal that grows with you (capped at +20%, suggests a more honest target if you're consistently below). Adjust it on the fly from the popover with ±2 / ±5 km shortcuts.
+- **Optional AI coach.** Bring your own API key (Gemini 2.5 Flash Lite by default — free tier covers daily use). Two-to-four lines of grounded coaching at the start and end of each week. Strict no-hallucination prompt — only the facts in your week. Disabled until you connect it.
+- **Race countdown.** Set a race date and the popover shows a live D-X banner; the coach weaves it in as the date approaches.
+- **Streaks, history, sunday recap.** Eight-week sparkline, goal-completion streak badge, optional sunday evening summary notification.
+- **Strava-synced, privacy-respecting.** OAuth + 30-min background sync. Your Strava tokens and (optional) AI coach key live in macOS Keychain. The AI coach only sees weekly aggregates — never activity names, timestamps, or GPS data.
 
-## Stack
+## Why
 
-Swift 5.10, SwiftUI, SwiftData, AppKit (NSStatusItem + NSPopover), Network.framework, swift-log.
+Strava is a logbook. Apple Fitness is a dashboard. Neither answers the question you actually have on a Wednesday afternoon: *am I on track this week?* RunBar is a glance, not a session. Open it when you want detail; ignore it when you don't — the runner in the menu bar already told you.
 
-Pas d'autres dépendances externes.
+## Install
 
-## Démarrer
+The signed and notarised DMG is the only supported install:
+
+> **[Download RunBar.dmg](https://runbar.vercel.app/download/RunBar.dmg)**
+
+Drag to Applications, launch, follow the 8-step onboarding (Strava connect is optional but unlocks everything). The app is fully menu-bar (no Dock icon).
+
+Sparkle ships in-app updates. Right-click the menu bar icon → *Check for updates* any time.
+
+## Privacy
+
+- **Strava data** stays local. SwiftData store at `~/Library/Application Support/RunBar/store.sqlite`. Tokens in Keychain.
+- **AI coach** is opt-in. When enabled, RunBar sends only weekly aggregates to your chosen provider: distance, run count, elevation, target, progress %, days left in the week, the last four weeks of distance totals, your goal streak, and (if set) your race name and days until race. **No activity names. No timestamps. No GPS data. No personal identifiers.** Your API key is stored in Keychain.
+- **No analytics, no telemetry.** RunBar does not phone home. The only outbound calls are: Strava (auth + sync), Sparkle (update check), and your AI provider (only if you enabled it).
+
+## Build from source
+
+Requires Xcode 15+ / Swift 5.10. For a quick run:
 
 ```sh
-git clone https://github.com/<your-handle>/runbar.git
+git clone https://github.com/Rod292/runbar.git
 cd runbar
-export RUNBAR_STRAVA_CLIENT_ID="..."
-export RUNBAR_STRAVA_CLIENT_SECRET="..."
 swift run RunBar
 ```
 
-Voir [`RUNNING.md`](./RUNNING.md) pour le détail (configuration Strava OAuth, webhook, tests).
+Strava credentials are needed to sync. See [`RUNNING.md`](./RUNNING.md) for the full dev setup (BYO Strava app, webhook receiver, packaging, notarisation).
 
-## Distribution
+## Stack
 
-```sh
-scripts/make-dmg.sh
-```
+Swift 5.10 · SwiftUI · SwiftData · AppKit (NSStatusItem + NSPopover) · Network.framework · Sparkle · swift-log. No third-party UI dependencies.
 
-Le script génère `build/RunBar.dmg` et le copie dans
-`website/public/download/RunBar.dmg`, utilisé par la landing page.
+## License
 
-## Architecture
-
-```
-Sources/RunBar/
-├── App/                    # entry point + AppDelegate (NSStatusItem)
-├── Design/                 # palette, typography, runner animation
-│   ├── Animations/         # RunnerView, RunnerPose, RunnerFrames, RunnerBitmap
-│   └── Components/         # TrackView, FinishFlagView, ConfettiView
-├── Features/
-│   ├── MenuBar/
-│   ├── Popover/
-│   ├── Settings/
-│   └── Onboarding/
-├── Domain/
-│   ├── Models/             # Activity (@Model), WeeklyGoal, RunnerState, WeeklySnapshot
-│   ├── Services/           # StravaService (OAuth + API), SyncManager, NotificationService, StravaWebhookServer
-│   └── Stores/             # ActivityStore (SwiftData), SnapshotStore
-└── Utilities/              # Keychain, DateExtensions, Logger
-```
-
-## Roadmap
-
-Voir [`PLANRunbar.md`](./PLANRunbar.md) — phases du MVP au shipping.
-
-Idées v0.2+ : HealthKit, Garmin, multi-objectifs, plans d'entraînement, shoe tracking, vue historique, paysage qui défile derrière le runner.
-
-## Licence
-
-MIT.
+MIT — see [`LICENSE`](./LICENSE).

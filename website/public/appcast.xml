@@ -7,8 +7,8 @@
         <language>fr</language>
         <item>
             <title>Version 0.1.12</title>
-            <pubDate>Tue, 05 May 2026 12:01:47 +0000</pubDate>
-            <sparkle:version>0.1.12</sparkle:version>
+            <pubDate>Tue, 05 May 2026 12:07:03 +0000</pubDate>
+            <sparkle:version>13</sparkle:version>
             <sparkle:shortVersionString>0.1.12</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[Cette release ajoute deux nouveautés majeures :

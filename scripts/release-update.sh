@@ -17,6 +17,7 @@ NOTES="${2:-Mise à jour RunBar $VERSION}"
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 DMG="$ROOT/build/RunBar.dmg"
+INFO_PLIST="$ROOT/build/RunBar.app/Contents/Info.plist"
 APPCAST="$ROOT/website/public/appcast.xml"
 DOWNLOAD_DIR="$ROOT/website/public/download"
 PUBLIC_BASE="${RUNBAR_DOWNLOAD_BASE:-https://runbar.vercel.app}"
@@ -25,6 +26,24 @@ SIGN_UPDATE="$ROOT/.build/artifacts/sparkle/Sparkle/bin/sign_update"
 if [ ! -f "$DMG" ]; then
     echo "DMG manquant à $DMG — relance scripts/make-dmg.sh d'abord." >&2
     exit 1
+fi
+
+if [ ! -f "$INFO_PLIST" ]; then
+    echo "Info.plist manquant à $INFO_PLIST — relance scripts/package-app.sh d'abord." >&2
+    exit 1
+fi
+
+# Sparkle compare `<sparkle:version>` avec `CFBundleVersion` (build number).
+# Si on met la semver dans `<sparkle:version>` mais que `CFBundleVersion` est un
+# int, la comparaison est cassée (« 12 » > « 0.1.12 ») et Sparkle annonce
+# « up to date » à tort. On lit donc les deux valeurs directement depuis
+# l'Info.plist du bundle et on les place dans les balises attendues.
+BUILD_NUMBER="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleVersion' "$INFO_PLIST")"
+SHORT_VERSION="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleShortVersionString' "$INFO_PLIST")"
+
+if [ "$SHORT_VERSION" != "$VERSION" ]; then
+    echo "WARN: argument version ($VERSION) ≠ Info.plist CFBundleShortVersionString ($SHORT_VERSION)." >&2
+    echo "      L'appcast utilisera $SHORT_VERSION pour shortVersionString et $BUILD_NUMBER pour sparkle:version." >&2
 fi
 
 if [ ! -x "$SIGN_UPDATE" ]; then
@@ -63,10 +82,10 @@ cat > "$APPCAST" <<APPCAST_EOF
         <description>Mises à jour RunBar</description>
         <language>fr</language>
         <item>
-            <title>Version $VERSION</title>
+            <title>Version $SHORT_VERSION</title>
             <pubDate>$PUBDATE</pubDate>
-            <sparkle:version>$VERSION</sparkle:version>
-            <sparkle:shortVersionString>$VERSION</sparkle:shortVersionString>
+            <sparkle:version>$BUILD_NUMBER</sparkle:version>
+            <sparkle:shortVersionString>$SHORT_VERSION</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
             <description><![CDATA[$NOTES]]></description>
             <enclosure

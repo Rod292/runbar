@@ -6,16 +6,16 @@
         <description>Mises à jour RunBar</description>
         <language>fr</language>
         <item>
-            <title>Version 0.1.7</title>
-            <pubDate>Mon, 04 May 2026 22:07:32 +0000</pubDate>
-            <sparkle:version>0.1.7</sparkle:version>
-            <sparkle:shortVersionString>0.1.7</sparkle:shortVersionString>
+            <title>Version 0.1.8</title>
+            <pubDate>Tue, 05 May 2026 08:39:52 +0000</pubDate>
+            <sparkle:version>0.1.8</sparkle:version>
+            <sparkle:shortVersionString>0.1.8</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[Clarifie la synchronisation Strava quand le compte connecté ne renvoie aucune activité : RunBar affiche maintenant un état explicite No Strava runs found et logge le nombre d'activités importées.]]></description>
+            <description><![CDATA[Connectez Strava avec votre propre application API personnelle. Plus besoin d'attendre l'augmentation de quota Strava (Single Player Mode limité à 1 athlète) : créez votre app en 2 minutes, collez Client ID et Client Secret dans RunBar, et synchronisez vos sorties.]]></description>
             <enclosure
-                url="https://runbar.vercel.app/download/RunBar-0.1.7.dmg"
-                sparkle:edSignature="ilwhNefsohYybiP8V7+6hoHWb++5sitJzUXIIynaE1nRbK4tWrVu9GVPlbP2g45AMYsIT/1xjyWXRwAAY4lABQ=="
-                length="2244069"
+                url="https://runbar.vercel.app/download/RunBar-0.1.8.dmg"
+                sparkle:edSignature="Fb+oVEm2SMJ0ivK2lA0f/PvB+jOi0aUdjxNaSFVKHgGTHd0xeCUhjmvtxGnEBNbn2Xc34cfiIZPfNJ0BP6VGBw=="
+                length="2317200"
                 type="application/octet-stream" />
         </item>
     </channel>

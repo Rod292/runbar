@@ -168,3 +168,41 @@
 "onboarding.race.enable" = "I have a race coming up";
 "onboarding.race.skip" = "Skip";
 "onboarding.race.skippable" = "Optional. You can always add one later in Settings → Goals.";
+
+/* Onboarding — Bring-Your-Own Strava connect step (added 2026-05-05) */
+"onboarding.connect.byo.subtitle" = "Strava limits new shared apps to one connected athlete. Create your own free Strava developer app — it takes 2 minutes.";
+"onboarding.connect.byo.intro" = "RunBar's shared OAuth app is still queued for Strava approval. In the meantime, you'll register your own personal Strava API client — it stays under your account, only sees your data, and skips the queue entirely.";
+"onboarding.connect.byo.step1" = "Sign in to Strava and open the developer page (link below).";
+"onboarding.connect.byo.step2" = "Create an app — any name works. Authorization Callback Domain → localhost.";
+"onboarding.connect.byo.step3" = "Upload any 124×124 icon, accept the API agreement.";
+"onboarding.connect.byo.step4" = "Copy the Client ID and Client Secret shown on your app page, paste them below.";
+"onboarding.connect.byo.open_strava" = "Open Strava developer page";
+"onboarding.connect.byo.client_id" = "Client ID";
+"onboarding.connect.byo.client_secret" = "Client Secret";
+"onboarding.connect.byo.save_and_connect" = "Save & Connect Strava";
+"onboarding.connect.byo.later_hint" = "Skip for now if you'd rather do this later — you can configure it any time from Settings → Sources.";
+"onboarding.connect.byo.success_own" = "your strava app";
+"onboarding.connect.byo.success_shared" = "shared runbar app";
+
+/* Settings — Bring-Your-Own Strava app (added 2026-05-05) */
+"settings.sources.byo.label" = "Use my own Strava app";
+"settings.sources.byo.blurb" = "Strava limits new shared apps to one connected athlete until they're approved. Register a personal Strava API app and plug your own credentials in to bypass the queue.";
+"settings.sources.byo.status.active" = "Using your own Strava app";
+"settings.sources.byo.status.inactive" = "Using shared RunBar app";
+"settings.sources.byo.configure" = "Configure";
+"settings.sources.byo.manage" = "Manage";
+"settings.sources.byo.sheet.eyebrow" = "Personal Strava API client";
+"settings.sources.byo.sheet.title" = "Bring your own.";
+"settings.sources.byo.sheet.intro" = "Create your own Strava OAuth app — it stays under your account, talks only to your data, and is not subject to RunBar's shared quota.";
+"settings.sources.byo.sheet.step1" = "Open https://www.strava.com/settings/api and click \"Create & Manage Your App\".";
+"settings.sources.byo.sheet.step2" = "Name it (e.g. \"RunBar — personal\"), category Data Importer, set the website to https://runbar.app.";
+"settings.sources.byo.sheet.step3" = "Authorization Callback Domain → localhost (no scheme, no path).";
+"settings.sources.byo.sheet.step4" = "Upload an icon (any 124×124 png), accept the API agreement, then create.";
+"settings.sources.byo.sheet.step5" = "Copy the Client ID and Client Secret shown on the app page, paste them below, and save.";
+"settings.sources.byo.sheet.open_strava" = "Open Strava developer page";
+"settings.sources.byo.sheet.form_title" = "Your credentials";
+"settings.sources.byo.sheet.client_id" = "Client ID";
+"settings.sources.byo.sheet.client_secret" = "Client Secret";
+"settings.sources.byo.sheet.save" = "Save & reconnect";
+"settings.sources.byo.sheet.cancel" = "Close";
+"settings.sources.byo.sheet.reset" = "Reset to default";

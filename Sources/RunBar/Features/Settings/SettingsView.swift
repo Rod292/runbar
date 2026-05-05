@@ -8,6 +8,11 @@ public final class SettingsCoordinator: ObservableObject {
     @Published public var stravaBusy: Bool = false
     @Published public var stravaError: String? = nil
 
+    /// True quand l'utilisateur a saisi son propre `client_id` + `client_secret`
+    /// dans Settings (mode "Bring Your Own App"). Source de vérité :
+    /// `StravaUserCredentialsStore.isUserManaged`.
+    @Published public var stravaUsesUserAccount: Bool = StravaUserCredentialsStore.isUserManaged
+
     public let strava: StravaServiceProtocol
 
     public init(strava: StravaServiceProtocol) {
@@ -50,6 +55,33 @@ public final class SettingsCoordinator: ObservableObject {
         await strava.disconnect()
         await refreshStravaStatus()
     }
+
+    /// Enregistre des credentials BYO. Force la déconnexion si on était
+    /// connecté : les tokens existants ont été émis sous l'ancien `client_id`,
+    /// ils sont devenus invalides côté Strava.
+    public func saveUserStravaCredentials(clientID: String, clientSecret: String) async {
+        stravaError = nil
+        do {
+            try StravaUserCredentialsStore.save(clientID: clientID, clientSecret: clientSecret)
+            stravaUsesUserAccount = true
+            if stravaConnected {
+                await disconnectStrava()
+            }
+        } catch {
+            stravaError = error.localizedDescription
+        }
+    }
+
+    /// Repasse en mode app partagée (ré-utilise le `client_id` baked dans le
+    /// binaire + backend Vercel). Force la déconnexion pour la même raison.
+    public func clearUserStravaCredentials() async {
+        StravaUserCredentialsStore.clear()
+        stravaUsesUserAccount = false
+        stravaError = nil
+        if stravaConnected {
+            await disconnectStrava()
+        }
+    }
 }
 
 /// Fenêtre de préférences — 5 panes, design éditorial aligné avec
@@ -70,6 +102,7 @@ public struct SettingsView: View {
     @AppStorage(RunBarPreferences.Key.trailMode) private var trailMode: Bool = false
     @State private var raceEnabled: Bool = false
     @State private var sliderGoal: Double = 60
+    @State private var byoSheetPresented: Bool = false
 
     private var unit: DistanceUnit {
         get { DistanceUnit(rawValue: unitRaw) ?? .km }
@@ -143,6 +176,11 @@ public struct SettingsView: View {
         }
         .frame(width: 660, height: 480)
         .navigationTitle(Text(selection.labelKey, bundle: .module))
+        .sheet(isPresented: $byoSheetPresented) {
+            StravaByoSheet(coordinator: coordinator) {
+                byoSheetPresented = false
+            }
+        }
     }
 
     // MARK: - Editorial header (per pane)
@@ -356,6 +394,8 @@ public struct SettingsView: View {
                 }
             }
 
+            byoStravaSection
+
             PaneSection("settings.sources.diagnostic.title", figure: "fig. b") {
                 HStack(spacing: 0) {
                     diagnosticMetric(
@@ -447,6 +487,45 @@ public struct SettingsView: View {
                 .controlSize(.small)
                 .buttonStyle(.borderedProminent)
                 .tint(RunBarColor.terra)
+            }
+        }
+    }
+
+    /// Carte "Use my own Strava API client" — point d'entrée vers la sheet
+    /// BYO. Garde la PaneSection providers ci-dessus 100 % inchangée pour
+    /// les utilisateurs en mode standard.
+    private var byoStravaSection: some View {
+        PaneSection("settings.sources.byo.label", figure: "advanced") {
+            VStack(alignment: .leading, spacing: 10) {
+                Text("settings.sources.byo.blurb", bundle: .module)
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                HStack(spacing: 10) {
+                    Circle()
+                        .fill(coordinator.stravaUsesUserAccount ? RunBarColor.moss : Color.secondary.opacity(0.4))
+                        .frame(width: 7, height: 7)
+                    Text(coordinator.stravaUsesUserAccount
+                         ? LocalizedStringKey("settings.sources.byo.status.active")
+                         : LocalizedStringKey("settings.sources.byo.status.inactive"),
+                         bundle: .module)
+                        .font(.system(size: 10.5, design: .monospaced))
+                        .tracking(1.4)
+                        .textCase(.uppercase)
+                        .foregroundStyle(.tertiary)
+                    Spacer()
+                    Button {
+                        byoSheetPresented = true
+                    } label: {
+                        Text(coordinator.stravaUsesUserAccount
+                             ? LocalizedStringKey("settings.sources.byo.manage")
+                             : LocalizedStringKey("settings.sources.byo.configure"),
+                             bundle: .module)
+                    }
+                    .controlSize(.small)
+                    .buttonStyle(PressableButtonStyle())
+                }
             }
         }
     }
@@ -800,6 +879,209 @@ public struct SettingsView: View {
             Spacer()
         }
         .padding(.top, 8)
+    }
+}
+
+/// Sheet "Use my own Strava API client" — instructions pas-à-pas pour créer
+/// une OAuth app personnelle sur https://www.strava.com/settings/api, plus
+/// les champs Client ID / Client Secret. Indispensable tant que l'app
+/// partagée n'a pas reçu l'augmentation de quota Strava.
+struct StravaByoSheet: View {
+    @ObservedObject var coordinator: SettingsCoordinator
+    let dismiss: () -> Void
+
+    @State private var clientID: String = StravaUserCredentialsStore.clientID
+    @State private var clientSecret: String = StravaUserCredentialsStore.clientSecret
+    @State private var saving: Bool = false
+
+    private var canSave: Bool {
+        !saving
+            && !clientID.trimmingCharacters(in: .whitespaces).isEmpty
+            && !clientSecret.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            header
+            ScrollView {
+                VStack(alignment: .leading, spacing: 22) {
+                    instructions
+                    credentialsForm
+                    if let err = coordinator.stravaError {
+                        Text(err)
+                            .font(.caption)
+                            .foregroundStyle(RunBarColor.terra)
+                    }
+                }
+                .padding(.horizontal, 28)
+                .padding(.vertical, 22)
+            }
+            footer
+        }
+        .frame(width: 560, height: 600)
+    }
+
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack(alignment: .firstTextBaseline, spacing: 12) {
+                Text("§ BYO")
+                    .font(.system(size: 10, design: .monospaced))
+                    .tracking(2)
+                    .foregroundStyle(.tertiary)
+                Rectangle().fill(.quaternary).frame(width: 22, height: 1)
+                Text("settings.sources.byo.sheet.eyebrow", bundle: .module)
+                    .font(.system(size: 10.5, design: .monospaced))
+                    .tracking(2.5)
+                    .textCase(.uppercase)
+                    .foregroundStyle(.secondary)
+            }
+            Text("settings.sources.byo.sheet.title", bundle: .module)
+                .font(.system(size: 26, weight: .medium, design: .serif))
+                .italic()
+            Rectangle()
+                .fill(.quaternary.opacity(0.6))
+                .frame(height: 1)
+                .padding(.top, 6)
+        }
+        .padding(.horizontal, 28)
+        .padding(.top, 24)
+        .padding(.bottom, 4)
+    }
+
+    private var instructions: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            Text("settings.sources.byo.sheet.intro", bundle: .module)
+                .font(.system(size: 13))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 10) {
+                step(num: "1", textKey: "settings.sources.byo.sheet.step1")
+                step(num: "2", textKey: "settings.sources.byo.sheet.step2")
+                step(num: "3", textKey: "settings.sources.byo.sheet.step3")
+                step(num: "4", textKey: "settings.sources.byo.sheet.step4")
+                step(num: "5", textKey: "settings.sources.byo.sheet.step5")
+            }
+
+            Button {
+                NSWorkspace.shared.open(URL(string: "https://www.strava.com/settings/api")!)
+            } label: {
+                HStack(spacing: 7) {
+                    Image(systemName: "arrow.up.forward.square")
+                    Text("settings.sources.byo.sheet.open_strava", bundle: .module)
+                }
+            }
+            .controlSize(.small)
+            .buttonStyle(PressableButtonStyle())
+        }
+    }
+
+    private func step(num: String, textKey: LocalizedStringKey) -> some View {
+        HStack(alignment: .top, spacing: 12) {
+            Text(num)
+                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .foregroundStyle(RunBarColor.terra)
+                .frame(width: 18, alignment: .leading)
+            Text(textKey, bundle: .module)
+                .font(.system(size: 12.5))
+                .foregroundStyle(.primary.opacity(0.85))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var credentialsForm: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("settings.sources.byo.sheet.form_title", bundle: .module)
+                .font(.system(size: 10, design: .monospaced))
+                .tracking(1.6)
+                .textCase(.uppercase)
+                .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("settings.sources.byo.sheet.client_id", bundle: .module)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+                TextField("", text: $clientID, prompt: Text("123456"))
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 13, design: .monospaced))
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text("settings.sources.byo.sheet.client_secret", bundle: .module)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+                SecureField("", text: $clientSecret, prompt: Text("a1b2c3…"))
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 13, design: .monospaced))
+            }
+        }
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 10)
+                .fill(Color.primary.opacity(0.025))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 10)
+                .strokeBorder(Color.primary.opacity(0.08), lineWidth: 0.5)
+        )
+    }
+
+    private var footer: some View {
+        HStack(spacing: 10) {
+            if coordinator.stravaUsesUserAccount {
+                Button(role: .destructive) {
+                    Task {
+                        saving = true
+                        await coordinator.clearUserStravaCredentials()
+                        clientID = ""
+                        clientSecret = ""
+                        saving = false
+                    }
+                } label: {
+                    Text("settings.sources.byo.sheet.reset", bundle: .module)
+                }
+                .controlSize(.regular)
+                .buttonStyle(PressableButtonStyle())
+            }
+            Spacer()
+            Button {
+                dismiss()
+            } label: {
+                Text("settings.sources.byo.sheet.cancel", bundle: .module)
+            }
+            .controlSize(.regular)
+            .buttonStyle(PressableButtonStyle())
+            Button {
+                Task {
+                    saving = true
+                    await coordinator.saveUserStravaCredentials(
+                        clientID: clientID,
+                        clientSecret: clientSecret
+                    )
+                    saving = false
+                    if coordinator.stravaError == nil {
+                        dismiss()
+                    }
+                }
+            } label: {
+                if saving {
+                    ProgressView().controlSize(.small)
+                } else {
+                    Text("settings.sources.byo.sheet.save", bundle: .module)
+                }
+            }
+            .controlSize(.regular)
+            .buttonStyle(.borderedProminent)
+            .tint(RunBarColor.terra)
+            .disabled(!canSave)
+        }
+        .padding(.horizontal, 28)
+        .padding(.vertical, 16)
+        .background(
+            Rectangle()
+                .fill(.quaternary.opacity(0.25))
+                .overlay(Rectangle().fill(.quaternary).frame(height: 0.5), alignment: .top)
+        )
     }
 }
 

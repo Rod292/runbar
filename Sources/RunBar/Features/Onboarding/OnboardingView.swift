@@ -797,106 +797,231 @@ private struct GoalStep: View {
     }
 }
 
-// MARK: - Step 4 — Connect
+// MARK: - Step 4 — Connect (Bring-Your-Own Strava app)
+//
+// Pourquoi BYO par défaut : l'app partagée RunBar est en "Single Player Mode"
+// (1 athlète max) tant que Strava n'a pas validé l'augmentation de quota. Tout
+// nouvel utilisateur qui clique sur le bouton standard "Connect with Strava"
+// se prendrait un 403. On guide donc directement vers la création d'une app
+// perso (gratuit, 2 minutes), et le bouton "Save & Connect" enchaîne sur le
+// vrai OAuth flow avec ses propres credentials.
 
 private struct ConnectStep: View {
     @ObservedObject var coordinator: SettingsCoordinator
     let stepIndex: Int
     let total: Int
 
+    @State private var clientID: String = StravaUserCredentialsStore.clientID
+    @State private var clientSecret: String = StravaUserCredentialsStore.clientSecret
+    @State private var saving: Bool = false
+
+    private var canSaveAndConnect: Bool {
+        !saving
+            && !clientID.trimmingCharacters(in: .whitespaces).isEmpty
+            && !clientSecret.trimmingCharacters(in: .whitespaces).isEmpty
+    }
+
     var body: some View {
-        VStack(spacing: 22) {
+        VStack(spacing: 14) {
             stepHeader(
                 stepIndex: stepIndex,
                 total: total,
                 kicker: "onboarding.connect.title",
                 italicWord: "Connect Strava.",
-                subtitleKey: "onboarding.connect.subtitle"
+                subtitleKey: "onboarding.connect.byo.subtitle"
             )
 
-            // editorial card with the connect action
-            VStack(alignment: .leading, spacing: 18) {
-                HStack(spacing: 10) {
-                    AsyncImage(url: URL(string: "https://d3nn82uaxijpm6.cloudfront.net/icon-strava-chrome-192.png")) { img in
-                        img.resizable().aspectRatio(contentMode: .fit)
-                    } placeholder: {
-                        RoundedRectangle(cornerRadius: 5).fill(.quaternary)
-                    }
-                    .frame(width: 22, height: 22)
-                    .clipShape(RoundedRectangle(cornerRadius: 5))
-
-                    Text("Strava")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(RunBarColor.slate)
-
-                    Spacer()
-
-                    Text(coordinator.stravaConnected ? "connected" : "not connected")
-                        .font(.system(size: 9, design: .monospaced))
-                        .tracking(1.6)
-                        .textCase(.uppercase)
-                        .foregroundStyle(coordinator.stravaConnected
-                                         ? RunBarColor.moss
-                                         : RunBarColor.mutedInk(dark: false))
-                }
-
-                Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(height: 1)
-
+            ScrollView(.vertical, showsIndicators: false) {
                 if coordinator.stravaConnected {
-                    HStack(spacing: 10) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(RunBarColor.moss)
-                        Text("settings.sources.connected", bundle: .module)
-                            .font(.system(size: 13))
-                            .foregroundStyle(RunBarColor.slate)
-                        Spacer()
-                        Text("tokens stored · keychain")
-                            .font(.system(size: 9, design: .monospaced))
-                            .tracking(1.6)
-                            .textCase(.uppercase)
-                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
-                    }
+                    successCard
                 } else {
-                    Button(action: { Task { await coordinator.connectStrava() } }) {
-                        HStack(spacing: 8) {
-                            Text("onboarding.connect.cta", bundle: .module)
+                    setupCard
+                }
+            }
+            .frame(maxWidth: 480)
+        }
+    }
+
+    private var successCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            stravaHeaderRow(connected: true)
+            Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(height: 1)
+            HStack(spacing: 10) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(RunBarColor.moss)
+                Text("settings.sources.connected", bundle: .module)
+                    .font(.system(size: 13))
+                    .foregroundStyle(RunBarColor.slate)
+                Spacer()
+                Text(coordinator.stravaUsesUserAccount
+                     ? LocalizedStringKey("onboarding.connect.byo.success_own")
+                     : LocalizedStringKey("onboarding.connect.byo.success_shared"),
+                     bundle: .module)
+                    .font(.system(size: 9, design: .monospaced))
+                    .tracking(1.6)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+            }
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 20)
+        .background(cardBackground)
+        .overlay(cardBorder)
+    }
+
+    private var setupCard: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            stravaHeaderRow(connected: false)
+
+            Text("onboarding.connect.byo.intro", bundle: .module)
+                .font(.system(size: 12))
+                .foregroundStyle(RunBarColor.slate)
+                .fixedSize(horizontal: false, vertical: true)
+
+            VStack(alignment: .leading, spacing: 6) {
+                stepLine(num: "1", textKey: "onboarding.connect.byo.step1")
+                stepLine(num: "2", textKey: "onboarding.connect.byo.step2")
+                stepLine(num: "3", textKey: "onboarding.connect.byo.step3")
+                stepLine(num: "4", textKey: "onboarding.connect.byo.step4")
+            }
+
+            Button {
+                NSWorkspace.shared.open(URL(string: "https://www.strava.com/settings/api")!)
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrow.up.forward.square")
+                        .font(.system(size: 11))
+                    Text("onboarding.connect.byo.open_strava", bundle: .module)
+                        .font(.system(size: 12, weight: .medium))
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 7)
+                .background(Capsule().stroke(RunBarColor.faintInk(dark: false), lineWidth: 1))
+                .foregroundStyle(RunBarColor.slate)
+            }
+            .buttonStyle(PressableButtonStyle())
+
+            Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(height: 1).padding(.vertical, 2)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("onboarding.connect.byo.client_id", bundle: .module)
+                    .font(.system(size: 10, design: .monospaced))
+                    .tracking(1.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                TextField("", text: $clientID, prompt: Text("123456"))
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 13, design: .monospaced))
+
+                Text("onboarding.connect.byo.client_secret", bundle: .module)
+                    .font(.system(size: 10, design: .monospaced))
+                    .tracking(1.4)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                    .padding(.top, 2)
+                SecureField("", text: $clientSecret, prompt: Text("a1b2c3…"))
+                    .textFieldStyle(.roundedBorder)
+                    .font(.system(size: 13, design: .monospaced))
+            }
+
+            HStack {
+                Spacer()
+                Button(action: saveAndConnect) {
+                    HStack(spacing: 8) {
+                        if saving {
+                            ProgressView().controlSize(.small)
+                        } else {
+                            Text("onboarding.connect.byo.save_and_connect", bundle: .module)
                                 .font(.system(size: 13, weight: .semibold))
                             Image(systemName: "arrow.up.right")
                                 .font(.system(size: 11, weight: .semibold))
                         }
-                        .padding(.horizontal, 18)
-                        .padding(.vertical, 11)
-                        .background(Capsule().fill(RunBarColor.terra))
-                        .foregroundStyle(Color.white)
                     }
-                    .buttonStyle(PressableButtonStyle())
-                    .disabled(coordinator.stravaBusy)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 11)
+                    .background(Capsule().fill(canSaveAndConnect ? RunBarColor.terra : RunBarColor.terra.opacity(0.45)))
+                    .foregroundStyle(Color.white)
                 }
-
-                if let err = coordinator.stravaError {
-                    Text(err)
-                        .font(.system(size: 11))
-                        .foregroundStyle(RunBarColor.terra)
-                }
-
-                Text("Opens your browser. Tokens are exchanged via runbar.app — your secret never lives in this app.")
-                    .font(.system(size: 11))
-                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                .buttonStyle(PressableButtonStyle())
+                .disabled(!canSaveAndConnect)
             }
-            .frame(maxWidth: 460)
-            .padding(.horizontal, 22)
-            .padding(.vertical, 20)
-            .background(
-                RoundedRectangle(cornerRadius: 14)
-                    .fill(Color.white.opacity(0.55))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(RunBarColor.faintInk(dark: false), lineWidth: 1)
-            )
+            .padding(.top, 4)
+
+            if let err = coordinator.stravaError {
+                Text(err)
+                    .font(.system(size: 11))
+                    .foregroundStyle(RunBarColor.terra)
+            }
+
+            Text("onboarding.connect.byo.later_hint", bundle: .module)
+                .font(.system(size: 11))
+                .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.horizontal, 22)
+        .padding(.vertical, 18)
+        .background(cardBackground)
+        .overlay(cardBorder)
+    }
+
+    private func stravaHeaderRow(connected: Bool) -> some View {
+        HStack(spacing: 10) {
+            AsyncImage(url: URL(string: "https://d3nn82uaxijpm6.cloudfront.net/icon-strava-chrome-192.png")) { img in
+                img.resizable().aspectRatio(contentMode: .fit)
+            } placeholder: {
+                RoundedRectangle(cornerRadius: 5).fill(.quaternary)
+            }
+            .frame(width: 22, height: 22)
+            .clipShape(RoundedRectangle(cornerRadius: 5))
+
+            Text("Strava")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(RunBarColor.slate)
 
             Spacer()
+
+            Text(connected ? "connected" : "needs your api app")
+                .font(.system(size: 9, design: .monospaced))
+                .tracking(1.6)
+                .textCase(.uppercase)
+                .foregroundStyle(connected ? RunBarColor.moss : RunBarColor.mutedInk(dark: false))
+        }
+    }
+
+    private func stepLine(num: String, textKey: LocalizedStringKey) -> some View {
+        HStack(alignment: .top, spacing: 10) {
+            Text(num)
+                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .foregroundStyle(RunBarColor.terra)
+                .frame(width: 14, alignment: .leading)
+            Text(textKey, bundle: .module)
+                .font(.system(size: 12))
+                .foregroundStyle(RunBarColor.slate)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    private var cardBackground: some View {
+        RoundedRectangle(cornerRadius: 14)
+            .fill(Color.white.opacity(0.55))
+    }
+
+    private var cardBorder: some View {
+        RoundedRectangle(cornerRadius: 14)
+            .strokeBorder(RunBarColor.faintInk(dark: false), lineWidth: 1)
+    }
+
+    private func saveAndConnect() {
+        Task {
+            saving = true
+            await coordinator.saveUserStravaCredentials(
+                clientID: clientID,
+                clientSecret: clientSecret
+            )
+            if coordinator.stravaError == nil {
+                await coordinator.connectStrava()
+            }
+            saving = false
         }
     }
 }

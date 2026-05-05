@@ -152,7 +152,15 @@ public actor StravaService: StravaServiceProtocol {
     }
 
     private func exchangeCodeForTokens(code: String) async throws -> TokenResponse {
-        try await callBackend(
+        if let secret = Secrets.stravaClientSecret {
+            return try await directStravaTokenCall(payload: [
+                "client_id": Secrets.stravaClientID,
+                "client_secret": secret,
+                "code": code,
+                "grant_type": "authorization_code",
+            ])
+        }
+        return try await callBackend(
             path: "/api/strava/exchange",
             payload: [
                 "code": code,
@@ -162,10 +170,42 @@ public actor StravaService: StravaServiceProtocol {
     }
 
     private func refreshTokens(refreshToken: String) async throws -> TokenResponse {
-        try await callBackend(
+        if let secret = Secrets.stravaClientSecret {
+            return try await directStravaTokenCall(payload: [
+                "client_id": Secrets.stravaClientID,
+                "client_secret": secret,
+                "refresh_token": refreshToken,
+                "grant_type": "refresh_token",
+            ])
+        }
+        return try await callBackend(
             path: "/api/strava/refresh",
             payload: ["refresh_token": refreshToken]
         )
+    }
+
+    /// Mode "Bring Your Own App" : appel direct à
+    /// `https://www.strava.com/oauth/token` avec le `client_secret` que
+    /// l'utilisateur a saisi dans Settings. On reproduit le format
+    /// `application/x-www-form-urlencoded` documenté par Strava.
+    private func directStravaTokenCall(payload: [String: String]) async throws -> TokenResponse {
+        let url = URL(string: "https://www.strava.com/oauth/token")!
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        var components = URLComponents()
+        components.queryItems = payload.map { URLQueryItem(name: $0.key, value: $0.value) }
+        req.httpBody = Data((components.percentEncodedQuery ?? "").utf8)
+
+        let (data, resp) = try await URLSession.shared.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+            RunBarLog.strava.error(
+                "direct strava token endpoint failed: HTTP \(code) — \(String(data: data, encoding: .utf8) ?? "")"
+            )
+            throw StravaError.httpStatus(code)
+        }
+        return try JSONDecoder().decode(TokenResponse.self, from: data)
     }
 
     /// Le backend (Next.js sur `Secrets.backendBaseURL`) détient le

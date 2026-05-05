@@ -9,13 +9,27 @@ import Foundation
 enum Secrets {
     /// `client_id` Strava — public. Apparaît dans l'URL d'autorisation que
     /// l'utilisateur voit dans son navigateur, donc c'est OK de le baker
-    /// dans le binaire. Override via env ou UserDefaults uniquement si tu
-    /// forks et enregistres ta propre OAuth app sur https://www.strava.com/settings/api.
-    static let stravaClientID = value(
-        env: "RUNBAR_STRAVA_CLIENT_ID",
-        defaults: "runbar.strava.clientID",
-        fallback: "235433"
-    )
+    /// dans le binaire.
+    ///
+    /// Évalué dynamiquement à chaque lecture pour que la section "Use my own
+    /// Strava API client" des Settings (cf. `StravaUserCredentialsStore`)
+    /// soit prise en compte sans relancer l'app.
+    static var stravaClientID: String {
+        value(
+            env: "RUNBAR_STRAVA_CLIENT_ID",
+            defaults: "runbar.strava.clientID",
+            fallback: "235433"
+        )
+    }
+
+    /// `client_secret` saisi par l'utilisateur dans l'écran Settings (mode
+    /// "Bring Your Own App"). `nil` quand l'utilisateur reste sur l'app
+    /// partagée — dans ce cas l'échange de tokens passe par le backend
+    /// Vercel qui détient le vrai secret.
+    static var stravaClientSecret: String? {
+        let stored = StravaUserCredentialsStore.clientSecret
+        return stored.isEmpty ? nil : stored
+    }
 
     /// Adresse du backend qui détient le `client_secret` et fait l'échange.
     /// Override en dev via `RUNBAR_BACKEND_BASE_URL=http://localhost:3210`

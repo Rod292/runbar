@@ -6,16 +6,16 @@
         <description>Mises à jour RunBar</description>
         <language>fr</language>
         <item>
-            <title>Version 0.1.9</title>
-            <pubDate>Tue, 05 May 2026 09:08:26 +0000</pubDate>
-            <sparkle:version>0.1.9</sparkle:version>
-            <sparkle:shortVersionString>0.1.9</sparkle:shortVersionString>
+            <title>Version 0.1.10</title>
+            <pubDate>Tue, 05 May 2026 09:23:38 +0000</pubDate>
+            <sparkle:version>0.1.10</sparkle:version>
+            <sparkle:shortVersionString>0.1.10</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[Corrige le status item invisible sur macOS Tahoe : nouveau slot Control Center RunBarMenuBarItemV2 et retrait du streak dans l'icône menu bar pour garder un item compact et stable après sync.]]></description>
+            <description><![CDATA[Corrige durablement le status item invisible sur macOS Tahoe : nouveau bundle identifier com.rodrigue.runbar.tahoe pour sortir de l'état Control Center corrompu, migration des préférences depuis les anciens IDs et nouveau slot RunBarMenuBarItemV3.]]></description>
             <enclosure
-                url="https://runbar.vercel.app/download/RunBar-0.1.9.dmg"
-                sparkle:edSignature="yD3wDxnYo/CmXZJ8eltiFdhbBDkMOX0sgGb9V/oaldToMwg2f7Bp0cAJ5jEK70P1+7GjyxMyz6d1vmVjK6MYCg=="
-                length="2317135"
+                url="https://runbar.vercel.app/download/RunBar-0.1.10.dmg"
+                sparkle:edSignature="Xz47c1ugUuAjA+2a3zSuiqrmETRbXysKyF1AV7JpuRHwXlu7dBjEdUvH91tuwDEF0WhCx9Vy9oBcWfC5JKFVCA=="
+                length="2317464"
                 type="application/octet-stream" />
         </item>
     </channel>

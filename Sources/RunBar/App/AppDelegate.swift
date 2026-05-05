@@ -42,20 +42,22 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 
     private func migrateLegacyDefaultsIfNeeded() {
-        let legacyBundleID = "com.rodrigue.runbar"
-        guard Bundle.main.bundleIdentifier != legacyBundleID else { return }
+        let legacyBundleIDs = ["com.rodrigue.runbar", "com.rodrigue.runbar.app"]
+        let currentBundleID = Bundle.main.bundleIdentifier
 
         let defaults = UserDefaults.standard
-        guard let legacyDomain = defaults.persistentDomain(forName: legacyBundleID), !legacyDomain.isEmpty else { return }
+        for legacyBundleID in legacyBundleIDs where currentBundleID != legacyBundleID {
+            guard let legacyDomain = defaults.persistentDomain(forName: legacyBundleID), !legacyDomain.isEmpty else { continue }
 
-        var migrated = 0
-        for (key, value) in legacyDomain where defaults.object(forKey: key) == nil {
-            defaults.set(value, forKey: key)
-            migrated += 1
-        }
+            var migrated = 0
+            for (key, value) in legacyDomain where defaults.object(forKey: key) == nil {
+                defaults.set(value, forKey: key)
+                migrated += 1
+            }
 
-        if migrated > 0 {
-            NSLog("[RunBar] Migrated \(migrated) UserDefaults value(s) from \(legacyBundleID)")
+            if migrated > 0 {
+                NSLog("[RunBar] Migrated \(migrated) UserDefaults value(s) from \(legacyBundleID)")
+            }
         }
     }
 
@@ -146,7 +148,7 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
         // namespace "Item-N" partagé avec d'autres apps, et `com.apple.controlcenter`
         // peut avoir une clé `NSStatusItem Visible Item-N = 0` qui écrase notre
         // `isVisible = true`. Avec un nom dédié, on a notre propre slot.
-        item.autosaveName = "RunBarMenuBarItemV2"
+        item.autosaveName = "RunBarMenuBarItemV3"
         item.isVisible = true
         if let button = item.button {
             applyIcon(to: button, image: RunnerBitmap.image(for: currentState, subframe: 0))

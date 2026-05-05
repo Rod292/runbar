@@ -6,16 +6,20 @@
         <description>Mises à jour RunBar</description>
         <language>fr</language>
         <item>
-            <title>Version 0.1.11</title>
-            <pubDate>Tue, 05 May 2026 09:59:49 +0000</pubDate>
-            <sparkle:version>0.1.11</sparkle:version>
-            <sparkle:shortVersionString>0.1.11</sparkle:shortVersionString>
+            <title>Version 0.1.12</title>
+            <pubDate>Tue, 05 May 2026 12:01:47 +0000</pubDate>
+            <sparkle:version>0.1.12</sparkle:version>
+            <sparkle:shortVersionString>0.1.12</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[Corrige le crash au lancement sur les Macs sans dossier de build local : les ressources SwiftPM ne dépendent plus de Bundle.module et sont embarquées dans Contents/Resources.]]></description>
+            <description><![CDATA[Cette release ajoute deux nouveautés majeures :
+
+• Suggestions de target hebdo. Runbar regarde tes 4 dernières semaines et propose un target plus juste chaque lundi, avec garde-fous : pas plus de +20% par semaine, et baisse suggérée si tu n'atteins pas régulièrement.
+• Modification rapide du target depuis le popover : clic sur le label km → menu avec ±2 / ±5 et 'Edit in Settings'.
+• Assistant IA optionnel. Tu fournis ta clé API (Gemini 2.5 Flash Lite par défaut, stockée dans le Keychain). Messages contextuels courts au début et à la fin de semaine. Désactivé tant que la clé n'est pas saisie.]]></description>
             <enclosure
-                url="https://runbar.vercel.app/download/RunBar-0.1.11.dmg"
-                sparkle:edSignature="TcYCSdwD/3Wib5mlEYAgwLzC+Oo1/LZ4ov/IbDPVfGQ8sHEWyvjWCSovZnbBr2gRWLPem/bJg8U6iSpDAS1GDQ=="
-                length="2313025"
+                url="https://runbar.vercel.app/download/RunBar-0.1.12.dmg"
+                sparkle:edSignature="NrKa0w8fZuR2uEN31/KwIc0PDyp7HzqKdvru8PxwQjZ+Hbg3Mq3eP8hnDIAT5cFr0bmcQXCcuXdYQcjZbYuODA=="
+                length="2463853"
                 type="application/octet-stream" />
         </item>
     </channel>

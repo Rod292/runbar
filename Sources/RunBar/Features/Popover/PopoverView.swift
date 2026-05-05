@@ -34,6 +34,8 @@ public struct PopoverView: View {
             header()
             onboardingResumeBanner
             statusBanner
+            suggestionBanner
+            coachBanner
             if let days = goal.daysUntilRace(), days >= 0 {
                 raceCountdownBanner(
                     days: days,
@@ -226,6 +228,151 @@ public struct PopoverView: View {
         }
     }
 
+    // MARK: Suggestion banner
+
+    @ViewBuilder
+    private var suggestionBanner: some View {
+        if let s = viewModel.pendingSuggestion {
+            let isIncrease = s.direction == .increase
+            let icon = isIncrease ? "arrow.up.right" : "arrow.down.right"
+            let tone = isIncrease ? RunBarColor.mossDeep : RunBarColor.gold
+            let displayCurrent = unit.valueFromKilometers(s.currentTarget)
+            let displaySuggested = unit.valueFromKilometers(s.suggestedTarget)
+            let displayAvg = unit.valueFromKilometers(s.baselineAvgKm)
+            let titleKey: LocalizedStringKey = isIncrease
+                ? "popover.suggestion.title_up"
+                : "popover.suggestion.title_down"
+            let detailTemplate = String(
+                localized: "popover.suggestion.detail",
+                bundle: .runBarResources
+            )
+            let detail = String(
+                format: detailTemplate,
+                DistanceFormatter.number(displayAvg),
+                unit.symbol,
+                Int(displayCurrent.rounded()),
+                Int(displaySuggested.rounded()),
+                unit.symbol
+            )
+
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 9) {
+                    Image(systemName: icon)
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(tone)
+                        .frame(width: 18)
+                    VStack(alignment: .leading, spacing: 1) {
+                        Text(titleKey, bundle: .runBarResources)
+                            .font(.system(size: 11.5, weight: .semibold))
+                            .foregroundStyle(RunBarColor.ink(dark: isDark))
+                        Text(detail)
+                            .font(.system(size: 10.5))
+                            .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                            .lineLimit(2)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 8)
+                }
+                HStack(spacing: 6) {
+                    Spacer()
+                    Button(action: { viewModel.dismissSuggestion() }) {
+                        Text("popover.suggestion.later", bundle: .runBarResources)
+                            .font(.system(size: 10.5, weight: .medium))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: {
+                        viewModel.openSettings()
+                        openSettings()
+                    }) {
+                        Text("popover.suggestion.edit", bundle: .runBarResources)
+                            .font(.system(size: 10.5, weight: .medium))
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(
+                                Capsule().stroke(RunBarColor.hairline(dark: isDark), lineWidth: 0.8)
+                            )
+                            .foregroundStyle(RunBarColor.ink(dark: isDark))
+                    }
+                    .buttonStyle(.plain)
+
+                    Button(action: { viewModel.acceptSuggestion() }) {
+                        Text("popover.suggestion.accept", bundle: .runBarResources)
+                            .font(.system(size: 10.5, weight: .semibold))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 5)
+                            .background(Capsule().fill(tone))
+                            .foregroundStyle(RunBarColor.ivory)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(tone.opacity(isDark ? 0.16 : 0.07))
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(RunBarColor.hairline(dark: isDark)).frame(height: 0.6)
+            }
+        }
+    }
+
+    // MARK: Coach banner
+
+    @ViewBuilder
+    private var coachBanner: some View {
+        if let m = viewModel.coachMessage {
+            VStack(alignment: .leading, spacing: 6) {
+                Text(m.text)
+                    .font(.system(size: 12, weight: .regular, design: .serif).italic())
+                    .foregroundStyle(RunBarColor.ink(dark: isDark))
+                    .lineLimit(5)
+                    .fixedSize(horizontal: false, vertical: true)
+                HStack(spacing: 6) {
+                    Text("popover.coach.byline", bundle: .runBarResources)
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .tracking(0.9)
+                        .textCase(.uppercase)
+                        .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                    Text("·")
+                        .font(.system(size: 9, design: .monospaced))
+                        .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                    Text(m.providerLabel)
+                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .tracking(0.9)
+                        .textCase(.uppercase)
+                        .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                    Spacer()
+                    Button(action: { viewModel.refreshCoach() }) {
+                        Image(systemName: viewModel.coachIsFetching
+                              ? "arrow.triangle.2.circlepath"
+                              : "arrow.clockwise")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(viewModel.coachIsFetching)
+                    Button(action: { viewModel.dismissCoach() }) {
+                        Image(systemName: "xmark")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                            .frame(width: 18, height: 18)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(RunBarColor.faintInk(dark: isDark).opacity(0.5))
+            .overlay(alignment: .bottom) {
+                Rectangle().fill(RunBarColor.hairline(dark: isDark)).frame(height: 0.6)
+            }
+        }
+    }
+
     // MARK: Race countdown
 
     @ViewBuilder
@@ -295,9 +442,7 @@ public struct PopoverView: View {
                     Text("of")
                         .font(.system(size: 14, weight: .regular, design: .serif).italic())
                         .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
-                    Text("\(Int(displayTarget.rounded())) \(unit.symbol)")
-                        .font(.system(size: 14).monospacedDigit())
-                        .foregroundStyle(RunBarColor.inkSoft(dark: isDark))
+                    targetEditMenu(displayTarget: displayTarget, goal: goal)
                 }
                 .padding(.leading, 8)
 
@@ -330,6 +475,59 @@ public struct PopoverView: View {
         .padding(.horizontal, 16)
         .padding(.top, 12)
         .padding(.bottom, 8)
+    }
+
+    /// Bouton-menu autour du target affiché. Pour `.distance`, propose des
+    /// deltas rapides (±2, ±5) plus un raccourci vers Settings. Pour les autres
+    /// métriques on ouvre directement Settings (les raccourcis n'ont pas
+    /// d'unité commune).
+    @ViewBuilder
+    private func targetEditMenu(displayTarget: Double, goal: WeeklyGoal) -> some View {
+        let label = Text("\(Int(displayTarget.rounded())) \(unit.symbol)")
+            .font(.system(size: 14).monospacedDigit())
+            .foregroundStyle(RunBarColor.inkSoft(dark: isDark))
+            .underline(true, pattern: .dot, color: RunBarColor.hairline(dark: isDark))
+        if goal.metric == .distance {
+            Menu {
+                Button(action: { bumpTargetKm(-5) }) {
+                    Text("popover.target.minus_5", bundle: .runBarResources)
+                }
+                Button(action: { bumpTargetKm(-2) }) {
+                    Text("popover.target.minus_2", bundle: .runBarResources)
+                }
+                Button(action: { bumpTargetKm(2) }) {
+                    Text("popover.target.plus_2", bundle: .runBarResources)
+                }
+                Button(action: { bumpTargetKm(5) }) {
+                    Text("popover.target.plus_5", bundle: .runBarResources)
+                }
+                Divider()
+                Button(action: {
+                    viewModel.openSettings()
+                    openSettings()
+                }) {
+                    Text("popover.target.edit_in_settings", bundle: .runBarResources)
+                }
+            } label: {
+                label
+            }
+            .menuStyle(.borderlessButton)
+            .menuIndicator(.hidden)
+            .fixedSize()
+        } else {
+            Button(action: {
+                viewModel.openSettings()
+                openSettings()
+            }) {
+                label
+            }
+            .buttonStyle(.plain)
+        }
+    }
+
+    /// Applique un delta km au target courant via le ViewModel (clamp 5...300).
+    private func bumpTargetKm(_ deltaKm: Double) {
+        viewModel.setGoalTargetKm(viewModel.goal.target + deltaKm)
     }
 
     private func dataline(value: Double, remaining: Double, mode: PopoverMode,

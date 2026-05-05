@@ -34,6 +34,46 @@
 "popover.history.up" = "+%@ %@ vs previous week";
 "popover.history.down" = "-%@ %@ vs previous week";
 
+/* ── Weekly goal suggestion ─────────────────── */
+"popover.suggestion.title_up" = "Time to step it up?";
+"popover.suggestion.title_down" = "A more realistic target?";
+/* %1$@ = avg km string, %2$@ = unit, %3$d = current target, %4$d = suggested target, %5$@ = unit */
+"popover.suggestion.detail" = "4-week avg %1$@ %2$@ — move target from %3$d to %4$d %5$@.";
+"popover.suggestion.accept" = "Apply";
+"popover.suggestion.edit" = "Adjust";
+"popover.suggestion.later" = "Later";
+
+/* ── Weekly target quick edit ───────────────── */
+"popover.target.minus_5" = "−5 km";
+"popover.target.minus_2" = "−2 km";
+"popover.target.plus_2" = "+2 km";
+"popover.target.plus_5" = "+5 km";
+"popover.target.edit_in_settings" = "Edit in Settings…";
+
+/* ── Coach (popover banner) ─────────────────── */
+"popover.coach.byline" = "AI COACH";
+
+/* ── Coach (Settings pane) ──────────────────── */
+"settings.coach.section_provider" = "Provider";
+"settings.coach.section_key" = "API key";
+"settings.coach.section_privacy" = "Privacy";
+"settings.coach.enabled" = "Enable AI coach";
+"settings.coach.provider" = "Model";
+"settings.coach.key_placeholder" = "Paste your API key";
+"settings.coach.save" = "Save";
+"settings.coach.test" = "Test";
+"settings.coach.remove" = "Remove key";
+"settings.coach.get_key" = "Get a key →";
+"settings.coach.privacy_disclaimer" = "When the coach is enabled, Runbar sends weekly aggregates to the chosen provider: distance, run count, elevation, target, progress, days left in the week, the last four weeks of distance totals, your goal streak, and (if set) your race name and days until race. No activity names, no timestamps, no GPS data, no personal identifiers are sent. The API key is stored in your macOS Keychain.";
+
+/* ── Onboarding — Coach step ────────────────── */
+"onboarding.coach.title" = "Optional · AI coach";
+"onboarding.coach.subtitle" = "Bring your own key. Skip if you don't want it.";
+"onboarding.coach.provider_label" = "Default provider";
+"onboarding.coach.get_key" = "Get a Gemini key →";
+"onboarding.coach.privacy" = "Runbar sends only weekly aggregates (distance, runs, target, progress, race countdown). No activity names, timestamps, or GPS data. Key stored in macOS Keychain.";
+"onboarding.coach.skip" = "Skip";
+
 /* ── Runner state labels ────────────────────── */
 "runner.state.idle" = "Warming up";
 "runner.state.jogging" = "Jogging";
@@ -52,6 +92,7 @@
 "settings.tab.display" = "Display";
 "settings.tab.sources" = "Sources";
 "settings.tab.goals" = "Goals";
+"settings.tab.coach" = "Coach";
 "settings.tab.about" = "About";
 
 /* ── Settings — general ─────────────────────── */

@@ -12,11 +12,20 @@ struct RunBarApp: App {
 
     var body: some Scene {
         Settings {
-            SettingsView(store: AppContainer.shared.store, coordinator: AppContainer.shared.settings)
+            SettingsView(
+                store: AppContainer.shared.store,
+                coordinator: AppContainer.shared.settings,
+                coachConfig: AppContainer.shared.coachConfiguration,
+                coachService: AppContainer.shared.coach
+            )
         }
 
         Window("Bienvenue", id: "onboarding") {
-            OnboardingView(store: AppContainer.shared.store, coordinator: AppContainer.shared.settings) {
+            OnboardingView(
+                store: AppContainer.shared.store,
+                coordinator: AppContainer.shared.settings,
+                coachConfig: AppContainer.shared.coachConfiguration
+            ) {
                 onboardingDone = true
                 NSApp.keyWindow?.close()
             }
@@ -39,6 +48,9 @@ public final class AppContainer {
     public let strava: StravaServiceProtocol
     public let sync: SyncManager
     public let settings: SettingsCoordinator
+    public let suggestions: GoalSuggestionStore
+    public let coachConfiguration: CoachConfiguration
+    public let coach: CoachService
     public let popoverVM: PopoverViewModel
     public let webhook: StravaWebhookServer
 
@@ -48,7 +60,13 @@ public final class AppContainer {
         let strava = StravaService()
         let sm = SyncManager(store: s, strava: strava)
         let coord = SettingsCoordinator(strava: strava)
-        let vm = PopoverViewModel(store: s, syncManager: sm, snapshots: snaps)
+        let suggestionStore = GoalSuggestionStore(store: s)
+        let coachCfg = CoachConfiguration()
+        let coachSvc = CoachService(store: s, snapshots: snaps, configuration: coachCfg)
+        let vm = PopoverViewModel(
+            store: s, syncManager: sm, snapshots: snaps,
+            suggestions: suggestionStore, coach: coachSvc
+        )
         vm.settingsCoordinator = coord
 
         let hook = StravaWebhookServer(port: 47863) { _ in
@@ -60,6 +78,9 @@ public final class AppContainer {
         self.strava = strava
         self.sync = sm
         self.settings = coord
+        self.suggestions = suggestionStore
+        self.coachConfiguration = coachCfg
+        self.coach = coachSvc
         self.popoverVM = vm
         self.webhook = hook
     }

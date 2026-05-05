@@ -91,6 +91,8 @@ public final class SettingsCoordinator: ObservableObject {
 public struct SettingsView: View {
     @ObservedObject var store: ActivityStore
     @ObservedObject var coordinator: SettingsCoordinator
+    @ObservedObject var coachConfig: CoachConfiguration
+    let coachService: CoachService
     @State private var selection: Tab = .general
     @Environment(\.openWindow) private var openWindow
     @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
@@ -108,15 +110,22 @@ public struct SettingsView: View {
         get { DistanceUnit(rawValue: unitRaw) ?? .km }
     }
 
-    public init(store: ActivityStore, coordinator: SettingsCoordinator) {
+    public init(
+        store: ActivityStore,
+        coordinator: SettingsCoordinator,
+        coachConfig: CoachConfiguration,
+        coachService: CoachService
+    ) {
         self.store = store
         self.coordinator = coordinator
+        self.coachConfig = coachConfig
+        self.coachService = coachService
         self._sliderGoal = State(initialValue: store.goal.target)
         self._raceEnabled = State(initialValue: store.goal.raceDate != nil)
     }
 
     enum Tab: String, CaseIterable, Identifiable {
-        case general, display, sources, goals, about
+        case general, display, sources, goals, coach, about
         var id: Self { self }
         var num: String {
             switch self {
@@ -124,7 +133,8 @@ public struct SettingsView: View {
             case .display: return "§ 02"
             case .sources: return "§ 03"
             case .goals:   return "§ 04"
-            case .about:   return "§ 05"
+            case .coach:   return "§ 05"
+            case .about:   return "§ 06"
             }
         }
         var labelKey: LocalizedStringKey {
@@ -133,6 +143,7 @@ public struct SettingsView: View {
             case .display: return "settings.tab.display"
             case .sources: return "settings.tab.sources"
             case .goals:   return "settings.tab.goals"
+            case .coach:   return "settings.tab.coach"
             case .about:   return "settings.tab.about"
             }
         }
@@ -142,6 +153,7 @@ public struct SettingsView: View {
             case .display: return "eye"
             case .sources: return "link"
             case .goals:   return "flag"
+            case .coach:   return "bubble.left.and.text.bubble.right"
             case .about:   return "info.circle"
             }
         }
@@ -166,6 +178,7 @@ public struct SettingsView: View {
                     case .display: displayPane
                     case .sources: sourcesPane
                     case .goals:   goalsPane
+                    case .coach:   coachPane
                     case .about:   aboutPane
                     }
                 }
@@ -752,6 +765,142 @@ public struct SettingsView: View {
         }
     }
 
+    // MARK: - Coach pane
+
+    @State private var coachKeyDraft: String = ""
+    @State private var coachKeyMasked: Bool = true
+    @State private var coachTestResult: String? = nil
+    @State private var coachTestError: String? = nil
+    @State private var coachTesting: Bool = false
+
+    private var coachPane: some View {
+        VStack(alignment: .leading, spacing: 22) {
+            paneHeader(.coach, italicWord: "Your AI coach.")
+
+            PaneSection("settings.coach.section_provider", figure: "fig. a") {
+                row {
+                    Text("settings.coach.enabled", bundle: .runBarResources)
+                        .font(.system(size: 13))
+                    Spacer()
+                    Toggle("", isOn: $coachConfig.enabled)
+                        .labelsHidden()
+                }
+                hairline
+                row {
+                    Text("settings.coach.provider", bundle: .runBarResources)
+                        .font(.system(size: 13))
+                    Spacer()
+                    Picker("", selection: $coachConfig.provider) {
+                        ForEach(CoachConfiguration.Provider.allCases, id: \.self) { p in
+                            Text(p.displayName).tag(p)
+                        }
+                    }
+                    .labelsHidden()
+                    .frame(maxWidth: 220)
+                }
+            }
+
+            PaneSection("settings.coach.section_key", figure: "fig. b") {
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 8) {
+                        if coachKeyMasked {
+                            SecureField("settings.coach.key_placeholder", text: $coachKeyDraft)
+                                .textFieldStyle(.roundedBorder)
+                        } else {
+                            TextField("settings.coach.key_placeholder", text: $coachKeyDraft)
+                                .textFieldStyle(.roundedBorder)
+                        }
+                        Button(action: { coachKeyMasked.toggle() }) {
+                            Image(systemName: coachKeyMasked ? "eye" : "eye.slash")
+                        }
+                        .buttonStyle(.plain)
+                    }
+                    HStack(spacing: 8) {
+                        Button {
+                            saveCoachKey()
+                        } label: {
+                            Text("settings.coach.save", bundle: .runBarResources)
+                        }
+                        .disabled(coachKeyDraft.isEmpty)
+
+                        Button {
+                            testCoachKey()
+                        } label: {
+                            HStack(spacing: 6) {
+                                if coachTesting {
+                                    ProgressView().controlSize(.small)
+                                }
+                                Text("settings.coach.test", bundle: .runBarResources)
+                            }
+                        }
+                        .disabled(coachKeyDraft.isEmpty || coachTesting)
+
+                        Spacer()
+                        if coachConfig.hasKey {
+                            Button(role: .destructive) {
+                                coachConfig.clearKey()
+                                coachKeyDraft = ""
+                            } label: {
+                                Text("settings.coach.remove", bundle: .runBarResources)
+                            }
+                        }
+                    }
+                    if let err = coachTestError {
+                        Text(err)
+                            .font(.system(size: 11))
+                            .foregroundStyle(RunBarColor.vermillonDeep)
+                            .lineLimit(3)
+                    }
+                    if let ok = coachTestResult {
+                        Text(ok)
+                            .font(.system(size: 12, design: .serif).italic())
+                            .foregroundStyle(.secondary)
+                            .lineLimit(4)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    Link(destination: coachConfig.provider.apiKeyURL) {
+                        Text("settings.coach.get_key", bundle: .runBarResources)
+                            .font(.system(size: 11))
+                    }
+                }
+            }
+
+            PaneSection("settings.coach.section_privacy", figure: "fig. c") {
+                Text("settings.coach.privacy_disclaimer", bundle: .runBarResources)
+                    .font(.system(size: 11.5))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+        }
+    }
+
+    private func saveCoachKey() {
+        coachTestError = nil
+        coachTestResult = nil
+        do {
+            try coachConfig.setKey(coachKeyDraft)
+            coachKeyDraft = ""
+        } catch {
+            coachTestError = error.localizedDescription
+        }
+    }
+
+    private func testCoachKey() {
+        coachTestError = nil
+        coachTestResult = nil
+        coachTesting = true
+        let key = coachKeyDraft
+        Task { @MainActor in
+            defer { coachTesting = false }
+            do {
+                let preview = try await coachService.test(apiKey: key)
+                coachTestResult = preview
+            } catch {
+                coachTestError = error.localizedDescription
+            }
+        }
+    }
+
     // MARK: - About pane
 
     private var aboutPane: some View {
@@ -1087,6 +1236,15 @@ struct StravaByoSheet: View {
 
 #if DEBUG
 #Preview {
-    SettingsView(store: ActivityStore(), coordinator: SettingsCoordinator(strava: StravaService.preview))
+    let store = ActivityStore()
+    let snaps = SnapshotStore()
+    let cfg = CoachConfiguration()
+    let coach = CoachService(store: store, snapshots: snaps, configuration: cfg)
+    return SettingsView(
+        store: store,
+        coordinator: SettingsCoordinator(strava: StravaService.preview),
+        coachConfig: cfg,
+        coachService: coach
+    )
 }
 #endif

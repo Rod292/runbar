@@ -81,6 +81,7 @@ enum RunnerTier: String, CaseIterable {
 public struct OnboardingView: View {
     @ObservedObject var store: ActivityStore
     @ObservedObject var coordinator: SettingsCoordinator
+    @ObservedObject var coachConfig: CoachConfiguration
     var onFinish: () -> Void
 
     @State private var step: Int = 0
@@ -97,6 +98,9 @@ public struct OnboardingView: View {
     @State private var raceEnabled: Bool = false
     @State private var raceName: String = ""
     @State private var raceDate: Date = Date.now.addingTimeInterval(30 * 24 * 3600)
+    /// Draft for the optional Gemini API key. Saved on leaving the Coach step.
+    @State private var coachKeyDraft: String = ""
+    @State private var coachKeyError: String? = nil
     @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
 
     private var unit: DistanceUnit {
@@ -106,14 +110,16 @@ public struct OnboardingView: View {
     public init(
         store: ActivityStore,
         coordinator: SettingsCoordinator,
+        coachConfig: CoachConfiguration,
         onFinish: @escaping () -> Void
     ) {
         self.store = store
         self.coordinator = coordinator
+        self.coachConfig = coachConfig
         self.onFinish = onFinish
     }
 
-    private let totalSteps = 7
+    private let totalSteps = 8
 
     public var body: some View {
         ZStack {
@@ -145,6 +151,14 @@ public struct OnboardingView: View {
                                      date: $raceDate,
                                      stepIndex: 5,
                                      total: totalSteps).transition(stepTransition)
+                    case 6: CoachStep(
+                        keyDraft: $coachKeyDraft,
+                        errorMessage: coachKeyError,
+                        providerName: coachConfig.provider.displayName,
+                        apiKeyURL: coachConfig.provider.apiKeyURL,
+                        stepIndex: 6,
+                        total: totalSteps
+                    ).transition(stepTransition)
                     default: DoneStep(metric: metric,
                                       unit: unit,
                                       targetKm: targetKm,
@@ -287,6 +301,10 @@ public struct OnboardingView: View {
         case totalSteps - 1: return "onboarding.done.cta"
         case 3: return coordinator.stravaConnected ? "onboarding.next" : "onboarding.connect.skip"
         case 5: return raceEnabled ? "onboarding.next" : "onboarding.race.skip"
+        case 6:
+            return coachKeyDraft.trimmingCharacters(in: .whitespaces).isEmpty
+                ? "onboarding.coach.skip"
+                : "onboarding.next"
         default: return "onboarding.next"
         }
     }
@@ -300,15 +318,39 @@ public struct OnboardingView: View {
         if step == 4 {
             commitGoal()
         }
-        // Leaving Race → Done: persist race fields (or clear them).
+        // Leaving Race → Coach: persist race fields (or clear them).
         if step == 5 {
             commitRace()
+        }
+        // Leaving Coach → Done: persist key if user typed one.
+        if step == 6 {
+            if !commitCoachKey() { return }
         }
         if step == totalSteps - 1 {
             onFinish()
             return
         }
         withAnimation { step += 1 }
+    }
+
+    /// Sauvegarde la clé Gemini si non vide ; active le coach automatiquement.
+    /// Retourne false si l'enregistrement Keychain échoue (laisse l'utilisateur
+    /// corriger plutôt que d'avancer en silence).
+    private func commitCoachKey() -> Bool {
+        let trimmed = coachKeyDraft.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else {
+            coachKeyError = nil
+            return true
+        }
+        do {
+            try coachConfig.setKey(trimmed)
+            coachConfig.enabled = true
+            coachKeyError = nil
+            return true
+        } catch {
+            coachKeyError = error.localizedDescription
+            return false
+        }
     }
 
     private func commitGoal() {
@@ -1150,7 +1192,102 @@ private struct RaceStep: View {
     }
 }
 
-// MARK: - Step 6 — Done
+// MARK: - Step 6 — Coach (optional)
+
+private struct CoachStep: View {
+    @Binding var keyDraft: String
+    let errorMessage: String?
+    let providerName: String
+    let apiKeyURL: URL
+    let stepIndex: Int
+    let total: Int
+
+    @State private var masked: Bool = true
+
+    var body: some View {
+        VStack(spacing: 18) {
+            stepHeader(
+                stepIndex: stepIndex,
+                total: total,
+                kicker: "onboarding.coach.title",
+                italicWord: "AI coach.",
+                subtitleKey: "onboarding.coach.subtitle"
+            )
+
+            VStack(alignment: .leading, spacing: 14) {
+                Text("onboarding.coach.provider_label", bundle: .runBarResources)
+                    .font(.system(size: 10, design: .monospaced))
+                    .tracking(1.6)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                Text(providerName)
+                    .font(.system(size: 14, weight: .medium, design: .serif).italic())
+                    .foregroundStyle(RunBarColor.slate)
+
+                Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(height: 1)
+
+                HStack(spacing: 8) {
+                    Group {
+                        if masked {
+                            SecureField("", text: $keyDraft, prompt: Text("AI…"))
+                        } else {
+                            TextField("", text: $keyDraft, prompt: Text("AI…"))
+                        }
+                    }
+                    .textFieldStyle(.plain)
+                    .font(.system(size: 13, design: .monospaced))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 8)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(RunBarColor.faintInk(dark: false), lineWidth: 1)
+                    )
+                    Button(action: { masked.toggle() }) {
+                        Image(systemName: masked ? "eye" : "eye.slash")
+                            .font(.system(size: 12))
+                            .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                            .frame(width: 28, height: 28)
+                    }
+                    .buttonStyle(.plain)
+                }
+
+                if let err = errorMessage {
+                    Text(err)
+                        .font(.system(size: 11))
+                        .foregroundStyle(RunBarColor.terra)
+                }
+
+                Link(destination: apiKeyURL) {
+                    Text("onboarding.coach.get_key", bundle: .runBarResources)
+                        .font(.system(size: 11))
+                        .underline()
+                }
+
+                Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(height: 1)
+
+                Text("onboarding.coach.privacy", bundle: .runBarResources)
+                    .font(.system(size: 11))
+                    .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .frame(maxWidth: 460)
+            .padding(.horizontal, 22)
+            .padding(.vertical, 18)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color.white.opacity(0.55))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(RunBarColor.faintInk(dark: false), lineWidth: 1)
+            )
+
+            Spacer()
+        }
+    }
+}
+
+// MARK: - Step 7 — Done
 
 private struct DoneStep: View {
     let metric: GoalMetric

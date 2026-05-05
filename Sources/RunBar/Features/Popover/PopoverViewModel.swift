@@ -18,6 +18,9 @@ public final class PopoverViewModel: ObservableObject {
     @Published public var isSyncing: Bool = false
     @Published public var lastError: String? = nil
     @Published public var lastImportedActivityCount: Int? = nil
+    @Published public var pendingSuggestion: GoalSuggestion? = nil
+    @Published public var coachMessage: CoachMessage? = nil
+    @Published public var coachIsFetching: Bool = false
 
     public var settingsCoordinator: SettingsCoordinator? {
         didSet {
@@ -31,13 +34,23 @@ public final class PopoverViewModel: ObservableObject {
     private let calculator = GoalCalculator()
     private let syncManager: SyncManager
     private let snapshots: SnapshotStore?
+    private let suggestions: GoalSuggestionStore?
+    private let coach: CoachService?
     private var cancellables = Set<AnyCancellable>()
     private var settingsCancellable: AnyCancellable?
 
-    public init(store: ActivityStore, syncManager: SyncManager, snapshots: SnapshotStore? = nil) {
+    public init(
+        store: ActivityStore,
+        syncManager: SyncManager,
+        snapshots: SnapshotStore? = nil,
+        suggestions: GoalSuggestionStore? = nil,
+        coach: CoachService? = nil
+    ) {
         self.store = store
         self.syncManager = syncManager
         self.snapshots = snapshots
+        self.suggestions = suggestions
+        self.coach = coach
         bind()
     }
 
@@ -176,6 +189,38 @@ public final class PopoverViewModel: ObservableObject {
             .receive(on: DispatchQueue.main)
             .assign(to: \.lastImportedActivityCount, on: self)
             .store(in: &cancellables)
+
+        if let suggestions {
+            suggestions.$pending
+                .receive(on: DispatchQueue.main)
+                .assign(to: \.pendingSuggestion, on: self)
+                .store(in: &cancellables)
+
+            // Re-évalue la suggestion à chaque fin de sync (et au démarrage,
+            // qui pousse `lastSync = nil`).
+            syncManager.$lastSync
+                .receive(on: DispatchQueue.main)
+                .sink { [weak suggestions] _ in suggestions?.refresh() }
+                .store(in: &cancellables)
+        }
+
+        if let coach {
+            coach.$current
+                .receive(on: DispatchQueue.main)
+                .assign(to: \.coachMessage, on: self)
+                .store(in: &cancellables)
+
+            coach.$isFetching
+                .receive(on: DispatchQueue.main)
+                .assign(to: \.coachIsFetching, on: self)
+                .store(in: &cancellables)
+
+            // Régénère après chaque sync, si due.
+            syncManager.$lastSync
+                .receive(on: DispatchQueue.main)
+                .sink { [weak coach] _ in coach?.refreshIfDue() }
+                .store(in: &cancellables)
+        }
     }
 
     // MARK: Derived
@@ -323,6 +368,28 @@ public final class PopoverViewModel: ObservableObject {
     public func close() {
         NotificationCenter.default.post(name: .runbarClosePopover, object: nil)
     }
+
+    // MARK: Suggestion / target
+
+    public func acceptSuggestion() {
+        suggestions?.accept()
+    }
+
+    public func dismissSuggestion() {
+        suggestions?.dismiss()
+    }
+
+    /// Modification rapide du target depuis le popover (clamp 5...300 km).
+    public func setGoalTargetKm(_ km: Double) {
+        guard store.goal.metric == .distance else { return }
+        let clamped = max(5, min(300, km.rounded()))
+        store.goal.target = clamped
+    }
+
+    // MARK: Coach
+
+    public func refreshCoach() { coach?.forceRefresh() }
+    public func dismissCoach() { coach?.dismiss() }
 }
 
 public enum PopoverStatusKind: Sendable {
@@ -344,7 +411,10 @@ public extension PopoverViewModel {
     static func preview(_ mode: PopoverMode) -> PopoverViewModel {
         let store = ActivityStore()
         let sync = SyncManager(store: store, strava: StravaService.preview)
-        let vm = PopoverViewModel(store: store, syncManager: sync, snapshots: nil)
+        let vm = PopoverViewModel(
+            store: store, syncManager: sync, snapshots: nil,
+            suggestions: nil, coach: nil
+        )
         switch mode {
         case .empty:
             store.clear()

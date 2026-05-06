@@ -9,6 +9,7 @@ public final class GoalSuggestionStore: ObservableObject {
     @Published public private(set) var pending: GoalSuggestion?
 
     private let store: ActivityStore
+    private let snapshots: SnapshotStore?
     private let engine: GoalSuggestionEngine
     private let defaults: UserDefaults
 
@@ -18,10 +19,12 @@ public final class GoalSuggestionStore: ObservableObject {
 
     public init(
         store: ActivityStore,
+        snapshots: SnapshotStore? = nil,
         engine: GoalSuggestionEngine = GoalSuggestionEngine(),
         defaults: UserDefaults = .standard
     ) {
         self.store = store
+        self.snapshots = snapshots
         self.engine = engine
         self.defaults = defaults
         self.pending = loadPending()
@@ -41,11 +44,25 @@ public final class GoalSuggestionStore: ObservableObject {
         if let lastDismissed = loadWeek(dismissedKey), lastDismissed >= thisMonday { return }
         if let lastAccepted = loadWeek(acceptedKey), lastAccepted >= thisMonday { return }
 
-        let suggestion = engine.evaluate(
-            activities: store.activities,
-            goal: store.goal,
-            now: now
-        )
+        // Prefer the persisted weekly snapshots when present — they reach
+        // back beyond the 7-day rolling activity cache and so reflect the
+        // user's actual 4-week pace. Only fall back to the activity-based
+        // path on installs without snapshots (e.g. someone using only
+        // manual entries, no Strava connection).
+        let suggestion: GoalSuggestion?
+        if let snaps = snapshots, !snaps.snapshots.isEmpty {
+            suggestion = engine.evaluate(
+                snapshots: snaps.snapshots,
+                goal: store.goal,
+                now: now
+            )
+        } else {
+            suggestion = engine.evaluate(
+                activities: store.activities,
+                goal: store.goal,
+                now: now
+            )
+        }
         setPending(suggestion)
     }
 

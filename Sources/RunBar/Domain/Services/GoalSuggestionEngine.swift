@@ -23,6 +23,11 @@ public struct GoalSuggestionEngine {
 
     public init() {}
 
+    /// Caller-friendly overload that derives weekly km totals from the
+    /// rolling-cache `Activity` rows. Kept for unit tests and the legacy
+    /// path; in production we now prefer `evaluate(snapshots:)` because
+    /// SwiftData only holds 7 days of activities (Strava § 7.1) so a
+    /// 4-week lookback against `Activity` only sees one full week.
     public func evaluate(
         activities: [Activity],
         goal: WeeklyGoal,
@@ -30,11 +35,8 @@ public struct GoalSuggestionEngine {
     ) -> GoalSuggestion? {
         guard goal.metric == .distance else { return nil }
         guard goal.target > 0 else { return nil }
-
         let cal = Calendar.iso8601Monday
         let thisMonday = now.startOfWeek(weekday: goal.resetWeekday, calendar: cal)
-
-        // Sommes km des 4 ISO weeks complètes précédant la semaine en cours.
         var weeklyKm: [Double] = []
         for i in 1...Self.lookbackWeeks {
             guard
@@ -46,7 +48,45 @@ public struct GoalSuggestionEngine {
                 .reduce(0.0) { $0 + $1.distanceKm }
             weeklyKm.append(km)
         }
+        return evaluate(weeklyKm: weeklyKm, goal: goal, thisMonday: thisMonday)
+    }
 
+    /// Production path: derive weekly totals from the persistent
+    /// `WeeklySnapshot` history (which we seed on Strava connect via
+    /// `SettingsCoordinator.seedHistoricalSnapshots`). The snapshots
+    /// store keeps 8+ weeks of derived aggregates without violating the
+    /// 7-day raw-data cache rule.
+    public func evaluate(
+        snapshots: [WeeklySnapshot],
+        goal: WeeklyGoal,
+        now: Date = .now
+    ) -> GoalSuggestion? {
+        guard goal.metric == .distance else { return nil }
+        guard goal.target > 0 else { return nil }
+        let cal = Calendar.iso8601Monday
+        let thisMonday = now.startOfWeek(weekday: goal.resetWeekday, calendar: cal)
+        var weeklyKm: [Double] = []
+        for i in 1...Self.lookbackWeeks {
+            guard
+                let start = cal.date(byAdding: .day, value: -7 * i, to: thisMonday),
+                let end = cal.date(byAdding: .day, value: 7, to: start)
+            else { continue }
+            let km = snapshots
+                .first(where: {
+                    $0.metric == .distance
+                    && $0.weekStart >= start
+                    && $0.weekStart < end
+                })?.achieved ?? 0
+            weeklyKm.append(km)
+        }
+        return evaluate(weeklyKm: weeklyKm, goal: goal, thisMonday: thisMonday)
+    }
+
+    private func evaluate(
+        weeklyKm: [Double],
+        goal: WeeklyGoal,
+        thisMonday: Date
+    ) -> GoalSuggestion? {
         guard weeklyKm.count == Self.lookbackWeeks else { return nil }
         let totalKm = weeklyKm.reduce(0, +)
         guard totalKm > 0 else { return nil }
@@ -54,7 +94,6 @@ public struct GoalSuggestionEngine {
         let avgKm = totalKm / Double(Self.lookbackWeeks)
         guard avgKm >= Self.minBaselineKm else { return nil }
 
-        // Combien de semaines à moins de 70% du target courant.
         let underperform = weeklyKm.filter { $0 / goal.target < Self.underperformThreshold }.count
         let direction: GoalSuggestion.Direction =
             (underperform >= Self.underperformWeeksTrigger) ? .decrease : .increase
@@ -71,12 +110,10 @@ public struct GoalSuggestionEngine {
 
         let suggested = min(Self.maxSuggestion, max(Self.minSuggestion, raw))
 
-        // Filtre le bruit : il faut un delta significatif pour mériter d'être proposé.
         let delta = abs(suggested - goal.target)
         let ratio = delta / goal.target
         guard delta >= Self.minDeltaKm, ratio >= Self.minDeltaRatio else { return nil }
 
-        // Cohérence direction/résultat (un cap peut neutraliser une hausse).
         switch direction {
         case .increase where suggested <= goal.target: return nil
         case .decrease where suggested >= goal.target: return nil

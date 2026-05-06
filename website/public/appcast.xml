@@ -6,26 +6,22 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.13</title>
-            <pubDate>Wed, 06 May 2026 13:02:31 +0000</pubDate>
-            <sparkle:version>14</sparkle:version>
-            <sparkle:shortVersionString>0.1.13</sparkle:shortVersionString>
+            <title>Version 0.1.14</title>
+            <pubDate>Wed, 06 May 2026 14:53:07 +0000</pubDate>
+            <sparkle:version>15</sparkle:version>
+            <sparkle:shortVersionString>0.1.14</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar 0.1.13 ships full Strava API Agreement compliance and migrates the canonical site to runbar.run.
+            <description><![CDATA[RunBar 0.1.14 — official Strava brand assets + simpler Settings.
 
-• Rolling 7-day Strava cache. Fetched activities are purged after one week per the Strava API Agreement; long-term history is preserved as derived weekly snapshots.
-• Disconnect now wipes Strava data. Settings → Sources → Disconnect deletes all locally cached Strava activities, not just the OAuth tokens.
-• Official Connect with Strava button across the popover, settings and onboarding.
-• Powered by Strava attribution in the popover footer.
-• View on Strava on every activity row — click to open the activity at strava.com.
-• AI coach disclaimer cites the Strava API Agreement and recommends a paid Gemini tier (free tier may use prompts to improve Google's models).
-• Site moves to runbar.run with /privacy /terms /contact pages.
+• Connect with Strava button now uses the official Strava asset (orange, retina-ready). The Powered by Strava attribution in the popover footer is also the official horizontal logo, automatically switching between black and white variants for light/dark mode.
+• Settings → Sources is now a single Strava card. While the shared RunBar Strava app is queued for quota approval, the Configure flow guides you straight through registering a personal API client. No more two-card confusion.
+• Drive-by: stale 0.1.2 version strings on the website (JSON-LD, 404 footer) bumped to current.
 
-Privacy summary unchanged: weekly aggregates only (distance, runs, elevation, target, progress, four-week history, streak, race countdown). Never activity names, timestamps, or GPS data.]]></description>
+Privacy unchanged: weekly aggregates only, Strava tokens in Keychain, no telemetry.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.13.dmg"
-                sparkle:edSignature="iGD/idhPCLCO1d5Ao3j9IZ9RA8yfpD7UiOWvcf/jaLaDX8Dp+/bePz6Ql2srsMWglX56gCNcIqGGH35fuSVKAg=="
-                length="2469889"
+                url="https://runbar.run/download/RunBar-0.1.14.dmg"
+                sparkle:edSignature="CTjH3xwiCwIAD+h1zgSUCqxoYNoKK9GuXIrHlvMiHEELyMFFgmPduiMJWzizE1lVncDMCrtU/tBwvmgaGVRnBw=="
+                length="2478246"
                 type="application/octet-stream" />
         </item>
     </channel>

@@ -2,6 +2,7 @@ type Props = {
   variant?: "primary" | "ghost";
   size?: "md" | "lg";
   className?: string;
+  source?: string;
   href?: string;
 };
 
@@ -9,8 +10,11 @@ export function DownloadButton({
   variant = "primary",
   size = "md",
   className = "",
-  href = "/download/RunBar.dmg",
+  source = "site",
+  href,
 }: Props) {
+  const resolvedHref =
+    href ?? `/api/download?utm_source=${encodeURIComponent(source)}&utm_medium=site`;
   const sizing =
     size === "lg" ? "h-12 px-6 text-[14px]" : "h-10 px-4 text-[13px]";
 
@@ -21,9 +25,8 @@ export function DownloadButton({
 
   return (
     <a
-      href={href}
-      aria-label="Download RunBar for macOS — direct DMG"
-      download
+      href={resolvedHref}
+      aria-label="Download RunBar for macOS"
       className={`group inline-flex items-center gap-2.5 rounded-full font-medium tracking-tight transition ${sizing} ${palette} ${className}`}
     >
       {/* Apple glyph */}

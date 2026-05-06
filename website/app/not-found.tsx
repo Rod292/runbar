@@ -33,7 +33,7 @@ export default function NotFound() {
             <span>← Back to RunBar</span>
           </Link>
           <Link
-            href="/download/RunBar.dmg"
+            href="/api/download?utm_source=404&utm_medium=site"
             className="text-[13px] text-ink-soft underline decoration-vermillon decoration-[1.5px] underline-offset-[5px] hover:text-ink"
           >
             Or just download
@@ -42,7 +42,7 @@ export default function NotFound() {
 
         <div className="mt-14 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
           <span className="h-px w-12 bg-hairline" />
-          <span>Run · Bar · v0.1.2</span>
+          <span>Run · Bar · v0.1.13</span>
         </div>
       </div>
     </main>

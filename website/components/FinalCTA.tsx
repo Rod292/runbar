@@ -51,6 +51,7 @@ export function FinalCTA() {
               <DownloadButton
                 size="lg"
                 variant="primary"
+                source="final-cta"
                 className="!bg-paper !text-ink hover:!bg-paper/90"
               />
               {/* legitimacy strip */}

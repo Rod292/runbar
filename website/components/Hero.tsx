@@ -48,7 +48,7 @@ export function Hero() {
 
           {/* CTAs */}
           <div className="mt-9 flex flex-wrap items-center gap-x-7 gap-y-4 md:mt-11">
-            <DownloadButton size="lg" />
+            <DownloadButton size="lg" source="hero" />
             <a
               href="#showcase"
               className="group inline-flex items-center gap-2 text-[13px] font-medium text-ink"

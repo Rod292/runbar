@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const SITE_URL = "https://runbar.run";
@@ -85,8 +86,8 @@ const jsonLd = {
   operatingSystem: "macOS 14",
   url: SITE_URL,
   downloadUrl: `${SITE_URL}/download/RunBar.dmg`,
-  softwareVersion: "0.1.2",
-  fileSize: "2.2 MB",
+  softwareVersion: "0.1.13",
+  fileSize: "2.5 MB",
   offers: {
     "@type": "Offer",
     price: "0",
@@ -113,6 +114,7 @@ export default function RootLayout({
       </head>
       <body className="bg-ivory text-ink">
         {children}
+        <Analytics />
       </body>
     </html>
   );

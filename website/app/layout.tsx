@@ -87,7 +87,7 @@ const jsonLd = {
   url: SITE_URL,
   downloadUrl: `${SITE_URL}/download/RunBar.dmg`,
   softwareVersion: "0.1.21",
-  fileSize: "2.5 MB",
+  fileSize: "2.4 MB",
   offers: {
     "@type": "Offer",
     price: "0",

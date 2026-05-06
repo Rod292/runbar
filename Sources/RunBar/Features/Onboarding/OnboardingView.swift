@@ -394,29 +394,50 @@ public struct OnboardingView: View {
         }
     }
 
-    /// Use the most recent activities to suggest a weekly km target.
-    /// Adds a +10% buffer (rounded to nearest 5) so users push slightly
-    /// above their current pace. No-op if metric ≠ distance, no activities,
-    /// or zero distance over the window.
+    /// Suggests a weekly km target from the user's recent running history.
+    /// Adds a +10% buffer (rounded to nearest 5) so the goal pushes slightly
+    /// above their current pace. No-op if metric ≠ distance or no usable data.
     ///
-    /// We can't always look at 4 full weeks: the Strava API Agreement § 7.1
-    /// limits us to a rolling 7-day cache, so a fresh install typically only
-    /// has ~1 week of activities in store.activities. Dividing the total
-    /// by 4 "weeks" in that case underestimates the user's pace by ~4×
-    /// (a 85 km / week runner would be quoted 19 km / week). The fix is
-    /// to derive the divisor from the actual span between the oldest
-    /// activity and now, clamped to [1, 4] weeks.
+    /// Two non-obvious decisions:
+    ///
+    /// 1. Exclude the current ISO week. Mondays with 0 km would otherwise
+    ///    drag the average down dramatically; even mid-week, the in-progress
+    ///    week is by definition partial and unrepresentative. Only fall
+    ///    back to the current week if it's the only data we have.
+    ///
+    /// 2. Adapt the divisor to the actual span of data, clamped to [1, 4]
+    ///    weeks. The Strava API Agreement § 7.1 limits us to a rolling
+    ///    7-day cache, so a fresh sync typically only fills ~1 week of
+    ///    activities; dividing by a hard-coded 4 there would underestimate
+    ///    the runner's weekly pace by ~4×.
     private func seedSuggestedGoalIfPossible() {
         guard metric == .distance else { return }
         let cal = Calendar.iso8601Monday
         let now = Date.now
-        guard let cutoff = cal.date(byAdding: .day, value: -28, to: cal.startOfDay(for: now)) else { return }
-        let recent = store.activities.filter { $0.startDate >= cutoff }
-        guard !recent.isEmpty else { return }
+        guard let currentWeekStart = cal.dateInterval(of: .weekOfYear, for: now)?.start,
+              let cutoff = cal.date(byAdding: .day, value: -28, to: currentWeekStart) else { return }
+
+        let completedWeekRuns = store.activities.filter {
+            $0.startDate >= cutoff && $0.startDate < currentWeekStart
+        }
+        let recent: [Activity]
+        let upperBound: Date
+        if !completedWeekRuns.isEmpty {
+            recent = completedWeekRuns
+            upperBound = currentWeekStart
+        } else {
+            // Only data available is the in-progress week. Use it rather
+            // than fall back to the 40 km hard-coded default.
+            recent = store.activities.filter { $0.startDate >= cutoff }
+            guard !recent.isEmpty else { return }
+            upperBound = now
+        }
+
         let totalKm = recent.reduce(0) { $0 + ($1.distance / 1000.0) }
-        let oldestDate = recent.map(\.startDate).min() ?? now
-        let weeksSpan = max(1.0, min(4.0, now.timeIntervalSince(oldestDate) / (7 * 24 * 3600)))
+        let oldestDate = recent.map(\.startDate).min() ?? cutoff
+        let weeksSpan = max(1.0, min(4.0, upperBound.timeIntervalSince(oldestDate) / (7 * 24 * 3600)))
         let avgKm = totalKm / weeksSpan
+
         guard avgKm > 0.5 else { return }
         let raw = ceil(avgKm * 1.1 / 5) * 5
         let suggested = min(150, max(10, raw))

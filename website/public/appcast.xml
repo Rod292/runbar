@@ -2,7 +2,7 @@
 <rss version="2.0" xmlns:sparkle="http://www.andymatuschak.org/xml-namespaces/sparkle">
     <channel>
         <title>RunBar</title>
-        <link>https://runbar.vercel.app/appcast.xml</link>
+        <link>https://runbar.run/appcast.xml</link>
         <description>RunBar updates</description>
         <language>en</language>
         <item>
@@ -19,7 +19,7 @@
 • Onboarding. New optional step lets you paste a Gemini key during first launch (skippable).
 • Privacy. The AI coach only sees weekly aggregates — distance, runs, elevation, target, progress, days left, four-week distance history, streak, race countdown. Never activity names, timestamps, or GPS data.]]></description>
             <enclosure
-                url="https://runbar.vercel.app/download/RunBar-0.1.12.dmg"
+                url="https://runbar.run/download/RunBar-0.1.12.dmg"
                 sparkle:edSignature="NrKa0w8fZuR2uEN31/KwIc0PDyp7HzqKdvru8PxwQjZ+Hbg3Mq3eP8hnDIAT5cFr0bmcQXCcuXdYQcjZbYuODA=="
                 length="2463853"
                 type="application/octet-stream" />

@@ -8,9 +8,9 @@
 </p>
 
 <p align="center">
-  <a href="https://runbar.vercel.app/download/RunBar.dmg"><strong>↓ Download for macOS</strong></a>
+  <a href="https://runbar.run/download/RunBar.dmg"><strong>↓ Download for macOS</strong></a>
   &nbsp;·&nbsp;
-  <a href="https://runbar.vercel.app">runbar.vercel.app</a>
+  <a href="https://runbar.run">runbar.run</a>
   &nbsp;·&nbsp;
   macOS 14+ · Apple Silicon &amp; Intel · Free
 </p>
@@ -36,7 +36,7 @@ Strava is a logbook. Apple Fitness is a dashboard. Neither answers the question 
 
 The signed and notarised DMG is the only supported install:
 
-> **[Download RunBar.dmg](https://runbar.vercel.app/download/RunBar.dmg)**
+> **[Download RunBar.dmg](https://runbar.run/download/RunBar.dmg)**
 
 Drag to Applications, launch, follow the 8-step onboarding (Strava connect is optional but unlocks everything). The app is fully menu-bar (no Dock icon).
 

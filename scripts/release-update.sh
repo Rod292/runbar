@@ -20,7 +20,7 @@ DMG="$ROOT/build/RunBar.dmg"
 INFO_PLIST="$ROOT/build/RunBar.app/Contents/Info.plist"
 APPCAST="$ROOT/website/public/appcast.xml"
 DOWNLOAD_DIR="$ROOT/website/public/download"
-PUBLIC_BASE="${RUNBAR_DOWNLOAD_BASE:-https://runbar.vercel.app}"
+PUBLIC_BASE="${RUNBAR_DOWNLOAD_BASE:-https://runbar.run}"
 SIGN_UPDATE="$ROOT/.build/artifacts/sparkle/Sparkle/bin/sign_update"
 
 if [ ! -f "$DMG" ]; then

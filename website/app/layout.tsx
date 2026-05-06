@@ -1,7 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
 
-const SITE_URL = "https://runbar.vercel.app";
+const SITE_URL = "https://runbar.run";
 const TITLE = "RunBar — a runner in your menu bar";
 const DESCRIPTION =
   "Mac menu-bar app for runners. A tiny figure runs toward your weekly finish line. Strava-synced. macOS 14+. Free.";

@@ -119,7 +119,7 @@ export default function TermsPage() {
         The App ships an in-app update mechanism (Sparkle) which fetches
         a signed update feed from
         {" "}
-        <code>runbar.vercel.app/appcast.xml</code>. Updates are validated
+        <code>runbar.run/appcast.xml</code>. Updates are validated
         with EdDSA before install. You may decline an update; some
         features may stop working over time as third-party APIs evolve.
       </p>

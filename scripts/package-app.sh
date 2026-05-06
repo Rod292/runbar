@@ -81,7 +81,7 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <key>NSHighResolutionCapable</key>
     <true/>
     <key>SUFeedURL</key>
-    <string>https://runbar.vercel.app/appcast.xml</string>
+    <string>https://runbar.run/appcast.xml</string>
     <key>SUEnableAutomaticChecks</key>
     <true/>
     <key>SUPublicEDKey</key>

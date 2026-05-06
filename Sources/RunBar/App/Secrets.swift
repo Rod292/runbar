@@ -38,7 +38,7 @@ enum Secrets {
     static let backendBaseURL = value(
         env: "RUNBAR_BACKEND_BASE_URL",
         defaults: "runbar.backend.baseURL",
-        fallback: "https://runbar.vercel.app"
+        fallback: "https://runbar.run"
     )
 
     /// Callback OAuth — un mini serveur local intercepte la requête.

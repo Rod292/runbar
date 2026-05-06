@@ -76,7 +76,7 @@ export default function PrivacyPage() {
         </li>
         <li>
           <strong>Sparkle update check.</strong> The app fetches{" "}
-          <code>https://runbar.vercel.app/appcast.xml</code> roughly every
+          <code>https://runbar.run/appcast.xml</code> roughly every
           24 hours to check for new versions. The request carries no
           identifier beyond a generic User-Agent.
         </li>

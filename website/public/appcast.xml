@@ -6,23 +6,22 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.17</title>
-            <pubDate>Wed, 06 May 2026 15:21:21 +0000</pubDate>
-            <sparkle:version>18</sparkle:version>
-            <sparkle:shortVersionString>0.1.17</sparkle:shortVersionString>
+            <title>Version 0.1.18</title>
+            <pubDate>Wed, 06 May 2026 16:00:55 +0000</pubDate>
+            <sparkle:version>19</sparkle:version>
+            <sparkle:shortVersionString>0.1.18</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar 0.1.17 — accurate weekly goal suggestion after a fresh Strava connect.
+            <description><![CDATA[RunBar 0.1.18 — accurate goal seed and instant 8-week sparkline on first Strava connect.
 
-Two related fixes when you onboard or reconnect a Strava account:
+Stravas API Agreement § 7.1 limits us to a rolling 7-day cache of raw activities, but explicitly permits storing *derived* weekly aggregates indefinitely. Until now RunBar only used the rolling cache, so a fresh BYO connect saw ~1 week of activities and could not tell an 85 km/week runner from a 19 km/week runner — and the popover sparkline started almost empty.
 
-• The seed used to divide the total km by a hard-coded "4 weeks" — but the Strava API Agreement § 7.1 limits us to a rolling 7-day cache, so a fresh sync only fills ~1 week of activities. An 85 km/week runner was being quoted 19 km/week as their average. The divisor now adapts to the actual span of available data, clamped to 1–4 weeks.
-• The seed now ignores the in-progress ISO week. A Monday morning install with 0 km logged this week was dragging the average down; the current week is by definition partial and unrepresentative. Only fall back to it if there is no completed-week data at all.
+On a successful Strava connect we now fetch 8 weeks of running history in memory, extract the weekly km/runs/elevation aggregates, and persist only those derived snapshots. Raw activities older than 7 days are never written to disk. Conformant — and the goal seed instantly reflects your actual recent pace.
 
-Net effect: the suggested target is closer to your actual recent pace, even on a fresh BYO connection.]]></description>
+Side effect: the 8-week sparkline in the popover is fully populated from the first launch instead of having to build up over time.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.17.dmg"
-                sparkle:edSignature="3rjfeUO/SjKOOki7B9mR0lGfdwkZoWPD98HKOjEiwWkBAQ9j9yBCX2g2+OI0LF8+YPYFXZnOEf4+Xy33Dz20BQ=="
-                length="2490657"
+                url="https://runbar.run/download/RunBar-0.1.18.dmg"
+                sparkle:edSignature="TWNyCVkXTtkob/uWtHzboEOHFnGdeHY6DIV3ZgJkrLl17CXPbHX7U8l1beeiC84XPDo2Anf7WbI9dUreweO9Ag=="
+                length="2501330"
                 type="application/octet-stream" />
         </item>
     </channel>

@@ -200,7 +200,9 @@
 "settings.general.behavior" = "Behavior";
 "settings.display.icon" = "Menu-bar icon";
 "settings.display.preview" = "Preview";
-"settings.sources.providers" = "Providers";
+"settings.sources.providers" = "Other sources";
+"settings.sources.strava.label" = "Strava";
+"settings.sources.strava.blurb" = "RunBar's shared Strava app is queued for quota approval. In the meantime, you connect your own personal Strava API client — it stays under your account, only sees your data, and skips the queue entirely.";
 "settings.about.actions" = "Actions";
 
 /* Onboarding — race step (added 2026-05-04) */

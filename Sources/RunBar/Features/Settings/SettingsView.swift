@@ -396,26 +396,17 @@ public struct SettingsView: View {
         return VStack(alignment: .leading, spacing: 22) {
             paneHeader(.sources, italicWord: "Where the data comes from.")
 
-            PaneSection("settings.sources.providers", figure: "fig. a") {
-                stravaRow
-                hairline
+            stravaSection
+
+            PaneSection("settings.sources.providers", figure: "fig. b") {
                 sourceRow(name: "Apple Health",   status: comingSoon, dotColor: .secondary, available: false)
                 hairline
                 sourceRow(name: "Garmin Connect", status: comingSoon, dotColor: .secondary, available: false)
                 hairline
                 sourceRow(name: "Manual entry",   status: alwaysOn,   dotColor: RunBarColor.gold, available: true)
-
-                if let err = coordinator.stravaError {
-                    Text(err)
-                        .font(.caption)
-                        .foregroundStyle(RunBarColor.terra)
-                        .padding(.top, 4)
-                }
             }
 
-            byoStravaSection
-
-            PaneSection("settings.sources.diagnostic.title", figure: "fig. b") {
+            PaneSection("settings.sources.diagnostic.title", figure: "fig. c") {
                 HStack(spacing: 0) {
                     diagnosticMetric(
                         title: String(localized: "settings.sources.diagnostic.strava", bundle: .runBarResources),
@@ -441,7 +432,7 @@ public struct SettingsView: View {
                 }
             }
 
-            PaneSection("settings.sources.local_data.title", figure: "fig. c") {
+            PaneSection("settings.sources.local_data.title", figure: "fig. d") {
                 HStack(alignment: .firstTextBaseline) {
                     Text(String(format: countTemplate, store.activities.count))
                         .font(.system(size: 13))
@@ -505,40 +496,66 @@ public struct SettingsView: View {
         }
     }
 
-    /// Carte "Use my own Strava API client" — point d'entrée vers la sheet
-    /// BYO. Garde la PaneSection providers ci-dessus 100 % inchangée pour
-    /// les utilisateurs en mode standard.
-    private var byoStravaSection: some View {
-        PaneSection("settings.sources.byo.label", figure: "advanced") {
-            VStack(alignment: .leading, spacing: 10) {
-                Text("settings.sources.byo.blurb", bundle: .runBarResources)
+    /// Carte Strava unique. Tant que l'augmentation de quota n'est pas
+    /// approuvée par Strava, on n'expose que le flow BYO — l'app partagée
+    /// est en "Single Player Mode" (1 athlète max), donc proposer un bouton
+    /// "Connect with Strava" standard amènerait l'utilisateur dans une
+    /// impasse. Le code `stravaRow` shared reste dans le fichier pour
+    /// réactivation rapide une fois le quota approuvé.
+    private var stravaSection: some View {
+        PaneSection("settings.sources.strava.label", figure: "fig. a") {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("settings.sources.strava.blurb", bundle: .runBarResources)
                     .font(.system(size: 12))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
                 HStack(spacing: 10) {
                     Circle()
-                        .fill(coordinator.stravaUsesUserAccount ? RunBarColor.moss : Color.secondary.opacity(0.4))
+                        .fill(coordinator.stravaConnected ? RunBarColor.moss : Color.secondary.opacity(0.4))
                         .frame(width: 7, height: 7)
-                    Text(coordinator.stravaUsesUserAccount
-                         ? LocalizedStringKey("settings.sources.byo.status.active")
-                         : LocalizedStringKey("settings.sources.byo.status.inactive"),
+                    Text(coordinator.stravaConnected
+                         ? LocalizedStringKey("settings.sources.connected")
+                         : LocalizedStringKey("settings.sources.disconnected"),
                          bundle: .runBarResources)
                         .font(.system(size: 10.5, design: .monospaced))
                         .tracking(1.4)
                         .textCase(.uppercase)
                         .foregroundStyle(.tertiary)
                     Spacer()
-                    Button {
-                        byoSheetPresented = true
-                    } label: {
-                        Text(coordinator.stravaUsesUserAccount
-                             ? LocalizedStringKey("settings.sources.byo.manage")
-                             : LocalizedStringKey("settings.sources.byo.configure"),
-                             bundle: .runBarResources)
+                    if coordinator.stravaBusy {
+                        ProgressView().controlSize(.small)
+                    } else if coordinator.stravaConnected {
+                        Button {
+                            byoSheetPresented = true
+                        } label: {
+                            Text("settings.sources.byo.manage", bundle: .runBarResources)
+                        }
+                        .controlSize(.small)
+                        .buttonStyle(PressableButtonStyle())
+
+                        Button(role: .destructive) {
+                            Task { await coordinator.disconnectStrava() }
+                        } label: {
+                            Text("settings.sources.disconnect", bundle: .runBarResources)
+                        }
+                        .controlSize(.small)
+                        .buttonStyle(PressableButtonStyle())
+                    } else {
+                        Button {
+                            byoSheetPresented = true
+                        } label: {
+                            Text("settings.sources.byo.configure", bundle: .runBarResources)
+                        }
+                        .controlSize(.small)
+                        .buttonStyle(PressableButtonStyle())
                     }
-                    .controlSize(.small)
-                    .buttonStyle(PressableButtonStyle())
+                }
+
+                if let err = coordinator.stravaError {
+                    Text(err)
+                        .font(.caption)
+                        .foregroundStyle(RunBarColor.terra)
                 }
             }
         }

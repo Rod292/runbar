@@ -394,10 +394,18 @@ public struct OnboardingView: View {
         }
     }
 
-    /// Use last 4 ISO weeks of activities to suggest a weekly km target.
+    /// Use the most recent activities to suggest a weekly km target.
     /// Adds a +10% buffer (rounded to nearest 5) so users push slightly
     /// above their current pace. No-op if metric ≠ distance, no activities,
     /// or zero distance over the window.
+    ///
+    /// We can't always look at 4 full weeks: the Strava API Agreement § 7.1
+    /// limits us to a rolling 7-day cache, so a fresh install typically only
+    /// has ~1 week of activities in store.activities. Dividing the total
+    /// by 4 "weeks" in that case underestimates the user's pace by ~4×
+    /// (a 85 km / week runner would be quoted 19 km / week). The fix is
+    /// to derive the divisor from the actual span between the oldest
+    /// activity and now, clamped to [1, 4] weeks.
     private func seedSuggestedGoalIfPossible() {
         guard metric == .distance else { return }
         let cal = Calendar.iso8601Monday
@@ -406,7 +414,9 @@ public struct OnboardingView: View {
         let recent = store.activities.filter { $0.startDate >= cutoff }
         guard !recent.isEmpty else { return }
         let totalKm = recent.reduce(0) { $0 + ($1.distance / 1000.0) }
-        let avgKm = totalKm / 4.0
+        let oldestDate = recent.map(\.startDate).min() ?? now
+        let weeksSpan = max(1.0, min(4.0, now.timeIntervalSince(oldestDate) / (7 * 24 * 3600)))
+        let avgKm = totalKm / weeksSpan
         guard avgKm > 0.5 else { return }
         let raw = ceil(avgKm * 1.1 / 5) * 5
         let suggested = min(150, max(10, raw))

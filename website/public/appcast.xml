@@ -6,20 +6,21 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.15</title>
-            <pubDate>Wed, 06 May 2026 15:04:02 +0000</pubDate>
-            <sparkle:version>16</sparkle:version>
-            <sparkle:shortVersionString>0.1.15</sparkle:shortVersionString>
+            <title>Version 0.1.16</title>
+            <pubDate>Wed, 06 May 2026 15:14:07 +0000</pubDate>
+            <sparkle:version>17</sparkle:version>
+            <sparkle:shortVersionString>0.1.16</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar 0.1.15 — three quality fixes for new BYO users.
+            <description><![CDATA[RunBar 0.1.16 — clean state on Strava disconnect & diagnostic logging.
 
-• Onboarding now suggests a weekly target even when you connect through your own personal Strava API client. Previously the suggestion only worked if the first sync had completed before you advanced to the goal step — BYO users routinely beat the sync and got stranded with the 40 km fallback. The seed now reacts to the first batch of activities landing in the store.
-• Settings → Strava gains a Reconnect button when the connection enters an error state. No more disconnect-then-reconfigure dance just to refresh a stale OAuth token.
-• Webhook receiver now honours Strava aspect_type=delete events and removes the matching activity from the local store immediately, instead of waiting for the next 7-day cache sweep. This closes the Strava API Agreement § 2.6f gap (48h delete SLA).]]></description>
+• Disconnecting Strava now also wipes the 8-week sparkline history. Previously the derived weekly snapshots survived, so switching to a different Strava account (or re-connecting via your own BYO app) left the popover showing the prior account history under the new "0 runs found" line. Cleaner state, and closer to the letter of the API Agreement § 5.4 (delete Personal Data on revocation, even derived).
+• When Strava returns activities but none of type Run / TrailRun / VirtualRun, RunBar now logs the type histogram (e.g. "Walk×3 Workout×7") to Console.app so you can immediately see whether your activities are filtered by type or whether you authenticated against an account with no runs.
+
+Privacy unchanged: no names, no GPS, no timestamps in logs — just type counts.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.15.dmg"
-                sparkle:edSignature="S31zCi2TfDt88tGcsWAt/6tLswrixPS/vKa17tkArDj+cDJoHItuprjQ3Gxx0vma1mXRSx0IeGS0/KmW6+YIAA=="
-                length="2479396"
+                url="https://runbar.run/download/RunBar-0.1.16.dmg"
+                sparkle:edSignature="+jMv/a/2hWZG120Ds5zsNAlpiLJM5u0tRvfsprmSPXWURcy0LP7EZw/Oqdgc7EbA9dS2dxbOgUd3LYB+cSx4Cw=="
+                length="2488020"
                 type="application/octet-stream" />
         </item>
     </channel>

@@ -6,21 +6,23 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.16</title>
-            <pubDate>Wed, 06 May 2026 15:14:07 +0000</pubDate>
-            <sparkle:version>17</sparkle:version>
-            <sparkle:shortVersionString>0.1.16</sparkle:shortVersionString>
+            <title>Version 0.1.17</title>
+            <pubDate>Wed, 06 May 2026 15:21:21 +0000</pubDate>
+            <sparkle:version>18</sparkle:version>
+            <sparkle:shortVersionString>0.1.17</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar 0.1.16 — clean state on Strava disconnect & diagnostic logging.
+            <description><![CDATA[RunBar 0.1.17 — accurate weekly goal suggestion after a fresh Strava connect.
 
-• Disconnecting Strava now also wipes the 8-week sparkline history. Previously the derived weekly snapshots survived, so switching to a different Strava account (or re-connecting via your own BYO app) left the popover showing the prior account history under the new "0 runs found" line. Cleaner state, and closer to the letter of the API Agreement § 5.4 (delete Personal Data on revocation, even derived).
-• When Strava returns activities but none of type Run / TrailRun / VirtualRun, RunBar now logs the type histogram (e.g. "Walk×3 Workout×7") to Console.app so you can immediately see whether your activities are filtered by type or whether you authenticated against an account with no runs.
+Two related fixes when you onboard or reconnect a Strava account:
 
-Privacy unchanged: no names, no GPS, no timestamps in logs — just type counts.]]></description>
+• The seed used to divide the total km by a hard-coded "4 weeks" — but the Strava API Agreement § 7.1 limits us to a rolling 7-day cache, so a fresh sync only fills ~1 week of activities. An 85 km/week runner was being quoted 19 km/week as their average. The divisor now adapts to the actual span of available data, clamped to 1–4 weeks.
+• The seed now ignores the in-progress ISO week. A Monday morning install with 0 km logged this week was dragging the average down; the current week is by definition partial and unrepresentative. Only fall back to it if there is no completed-week data at all.
+
+Net effect: the suggested target is closer to your actual recent pace, even on a fresh BYO connection.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.16.dmg"
-                sparkle:edSignature="+jMv/a/2hWZG120Ds5zsNAlpiLJM5u0tRvfsprmSPXWURcy0LP7EZw/Oqdgc7EbA9dS2dxbOgUd3LYB+cSx4Cw=="
-                length="2488020"
+                url="https://runbar.run/download/RunBar-0.1.17.dmg"
+                sparkle:edSignature="3rjfeUO/SjKOOki7B9mR0lGfdwkZoWPD98HKOjEiwWkBAQ9j9yBCX2g2+OI0LF8+YPYFXZnOEf4+Xy33Dz20BQ=="
+                length="2490657"
                 type="application/octet-stream" />
         </item>
     </channel>

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const LATEST_DMG = "/download/RunBar-0.1.16.dmg";
+const LATEST_DMG = "/download/RunBar-0.1.17.dmg";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
   console.log(
     JSON.stringify({
       event: "download",
-      version: "0.1.16",
+      version: "0.1.17",
       utm_source: utmSource,
       utm_medium: utmMedium,
       utm_campaign: utmCampaign,

@@ -6,22 +6,26 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.12</title>
-            <pubDate>Tue, 05 May 2026 12:56:03 +0000</pubDate>
-            <sparkle:version>13</sparkle:version>
-            <sparkle:shortVersionString>0.1.12</sparkle:shortVersionString>
+            <title>Version 0.1.13</title>
+            <pubDate>Wed, 06 May 2026 13:02:31 +0000</pubDate>
+            <sparkle:version>14</sparkle:version>
+            <sparkle:shortVersionString>0.1.13</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar reads your last four weeks and proposes a weekly target you can actually hold — and ships an optional AI coach for two-line check-ins.
+            <description><![CDATA[RunBar 0.1.13 ships full Strava API Agreement compliance and migrates the canonical site to runbar.run.
 
-• Weekly target suggestions. Each Monday RunBar evaluates your last four ISO weeks and proposes a fresh target. Capped at +20% per week. Suggests a more realistic lower target if you've been below 70% for two weeks running.
-• Quick target edit. Click the 'of XX km' label in the popover for a menu with ±2 / ±5 km shortcuts and a path to Settings.
-• Optional AI coach. Bring your own API key (Gemini 2.5 Flash Lite by default — free tier covers daily use). Two-to-four lines, factual and warm, only based on real facts from your week. Disabled until you connect it.
-• Onboarding. New optional step lets you paste a Gemini key during first launch (skippable).
-• Privacy. The AI coach only sees weekly aggregates — distance, runs, elevation, target, progress, days left, four-week distance history, streak, race countdown. Never activity names, timestamps, or GPS data.]]></description>
+• Rolling 7-day Strava cache. Fetched activities are purged after one week per the Strava API Agreement; long-term history is preserved as derived weekly snapshots.
+• Disconnect now wipes Strava data. Settings → Sources → Disconnect deletes all locally cached Strava activities, not just the OAuth tokens.
+• Official Connect with Strava button across the popover, settings and onboarding.
+• Powered by Strava attribution in the popover footer.
+• View on Strava on every activity row — click to open the activity at strava.com.
+• AI coach disclaimer cites the Strava API Agreement and recommends a paid Gemini tier (free tier may use prompts to improve Google's models).
+• Site moves to runbar.run with /privacy /terms /contact pages.
+
+Privacy summary unchanged: weekly aggregates only (distance, runs, elevation, target, progress, four-week history, streak, race countdown). Never activity names, timestamps, or GPS data.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.12.dmg"
-                sparkle:edSignature="NrKa0w8fZuR2uEN31/KwIc0PDyp7HzqKdvru8PxwQjZ+Hbg3Mq3eP8hnDIAT5cFr0bmcQXCcuXdYQcjZbYuODA=="
-                length="2463853"
+                url="https://runbar.run/download/RunBar-0.1.13.dmg"
+                sparkle:edSignature="iGD/idhPCLCO1d5Ao3j9IZ9RA8yfpD7UiOWvcf/jaLaDX8Dp+/bePz6Ql2srsMWglX56gCNcIqGGH35fuSVKAg=="
+                length="2469889"
                 type="application/octet-stream" />
         </item>
     </channel>

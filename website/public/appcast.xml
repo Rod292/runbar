@@ -6,20 +6,20 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.19</title>
-            <pubDate>Wed, 06 May 2026 16:10:10 +0000</pubDate>
-            <sparkle:version>20</sparkle:version>
-            <sparkle:shortVersionString>0.1.19</sparkle:shortVersionString>
+            <title>Version 0.1.20</title>
+            <pubDate>Wed, 06 May 2026 16:15:17 +0000</pubDate>
+            <sparkle:version>21</sparkle:version>
+            <sparkle:shortVersionString>0.1.20</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar 0.1.19 — fix the "A more realistic target?" banner ignoring your weekly history.
+            <description><![CDATA[RunBar 0.1.20 — fix Save & reconnect doing nothing.
 
-The popover banner was confidently telling 85 km/week runners that their 4-week average was 15.3 km. Cause: the suggestion engine read 4 ISO weeks of raw activity rows, but Stravas API Agreement § 7.1 only lets us cache 7 days of activities. The other three weeks of the 4-week lookback were 0 km zeros, dragging the average down to roughly 1/4 of reality and triggering a spurious decrease suggestion.
+The Settings → Strava → Manage sheet has a primary button labelled "Save & reconnect", but it was only persisting the new credentials and dismissing the sheet — no OAuth round-trip, no Strava authorize page in the browser. So if you tried to switch to a different Strava account (or fix a stale token) from Settings, youd save your client_id/secret and then sit there wondering why the connection never actually re-established.
 
-The engine now reads weekly km from the persisted WeeklySnapshot history (which we already fill via 8-week seed on Strava connect, see 0.1.18). Conformant — and the suggestion finally reflects your actual recent pace.]]></description>
+The sheet now mirrors what the onboarding flow already did: save → kick off OAuth (opens the Strava authorize URL in your default browser) → on success, seed 8 weeks of derived weekly snapshots so the goal seed and the popover sparkline reflect reality immediately.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.19.dmg"
-                sparkle:edSignature="Rwd2s+qMLhdbuIPxzieZMu9FWgXSzPRKwS7Rs6GB1gKhcjcb+dPtgX33TF90aM+DL1smf7ZxVT4qWCYbyrNJCA=="
-                length="2502813"
+                url="https://runbar.run/download/RunBar-0.1.20.dmg"
+                sparkle:edSignature="LXrVJ9KjUwtZ6VQ/BtGWJDxnhw8VS9gH2Vvv6qFtfNwe7r3cTFWG0bajoKPZcy3/DgZnmDbzMsU9+CovPPufCg=="
+                length="2503430"
                 type="application/octet-stream" />
         </item>
     </channel>

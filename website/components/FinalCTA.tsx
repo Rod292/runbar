@@ -83,7 +83,7 @@ export function FinalCTA() {
           <div className="flex items-center gap-3">
             <span className="font-display italic text-paper">Run</span>
             <span className="font-medium text-paper">Bar</span>
-            <span>· v0.1.19 · 2026</span>
+            <span>· v0.1.20 · 2026</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <a href="#showcase" className="hover:text-paper">Overview</a>

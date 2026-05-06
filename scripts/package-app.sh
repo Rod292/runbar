@@ -69,9 +69,9 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.healthcare-fitness</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.19</string>
+    <string>0.1.20</string>
     <key>CFBundleVersion</key>
-    <string>20</string>
+    <string>21</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>

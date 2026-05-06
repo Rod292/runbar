@@ -113,6 +113,7 @@
 "settings.sources.disconnected" = "Not connected";
 "settings.sources.connect" = "Connect";
 "settings.sources.disconnect" = "Disconnect";
+"settings.sources.reconnect" = "Reconnect";
 "settings.sources.coming_soon" = "Coming soon";
 "settings.sources.always_active" = "Always on";
 "settings.sources.local_data.title" = "Local data";

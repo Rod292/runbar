@@ -553,9 +553,20 @@ public struct SettingsView: View {
                 }
 
                 if let err = coordinator.stravaError {
-                    Text(err)
-                        .font(.caption)
-                        .foregroundStyle(RunBarColor.terra)
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(err)
+                            .font(.caption)
+                            .foregroundStyle(RunBarColor.terra)
+                            .fixedSize(horizontal: false, vertical: true)
+                        Spacer()
+                        Button {
+                            Task { await coordinator.connectStrava() }
+                        } label: {
+                            Text("settings.sources.reconnect", bundle: .runBarResources)
+                        }
+                        .controlSize(.small)
+                        .buttonStyle(PressableButtonStyle())
+                    }
                 }
             }
         }

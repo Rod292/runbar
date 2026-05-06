@@ -176,6 +176,16 @@ public struct OnboardingView: View {
         }
         .frame(width: 720, height: 580)
         .preferredColorScheme(.light)
+        // The first Strava sync is async — it can land *after* the user
+        // has already advanced from Connect (step 3) to Goal (step 4).
+        // When that happens, re-seed the suggested target as soon as the
+        // store wakes up, so BYO users don't get stranded with the
+        // hard-coded fallback (40 km).
+        .onChange(of: store.activities.count) { _, _ in
+            if step == 4 && !suggestionSeeded && metric == .distance {
+                seedSuggestedGoalIfPossible()
+            }
+        }
     }
 
     // MARK: - Sections

@@ -113,9 +113,22 @@ public actor StravaService: StravaServiceProtocol {
             page += 1
         }
 
-        return all
-            .filter(\.isRunningActivity)
-            .map { $0.toDomain() }
+        let runs = all.filter(\.isRunningActivity)
+        if all.count > 0 && runs.isEmpty {
+            // Help users diagnose "I have activities but RunBar shows 0 runs":
+            // log the types we received so the OAuth+account combination is
+            // visible without exposing private data (no name, no GPS, no time).
+            let types = Dictionary(grouping: all, by: \.type)
+                .mapValues(\.count)
+                .sorted { $0.value > $1.value }
+                .prefix(8)
+                .map { "\($0.key)×\($0.value)" }
+                .joined(separator: " ")
+            RunBarLog.strava.notice(
+                "Strava returned \(all.count) activities but none are runs. Types seen: \(types)"
+            )
+        }
+        return runs.map { $0.toDomain() }
     }
 
     // MARK: - Token plumbing

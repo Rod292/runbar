@@ -34,6 +34,17 @@ public final class SnapshotStore: ObservableObject {
         Array(snapshots.sorted(by: { $0.weekStart > $1.weekStart }).prefix(limit))
     }
 
+    /// Wipes the entire weekly history. Called on Strava disconnect: even
+    /// though weekly snapshots are derived aggregates, they are still
+    /// "Personal Data pertaining to that user" under § 5.4 of the Strava API
+    /// Agreement and must be deleted on revocation. Also clears the visual
+    /// ghosting where the previous account's sparkline lingered after the
+    /// new account was connected and returned no runs.
+    public func clear() {
+        snapshots = []
+        UserDefaults.standard.removeObject(forKey: key)
+    }
+
     private func load() {
         guard let data = UserDefaults.standard.data(forKey: key) else { return }
         if let decoded = try? JSONDecoder().decode([WeeklySnapshot].self, from: data) {

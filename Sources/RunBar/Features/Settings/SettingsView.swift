@@ -15,10 +15,12 @@ public final class SettingsCoordinator: ObservableObject {
 
     public let strava: StravaServiceProtocol
     private let store: ActivityStore?
+    private let snapshots: SnapshotStore?
 
-    public init(strava: StravaServiceProtocol, store: ActivityStore? = nil) {
+    public init(strava: StravaServiceProtocol, store: ActivityStore? = nil, snapshots: SnapshotStore? = nil) {
         self.strava = strava
         self.store = store
+        self.snapshots = snapshots
         Task { await refreshStravaStatus() }
     }
 
@@ -57,8 +59,13 @@ public final class SettingsCoordinator: ObservableObject {
         await strava.disconnect()
         // Strava API Agreement: "ensure that all Personal Data pertaining to
         // that user is deleted from your Developer Applications" upon
-        // revocation. On supprime toutes les activités Strava locales.
+        // revocation. On supprime toutes les activités Strava locales et
+        // les snapshots hebdo dérivés (qui restaient sinon comme historique
+        // fantôme du compte précédent — surtout visible quand on switch de
+        // compte Strava et que le sparkline 8 semaines reste plein alors
+        // que la sync renvoie 0 activités).
         store?.clear(source: .strava)
+        snapshots?.clear()
         await refreshStravaStatus()
     }
 

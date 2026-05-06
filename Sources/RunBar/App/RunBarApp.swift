@@ -59,7 +59,7 @@ public final class AppContainer {
         let snaps = SnapshotStore()
         let strava = StravaService()
         let sm = SyncManager(store: s, strava: strava)
-        let coord = SettingsCoordinator(strava: strava, store: s)
+        let coord = SettingsCoordinator(strava: strava, store: s, snapshots: snaps)
         let suggestionStore = GoalSuggestionStore(store: s)
         let coachCfg = CoachConfiguration()
         let coachSvc = CoachService(store: s, snapshots: snaps, configuration: coachCfg)

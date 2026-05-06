@@ -86,6 +86,8 @@ public struct OnboardingView: View {
     var onFinish: () -> Void
 
     @State private var step: Int = 0
+    @AppStorage("runbar.onboarding.restartToken") private var restartToken: Int = 0
+    @State private var lastSeenRestartToken: Int = 0
     @State private var metric: GoalMetric = .distance
     @State private var targetKm: Double = 40
     @State private var targetCount: Double = 4
@@ -194,6 +196,21 @@ public struct OnboardingView: View {
             }
         }
         .onAppear {
+            // SwiftUI Window scene reuses this view between open/close, so
+            // the @State `step` lingers at the Done screen after the user
+            // finished once. The Settings "Restart onboarding" button bumps
+            // restartToken; we read it on appear and reset to step 0 if it
+            // changed since we last looked.
+            if restartToken != lastSeenRestartToken {
+                step = 0
+                suggestionSeeded = false
+                suggestionAvgKm = nil
+                coachKeyDraft = ""
+                coachKeyError = nil
+                raceEnabled = false
+                raceName = ""
+                lastSeenRestartToken = restartToken
+            }
             if !suggestionSeeded && metric == .distance {
                 seedSuggestedGoalIfPossible()
             }

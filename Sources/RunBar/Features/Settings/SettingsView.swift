@@ -1072,6 +1072,14 @@ public struct SettingsView: View {
 
                     HStack {
                         Button {
+                            // Bump a token that OnboardingView observes via
+                            // @AppStorage. Without this, the SwiftUI Window
+                            // scene reuses the existing OnboardingView
+                            // instance — so its @State `step` lingers at 7
+                            // (the Done screen) from the previous run, and
+                            // "Restart" only re-shows the Finish button.
+                            let token = UserDefaults.standard.integer(forKey: "runbar.onboarding.restartToken")
+                            UserDefaults.standard.set(token + 1, forKey: "runbar.onboarding.restartToken")
                             UserDefaults.standard.set(false, forKey: "runbar.onboardingDone")
                             openWindow(id: "onboarding")
                         } label: {

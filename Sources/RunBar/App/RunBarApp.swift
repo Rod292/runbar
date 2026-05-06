@@ -23,6 +23,7 @@ struct RunBarApp: App {
         Window("Bienvenue", id: "onboarding") {
             OnboardingView(
                 store: AppContainer.shared.store,
+                snapshots: AppContainer.shared.snapshots,
                 coordinator: AppContainer.shared.settings,
                 coachConfig: AppContainer.shared.coachConfiguration
             ) {

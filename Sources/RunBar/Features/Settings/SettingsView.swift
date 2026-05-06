@@ -85,6 +85,66 @@ public final class SettingsCoordinator: ObservableObject {
         }
     }
 
+    /// Fetches `daysBack` days of running activities from Strava, groups
+    /// them by ISO week, and persists weekly aggregates as `WeeklySnapshot`.
+    /// Returns the average km/week across the *completed* weeks (current
+    /// week excluded), or `nil` when there is no usable data or the fetch
+    /// fails.
+    ///
+    /// Why this is conformant with the Strava API Agreement:
+    /// - § 7.1 (7-day cache limit): we never write the raw activities
+    ///   beyond 7 days into SwiftData. The fetch result is in-memory only,
+    ///   and only the *derived* weekly aggregates are persisted, which the
+    ///   agreement explicitly allows.
+    /// - § 2.9 (no aggregation/storage except as permitted): weekly
+    ///   distance / runs / elevation aggregates are explicitly listed as
+    ///   permitted derived data.
+    ///
+    /// Used by the onboarding flow to seed an accurate weekly target on
+    /// first connect — without this, a fresh sync only fills the rolling
+    /// 7-day window and underestimates the runner's true weekly pace.
+    @discardableResult
+    public func seedHistoricalSnapshots(
+        daysBack: Int = 28,
+        defaultTarget: Double = 40
+    ) async -> Double? {
+        let cal = Calendar.iso8601Monday
+        let now = Date.now
+        guard let cutoff = cal.date(byAdding: .day, value: -daysBack, to: now),
+              let currentWeekStart = cal.dateInterval(of: .weekOfYear, for: now)?.start
+        else { return nil }
+        do {
+            let dtos = try await strava.fetchActivities(since: cutoff)
+            var byWeek: [Date: Double] = [:]
+            for dto in dtos {
+                guard let weekStart = cal.dateInterval(of: .weekOfYear, for: dto.startDate)?.start else { continue }
+                byWeek[weekStart, default: 0] += dto.distance / 1000.0
+            }
+            // Persist derived snapshots for every week we touched (including
+            // the current one — the popover sparkline benefits from it).
+            for (weekStart, km) in byWeek {
+                snapshots?.record(
+                    weekStart: weekStart,
+                    metric: .distance,
+                    target: defaultTarget,
+                    achieved: km
+                )
+            }
+            // Average is computed over completed weeks only — the current
+            // week is partial and would bias the seed downward.
+            let completed = byWeek.filter { $0.key < currentWeekStart }
+            guard !completed.isEmpty else { return nil }
+            let avg = completed.values.reduce(0, +) / Double(completed.count)
+            RunBarLog.sync.notice(
+                "Historical seed: \(completed.count) completed weeks, avg \(String(format: "%.1f", avg)) km"
+            )
+            return avg
+        } catch {
+            RunBarLog.sync.error("Historical seed failed: \(error.localizedDescription)")
+            return nil
+        }
+    }
+
     /// Repasse en mode app partagée (ré-utilise le `client_id` baked dans le
     /// binaire + backend Vercel). Force la déconnexion pour la même raison.
     public func clearUserStravaCredentials() async {

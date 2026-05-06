@@ -80,6 +80,7 @@ enum RunnerTier: String, CaseIterable {
 /// (runner pulsant, confettis) sans tomber dans le SaaS générique.
 public struct OnboardingView: View {
     @ObservedObject var store: ActivityStore
+    @ObservedObject var snapshots: SnapshotStore
     @ObservedObject var coordinator: SettingsCoordinator
     @ObservedObject var coachConfig: CoachConfiguration
     var onFinish: () -> Void
@@ -109,11 +110,13 @@ public struct OnboardingView: View {
 
     public init(
         store: ActivityStore,
+        snapshots: SnapshotStore,
         coordinator: SettingsCoordinator,
         coachConfig: CoachConfiguration,
         onFinish: @escaping () -> Void
     ) {
         self.store = store
+        self.snapshots = snapshots
         self.coordinator = coordinator
         self.coachConfig = coachConfig
         self.onFinish = onFinish
@@ -398,18 +401,23 @@ public struct OnboardingView: View {
     /// Adds a +10% buffer (rounded to nearest 5) so the goal pushes slightly
     /// above their current pace. No-op if metric ≠ distance or no usable data.
     ///
-    /// Two non-obvious decisions:
+    /// Data sources, in priority order:
     ///
-    /// 1. Exclude the current ISO week. Mondays with 0 km would otherwise
-    ///    drag the average down dramatically; even mid-week, the in-progress
-    ///    week is by definition partial and unrepresentative. Only fall
-    ///    back to the current week if it's the only data we have.
+    /// 1. `WeeklySnapshot` — derived weekly aggregates persisted by
+    ///    `SettingsCoordinator.seedHistoricalSnapshots()` at connect time.
+    ///    Reaches back beyond the 7-day cache window because we fetch +
+    ///    aggregate + persist-only-the-aggregates (Strava API Agreement
+    ///    explicitly permits derived data beyond 7 days). Best signal,
+    ///    used whenever available.
     ///
-    /// 2. Adapt the divisor to the actual span of data, clamped to [1, 4]
-    ///    weeks. The Strava API Agreement § 7.1 limits us to a rolling
-    ///    7-day cache, so a fresh sync typically only fills ~1 week of
-    ///    activities; dividing by a hard-coded 4 there would underestimate
-    ///    the runner's weekly pace by ~4×.
+    /// 2. `store.activities` — only ~7 days of raw activities (rolling
+    ///    cache). Fallback when snapshots haven't been seeded yet (e.g.
+    ///    first sync still in flight, no Strava connection at all). The
+    ///    divisor adapts to the actual span of data so we don't divide
+    ///    one week of runs by a hard-coded 4.
+    ///
+    /// In both branches we exclude the in-progress ISO week — it's by
+    /// definition partial and would drag the average down on a Monday.
     private func seedSuggestedGoalIfPossible() {
         guard metric == .distance else { return }
         let cal = Calendar.iso8601Monday
@@ -417,6 +425,18 @@ public struct OnboardingView: View {
         guard let currentWeekStart = cal.dateInterval(of: .weekOfYear, for: now)?.start,
               let cutoff = cal.date(byAdding: .day, value: -28, to: currentWeekStart) else { return }
 
+        // Branch 1: prefer the derived weekly snapshots when present.
+        let completedWeekSnapshots = snapshots.snapshots.filter {
+            $0.metric == .distance && $0.weekStart >= cutoff && $0.weekStart < currentWeekStart
+        }
+        if !completedWeekSnapshots.isEmpty {
+            let totalKm = completedWeekSnapshots.reduce(0.0) { $0 + $1.achieved }
+            let avgKm = totalKm / Double(completedWeekSnapshots.count)
+            applySeed(avgKm: avgKm)
+            return
+        }
+
+        // Branch 2: fall back to the rolling 7-day raw activities.
         let completedWeekRuns = store.activities.filter {
             $0.startDate >= cutoff && $0.startDate < currentWeekStart
         }
@@ -426,18 +446,17 @@ public struct OnboardingView: View {
             recent = completedWeekRuns
             upperBound = currentWeekStart
         } else {
-            // Only data available is the in-progress week. Use it rather
-            // than fall back to the 40 km hard-coded default.
             recent = store.activities.filter { $0.startDate >= cutoff }
             guard !recent.isEmpty else { return }
             upperBound = now
         }
-
         let totalKm = recent.reduce(0) { $0 + ($1.distance / 1000.0) }
         let oldestDate = recent.map(\.startDate).min() ?? cutoff
         let weeksSpan = max(1.0, min(4.0, upperBound.timeIntervalSince(oldestDate) / (7 * 24 * 3600)))
-        let avgKm = totalKm / weeksSpan
+        applySeed(avgKm: totalKm / weeksSpan)
+    }
 
+    private func applySeed(avgKm: Double) {
         guard avgKm > 0.5 else { return }
         let raw = ceil(avgKm * 1.1 / 5) * 5
         let suggested = min(150, max(10, raw))
@@ -1112,6 +1131,15 @@ private struct ConnectStep: View {
             )
             if coordinator.stravaError == nil {
                 await coordinator.connectStrava()
+                // Once OAuth succeeds, fetch four weeks of running history
+                // and persist the weekly aggregates. This bypasses the
+                // rolling 7-day cache for the goal-seeding step (and for
+                // the 8-week sparkline) while keeping us within § 7.1:
+                // the raw fetch lives only in memory, only derived
+                // aggregates ever hit disk.
+                if coordinator.stravaConnected {
+                    await coordinator.seedHistoricalSnapshots(daysBack: 56)
+                }
             }
             saving = false
         }

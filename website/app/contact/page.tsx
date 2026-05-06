@@ -6,7 +6,7 @@ export const metadata: Metadata = {
   description: "How to reach the RunBar team for support, bugs, and privacy.",
 };
 
-const SUPPORT_EMAIL = "support@runbar.run";
+const SUPPORT_EMAIL = "contact@runbar.run";
 
 export default function ContactPage() {
   return (

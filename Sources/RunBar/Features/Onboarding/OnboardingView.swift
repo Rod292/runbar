@@ -176,13 +176,22 @@ public struct OnboardingView: View {
         }
         .frame(width: 720, height: 580)
         .preferredColorScheme(.light)
-        // The first Strava sync is async — it can land *after* the user
-        // has already advanced from Connect (step 3) to Goal (step 4).
-        // When that happens, re-seed the suggested target as soon as the
-        // store wakes up, so BYO users don't get stranded with the
-        // hard-coded fallback (40 km).
+        // The first Strava sync is async. Two race conditions used to
+        // strand BYO users on the 40 km fallback:
+        //   1. Sync lands before they advance to Goal (count change fired
+        //      while step == 3, so an earlier "step == 4" guard skipped it).
+        //   2. Sync lands after, but they advance to step 4 and never see
+        //      another count change to trigger the seed.
+        // Listening regardless of step + bailing only on suggestionSeeded /
+        // metric handles both: the seed is idempotent and the ceil/cap math
+        // produces the same answer no matter when it runs.
         .onChange(of: store.activities.count) { _, _ in
-            if step == 4 && !suggestionSeeded && metric == .distance {
+            if !suggestionSeeded && metric == .distance {
+                seedSuggestedGoalIfPossible()
+            }
+        }
+        .onAppear {
+            if !suggestionSeeded && metric == .distance {
                 seedSuggestedGoalIfPossible()
             }
         }

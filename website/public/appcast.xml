@@ -6,20 +6,20 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.20</title>
-            <pubDate>Wed, 06 May 2026 16:15:17 +0000</pubDate>
-            <sparkle:version>21</sparkle:version>
-            <sparkle:shortVersionString>0.1.20</sparkle:shortVersionString>
+            <title>Version 0.1.21</title>
+            <pubDate>Wed, 06 May 2026 16:25:14 +0000</pubDate>
+            <sparkle:version>22</sparkle:version>
+            <sparkle:shortVersionString>0.1.21</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar 0.1.20 — fix Save & reconnect doing nothing.
+            <description><![CDATA[RunBar 0.1.21 — Restart onboarding actually restarts.
 
-The Settings → Strava → Manage sheet has a primary button labelled "Save & reconnect", but it was only persisting the new credentials and dismissing the sheet — no OAuth round-trip, no Strava authorize page in the browser. So if you tried to switch to a different Strava account (or fix a stale token) from Settings, youd save your client_id/secret and then sit there wondering why the connection never actually re-established.
+Clicking Settings → Restart onboarding was re-opening the window but the SwiftUI Window scene reuses the existing OnboardingView instance, so its @State `step` lingered at 7 (the Done screen) from the previous run. You ended up looking at the Finish button with no way to walk through the steps again.
 
-The sheet now mirrors what the onboarding flow already did: save → kick off OAuth (opens the Strava authorize URL in your default browser) → on success, seed 8 weeks of derived weekly snapshots so the goal seed and the popover sparkline reflect reality immediately.]]></description>
+The Settings button now bumps a shared restart token; OnboardingView observes the token and resets to step 1 plus the per-run state (suggestion seed flag, coach key draft, race toggle). Per-user prefs that should survive (unit, metric, prior targets) are intentionally untouched.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.20.dmg"
-                sparkle:edSignature="LXrVJ9KjUwtZ6VQ/BtGWJDxnhw8VS9gH2Vvv6qFtfNwe7r3cTFWG0bajoKPZcy3/DgZnmDbzMsU9+CovPPufCg=="
-                length="2503430"
+                url="https://runbar.run/download/RunBar-0.1.21.dmg"
+                sparkle:edSignature="Q6PfDcYjNann5zQYO+vAZrusRkKgbPuqXmpAJ9YVZSRAJXaEhoQTHBskIdZS53uuL6LTQXz8t6KX2SxkT1gHBg=="
+                length="2504620"
                 type="application/octet-stream" />
         </item>
     </channel>

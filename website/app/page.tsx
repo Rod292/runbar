@@ -4,6 +4,7 @@ import { Showcase } from "@/components/Showcase";
 import { States } from "@/components/States";
 import { Popover } from "@/components/Popover";
 import { Why } from "@/components/Why";
+import { FAQ } from "@/components/FAQ";
 import { FinalCTA } from "@/components/FinalCTA";
 
 export default function Home() {
@@ -15,6 +16,7 @@ export default function Home() {
       <States />
       <Popover />
       <Why />
+      <FAQ />
       <FinalCTA />
     </main>
   );

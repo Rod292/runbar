@@ -6,22 +6,20 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.14</title>
-            <pubDate>Wed, 06 May 2026 14:53:07 +0000</pubDate>
-            <sparkle:version>15</sparkle:version>
-            <sparkle:shortVersionString>0.1.14</sparkle:shortVersionString>
+            <title>Version 0.1.15</title>
+            <pubDate>Wed, 06 May 2026 15:04:02 +0000</pubDate>
+            <sparkle:version>16</sparkle:version>
+            <sparkle:shortVersionString>0.1.15</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar 0.1.14 — official Strava brand assets + simpler Settings.
+            <description><![CDATA[RunBar 0.1.15 — three quality fixes for new BYO users.
 
-• Connect with Strava button now uses the official Strava asset (orange, retina-ready). The Powered by Strava attribution in the popover footer is also the official horizontal logo, automatically switching between black and white variants for light/dark mode.
-• Settings → Sources is now a single Strava card. While the shared RunBar Strava app is queued for quota approval, the Configure flow guides you straight through registering a personal API client. No more two-card confusion.
-• Drive-by: stale 0.1.2 version strings on the website (JSON-LD, 404 footer) bumped to current.
-
-Privacy unchanged: weekly aggregates only, Strava tokens in Keychain, no telemetry.]]></description>
+• Onboarding now suggests a weekly target even when you connect through your own personal Strava API client. Previously the suggestion only worked if the first sync had completed before you advanced to the goal step — BYO users routinely beat the sync and got stranded with the 40 km fallback. The seed now reacts to the first batch of activities landing in the store.
+• Settings → Strava gains a Reconnect button when the connection enters an error state. No more disconnect-then-reconfigure dance just to refresh a stale OAuth token.
+• Webhook receiver now honours Strava aspect_type=delete events and removes the matching activity from the local store immediately, instead of waiting for the next 7-day cache sweep. This closes the Strava API Agreement § 2.6f gap (48h delete SLA).]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.14.dmg"
-                sparkle:edSignature="CTjH3xwiCwIAD+h1zgSUCqxoYNoKK9GuXIrHlvMiHEELyMFFgmPduiMJWzizE1lVncDMCrtU/tBwvmgaGVRnBw=="
-                length="2478246"
+                url="https://runbar.run/download/RunBar-0.1.15.dmg"
+                sparkle:edSignature="S31zCi2TfDt88tGcsWAt/6tLswrixPS/vKa17tkArDj+cDJoHItuprjQ3Gxx0vma1mXRSx0IeGS0/KmW6+YIAA=="
+                length="2479396"
                 type="application/octet-stream" />
         </item>
     </channel>

@@ -86,7 +86,7 @@ const jsonLd = {
   operatingSystem: "macOS 14",
   url: SITE_URL,
   downloadUrl: `${SITE_URL}/download/RunBar.dmg`,
-  softwareVersion: "0.1.14",
+  softwareVersion: "0.1.15",
   fileSize: "2.5 MB",
   offers: {
     "@type": "Offer",

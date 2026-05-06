@@ -1,13 +1,9 @@
 import SwiftUI
 
-/// Bouton OAuth « Connect with Strava » conforme aux Strava Brand Guidelines.
+/// Bouton OAuth « Connect with Strava » — asset officiel Strava.
 ///
-/// Couleur orange officielle Strava (#FC5200), texte exact, layout en capsule.
-/// Pour une conformité 100% visuelle, remplacer le label par l'asset PNG
-/// officiel téléchargé depuis :
-///   https://developers.strava.com/guidelines/
-///   (btn_strava_connectwith_orange.png + @2x)
-/// et l'embarquer dans Resources.
+/// Source : https://developers.strava.com/guidelines/ → "Connect with
+/// Strava Buttons" → orange. Embarqué dans `Resources/StravaBrand/`.
 public struct StravaConnectButton: View {
     public enum Size { case standard, compact }
 
@@ -19,48 +15,43 @@ public struct StravaConnectButton: View {
         self.action = action
     }
 
-    /// Couleur orange Strava officielle.
     public static let strava = Color(red: 0xFC / 255, green: 0x52 / 255, blue: 0x00 / 255)
 
     public var body: some View {
         Button(action: action) {
-            HStack(spacing: 8) {
-                stravaGlyph
-                Text("Connect with Strava")
-                    .font(.system(size: size == .compact ? 12 : 14, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
-            .padding(.horizontal, size == .compact ? 12 : 18)
-            .padding(.vertical, size == .compact ? 7 : 10)
-            .background(Capsule().fill(Self.strava))
+            Image("btn_strava_connect_with_orange", bundle: .runBarResources)
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(height: size == .compact ? 26 : 36)
+                .accessibilityLabel("Connect with Strava")
         }
         .buttonStyle(.plain)
     }
-
-    /// Glyph stylisé évoquant le chevron Strava — substitut au logo officiel
-    /// jusqu'à ce que l'asset PNG soit embarqué.
-    private var stravaGlyph: some View {
-        Image(systemName: "chevron.up")
-            .font(.system(size: size == .compact ? 11 : 13, weight: .heavy))
-            .foregroundStyle(.white)
-    }
 }
 
-/// Tag d'attribution « Powered by Strava » — affiché là où on display de la
-/// Strava Data (footer du popover, page download du site).
+/// Tag d'attribution « Powered by Strava » — asset officiel Strava (horizontal).
+///
+/// Choisit automatiquement la variante noire ou blanche en fonction du
+/// `ColorScheme` ambiant (light / dark mode), pour rester lisible quel que
+/// soit le fond de la surface qui l'héberge (popover, footer settings, etc.).
 public struct PoweredByStravaTag: View {
-    public init() {}
+    @Environment(\.colorScheme) private var colorScheme
+    private let height: CGFloat
+
+    public init(height: CGFloat = 14) {
+        self.height = height
+    }
 
     public var body: some View {
-        HStack(spacing: 4) {
-            Text("POWERED BY")
-                .font(.system(size: 8, weight: .medium, design: .monospaced))
-                .tracking(1.2)
-                .foregroundStyle(.secondary)
-            Text("STRAVA")
-                .font(.system(size: 9, weight: .bold, design: .monospaced))
-                .tracking(0.5)
-                .foregroundStyle(StravaConnectButton.strava)
-        }
+        Image(
+            colorScheme == .dark
+                ? "api_logo_pwrdBy_strava_horiz_white"
+                : "api_logo_pwrdBy_strava_horiz_black",
+            bundle: .runBarResources
+        )
+        .resizable()
+        .aspectRatio(contentMode: .fit)
+        .frame(height: height)
+        .accessibilityLabel("Powered by Strava")
     }
 }

@@ -11,12 +11,18 @@ import Network
 /// vraiment nous joindre il faut soit un tunnel (ngrok, cloudflared) soit
 /// déployer le récepteur sur un vrai serveur. En dev local, on utilise le
 /// serveur surtout pour valider le challenge GET initial et pour debugger.
+public enum StravaWebhookAspect: String, Sendable {
+    case create
+    case update
+    case delete
+}
+
 public final class StravaWebhookServer: @unchecked Sendable {
     private var listener: NWListener?
     private let port: NWEndpoint.Port
-    private let onActivityEvent: (Int) -> Void
+    private let onActivityEvent: (Int, StravaWebhookAspect) -> Void
 
-    public init(port: UInt16, onActivityEvent: @escaping (Int) -> Void) {
+    public init(port: UInt16, onActivityEvent: @escaping (Int, StravaWebhookAspect) -> Void) {
         self.port = NWEndpoint.Port(rawValue: port) ?? 47863
         self.onActivityEvent = onActivityEvent
     }
@@ -95,7 +101,7 @@ public final class StravaWebhookServer: @unchecked Sendable {
     }
 
     /// Body POST : `{"object_type":"activity","aspect_type":"create","object_id":12345, ...}`.
-    /// On extrait l'object_id et on déclenche le callback.
+    /// On extrait l'object_id + aspect_type et on déclenche le callback.
     private func handleEvent(raw: String) -> String {
         // Body séparé du header par double CRLF
         if let bodyStart = raw.range(of: "\r\n\r\n") {
@@ -104,8 +110,11 @@ public final class StravaWebhookServer: @unchecked Sendable {
                let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let type = json["object_type"] as? String, type == "activity",
                let objectId = json["object_id"] as? Int {
+                let aspect = StravaWebhookAspect(
+                    rawValue: (json["aspect_type"] as? String) ?? "update"
+                ) ?? .update
                 let cb = onActivityEvent
-                Task { @MainActor in cb(objectId) }
+                Task { @MainActor in cb(objectId, aspect) }
             }
         }
         return Self.simple(status: "200 OK", body: "{}", contentType: "application/json")

@@ -119,6 +119,22 @@ public final class ActivityStore: ObservableObject {
         loadActivities()
     }
 
+    /// Supprime une activité Strava par son `object_id`. Appelée quand le
+    /// webhook nous notifie d'un `aspect_type=delete` côté Strava — l'API
+    /// Agreement (section 2.6f) exige la suppression dans les 48h.
+    public func deleteStravaActivity(objectID: Int) {
+        let key = String(objectID)
+        let context = container.mainContext
+        let descriptor = FetchDescriptor<Activity>(
+            predicate: #Predicate { $0.id == key }
+        )
+        let existing = (try? context.fetch(descriptor)) ?? []
+        guard !existing.isEmpty else { return }
+        for activity in existing { context.delete(activity) }
+        try? context.save()
+        loadActivities()
+    }
+
     /// Purge les activités d'une source plus anciennes qu'un cutoff. Strava API
     /// Agreement: pas plus de 7 jours de Strava Data en cache. L'historique
     /// long est conservé via `WeeklySnapshot` (agrégats dérivés).

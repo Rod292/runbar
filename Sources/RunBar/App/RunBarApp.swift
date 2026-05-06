@@ -69,8 +69,17 @@ public final class AppContainer {
         )
         vm.settingsCoordinator = coord
 
-        let hook = StravaWebhookServer(port: 47863) { _ in
-            Task { @MainActor in await sm.syncNow() }
+        let hook = StravaWebhookServer(port: 47863) { objectId, aspect in
+            Task { @MainActor in
+                switch aspect {
+                case .delete:
+                    // Strava API Agreement § 2.6f: delete within 48h. We act
+                    // immediately rather than waiting on the next sync window.
+                    s.deleteStravaActivity(objectID: objectId)
+                case .create, .update:
+                    await sm.syncNow()
+                }
+            }
         }
 
         self.store = s

@@ -1303,6 +1303,16 @@ struct StravaByoSheet: View {
                         clientID: clientID,
                         clientSecret: clientSecret
                     )
+                    // Save alone doesn't reconnect — the button is labelled
+                    // "Save & reconnect", so we must actually drive the OAuth
+                    // flow ourselves. Mirrors what the onboarding ConnectStep
+                    // does on first connect.
+                    if coordinator.stravaError == nil {
+                        await coordinator.connectStrava()
+                        if coordinator.stravaConnected {
+                            await coordinator.seedHistoricalSnapshots(daysBack: 56)
+                        }
+                    }
                     saving = false
                     if coordinator.stravaError == nil {
                         dismiss()

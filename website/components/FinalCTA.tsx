@@ -78,6 +78,36 @@ export function FinalCTA() {
           </div>
         </div>
 
+        {/* ─── support strip ─── */}
+        <div className="mb-8 flex flex-col items-start gap-3 border-t border-paper/12 pt-8 md:flex-row md:items-center md:justify-between">
+          <p className="max-w-[44ch] text-[13px] leading-[1.55] text-paper/65">
+            RunBar is free and MIT-licensed. If it helps your week, fuel
+            the runner — every gel keeps the project moving.
+          </p>
+          <a
+            href="https://ko-fi.com/V7V11Z3VNE"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group inline-flex items-center gap-2.5 rounded-full bg-vermillon px-5 py-2.5 text-[13px] font-medium tracking-tight text-paper shadow-[0_1px_0_rgba(0,0,0,0.1),0_8px_24px_-12px_rgba(224,60,27,0.5)] transition hover:bg-vermillon/90"
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+              <path
+                fill="currentColor"
+                d="M3 7h14a4 4 0 0 1 0 8h-1.07A6 6 0 0 1 10 21H6a3 3 0 0 1-3-3V7Zm14 6a2 2 0 0 0 0-4h-1v4h1Z"
+              />
+              <path
+                fill="currentColor"
+                opacity="0.6"
+                d="M6 1.5c.3-.3.7-.3 1 0 .3.3.3.7 0 1l-.5.5c-.3.3-.3.7 0 1 .3.3.3.7 0 1-.3.3-.7.3-1 0-.6-.6-.6-1.6 0-2.2L6 1.5Zm4 0c.3-.3.7-.3 1 0 .3.3.3.7 0 1l-.5.5c-.3.3-.3.7 0 1 .3.3.3.7 0 1-.3.3-.7.3-1 0-.6-.6-.6-1.6 0-2.2L10 1.5Zm4 0c.3-.3.7-.3 1 0 .3.3.3.7 0 1l-.5.5c-.3.3-.3.7 0 1 .3.3.3.7 0 1-.3.3-.7.3-1 0-.6-.6-.6-1.6 0-2.2L14 1.5Z"
+              />
+            </svg>
+            <span>Buy me a gel</span>
+            <span className="opacity-50 transition group-hover:translate-x-0.5">
+              →
+            </span>
+          </a>
+        </div>
+
         {/* ─── footer line ─── */}
         <div className="flex flex-col items-start justify-between gap-6 border-t border-paper/12 pt-8 text-[12px] text-paper/50 md:flex-row md:items-center">
           <div className="flex items-center gap-3">
@@ -87,8 +117,8 @@ export function FinalCTA() {
           </div>
           <div className="flex flex-wrap items-center gap-x-6 gap-y-2">
             <a href="#showcase" className="hover:text-paper">Overview</a>
-            <a href="#features" className="hover:text-paper">States</a>
-            <a href="#why" className="hover:text-paper">Manifesto</a>
+            <a href="#faq" className="hover:text-paper">FAQ</a>
+            <a href="/changelog" className="hover:text-paper">Changelog</a>
             <a href="/privacy" className="hover:text-paper">Privacy</a>
             <a href="/terms" className="hover:text-paper">Terms</a>
             <a href="/contact" className="hover:text-paper">Contact</a>

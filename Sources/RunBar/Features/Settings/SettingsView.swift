@@ -1020,7 +1020,13 @@ public struct SettingsView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Text("RunBar")
                         .font(.system(size: 22, weight: .medium, design: .serif))
-                    Text(String(format: String(localized: "settings.about.version", bundle: .runBarResources), "0.1.0"))
+                    Text(String(
+                        format: String(localized: "settings.about.version", bundle: .runBarResources),
+                        // Read the actual bundled version instead of a stale
+                        // hard-coded "0.1.0" — we ship a new build every time
+                        // we bump CFBundleShortVersionString in package-app.sh.
+                        Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "?"
+                    ))
                         .font(.system(size: 11, design: .monospaced))
                         .tracking(1.2)
                         .foregroundStyle(.tertiary)
@@ -1068,6 +1074,22 @@ public struct SettingsView: View {
                         }
                         .controlSize(.small)
                         .buttonStyle(PressableButtonStyle())
+                    }
+
+                    HStack {
+                        Button {
+                            NSWorkspace.shared.open(URL(string: "https://ko-fi.com/V7V11Z3VNE")!)
+                        } label: {
+                            HStack(spacing: 7) {
+                                Image(systemName: "drop.fill")
+                                    .foregroundStyle(RunBarColor.vermillon)
+                                Text("Buy me a gel")
+                            }
+                        }
+                        .controlSize(.small)
+                        .buttonStyle(PressableButtonStyle())
+
+                        Spacer()
                     }
 
                     HStack {

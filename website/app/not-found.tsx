@@ -42,7 +42,7 @@ export default function NotFound() {
 
         <div className="mt-14 flex items-center gap-3 font-mono text-[10px] uppercase tracking-[0.22em] text-ink-mute">
           <span className="h-px w-12 bg-hairline" />
-          <span>Run · Bar · v0.1.21</span>
+          <span>Run · Bar · v0.1.22</span>
         </div>
       </div>
     </main>

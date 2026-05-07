@@ -6,20 +6,20 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.21</title>
-            <pubDate>Wed, 06 May 2026 16:25:14 +0000</pubDate>
-            <sparkle:version>22</sparkle:version>
-            <sparkle:shortVersionString>0.1.21</sparkle:shortVersionString>
+            <title>Version 0.1.22</title>
+            <pubDate>Thu, 07 May 2026 08:09:41 +0000</pubDate>
+            <sparkle:version>23</sparkle:version>
+            <sparkle:shortVersionString>0.1.22</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar 0.1.21 — Restart onboarding actually restarts.
+            <description><![CDATA[RunBar 0.1.22 — small polish.
 
-Clicking Settings → Restart onboarding was re-opening the window but the SwiftUI Window scene reuses the existing OnboardingView instance, so its @State `step` lingered at 7 (the Done screen) from the previous run. You ended up looking at the Finish button with no way to walk through the steps again.
-
-The Settings button now bumps a shared restart token; OnboardingView observes the token and resets to step 1 plus the per-run state (suggestion seed flag, coach key draft, race toggle). Per-user prefs that should survive (unit, metric, prior targets) are intentionally untouched.]]></description>
+• Victory state in the popover, the onboarding Done step and the TrackView now bounces vertically on top of the frame cycle, so the figure reads as airborne — same fix that was already on the marketing site.
+• New "Buy me a gel" button in Settings → About, opens Ko-fi in your default browser. Same support link is now in the website footer too. Free and MIT-licensed; gels are optional fuel for the project.
+• Settings → About now reads the bundled version dynamically instead of the hard-coded "0.1.0" placeholder it had been showing forever.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.21.dmg"
-                sparkle:edSignature="Q6PfDcYjNann5zQYO+vAZrusRkKgbPuqXmpAJ9YVZSRAJXaEhoQTHBskIdZS53uuL6LTQXz8t6KX2SxkT1gHBg=="
-                length="2504620"
+                url="https://runbar.run/download/RunBar-0.1.22.dmg"
+                sparkle:edSignature="+1B68DnkfuZzE5yKXtqsCV4uxlphrnT9Xf6SLpMQGnkMKXbNN0En/77HmHVrWp174HJXkTdwjs2UVYlZwy3nCg=="
+                length="2507194"
                 type="application/octet-stream" />
         </item>
     </channel>

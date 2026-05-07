@@ -84,27 +84,28 @@ export function FinalCTA() {
             RunBar is free and MIT-licensed. If it helps your week, fuel
             the runner — every gel keeps the project moving.
           </p>
+          {/* Reproduces Ko-fi's official Widget_2 button server-side
+              (no remote JS, no layout shift) — colour #ff4400, label
+              "Buy Me a Gel", same cup icon + heart pulse Ko-fi uses. */}
           <a
             href="https://ko-fi.com/V7V11Z3VNE"
             target="_blank"
             rel="noopener noreferrer"
-            className="group inline-flex items-center gap-2.5 rounded-full bg-vermillon px-5 py-2.5 text-[13px] font-medium tracking-tight text-paper shadow-[0_1px_0_rgba(0,0,0,0.1),0_8px_24px_-12px_rgba(224,60,27,0.5)] transition hover:bg-vermillon/90"
+            style={{ backgroundColor: "#ff4400" }}
+            className="group inline-flex items-center gap-2.5 rounded-md px-4 py-2.5 text-[14px] font-semibold tracking-tight text-white shadow-[0_1px_0_rgba(0,0,0,0.12),0_8px_24px_-12px_rgba(255,68,0,0.6)] transition hover:opacity-90"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" aria-hidden>
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden>
               <path
-                fill="currentColor"
-                d="M3 7h14a4 4 0 0 1 0 8h-1.07A6 6 0 0 1 10 21H6a3 3 0 0 1-3-3V7Zm14 6a2 2 0 0 0 0-4h-1v4h1Z"
+                fill="#ffffff"
+                d="M11.5 4.5c1 0 1.5 0 2 .3.5.3 1 1 1 1.7 1 0 1.7.5 2 1.5.3 1-.2 2-1 2.5-.3 1.7-1.5 3.5-3 4.3-1 .5-2.2.7-3 .7-1 0-2-.2-2.7-.7-1.7-.8-2.7-2.5-3-4.3-.7-.3-1.3-1-1.5-1.7-.2-1 .3-2 1.2-2.3.3-1 .8-1.5 1.5-1.7.5-.2 1-.3 2-.3h4.5Zm0 1.5h-4c-.7 0-1.2 0-1.5.2-.3.2-.5.5-.5 1v4.7c0 1.5.5 2.7 1.5 3.5.7.5 1.7.8 2.7.8 1 0 2-.3 2.7-.8 1-.7 1.5-2 1.5-3.5V7.2c0-.5-.2-.8-.5-1-.3-.2-.8-.2-1.5-.2H11.5Zm3 1.7v3c.5-.2.7-.5.8-1v-1c-.2-.5-.4-.8-.8-1Z"
               />
               <path
-                fill="currentColor"
-                opacity="0.6"
-                d="M6 1.5c.3-.3.7-.3 1 0 .3.3.3.7 0 1l-.5.5c-.3.3-.3.7 0 1 .3.3.3.7 0 1-.3.3-.7.3-1 0-.6-.6-.6-1.6 0-2.2L6 1.5Zm4 0c.3-.3.7-.3 1 0 .3.3.3.7 0 1l-.5.5c-.3.3-.3.7 0 1 .3.3.3.7 0 1-.3.3-.7.3-1 0-.6-.6-.6-1.6 0-2.2L10 1.5Zm4 0c.3-.3.7-.3 1 0 .3.3.3.7 0 1l-.5.5c-.3.3-.3.7 0 1 .3.3.3.7 0 1-.3.3-.7.3-1 0-.6-.6-.6-1.6 0-2.2L14 1.5Z"
+                fill="#ffffff"
+                opacity="0.95"
+                d="M9 17.5h6c.3 0 .5.2.5.5s-.2.5-.5.5H9c-.3 0-.5-.2-.5-.5s.2-.5.5-.5Z"
               />
             </svg>
-            <span>Buy me a gel</span>
-            <span className="opacity-50 transition group-hover:translate-x-0.5">
-              →
-            </span>
+            <span>Buy Me a Gel</span>
           </a>
         </div>
 

@@ -1078,22 +1078,6 @@ public struct SettingsView: View {
 
                     HStack {
                         Button {
-                            NSWorkspace.shared.open(URL(string: "https://ko-fi.com/V7V11Z3VNE")!)
-                        } label: {
-                            HStack(spacing: 7) {
-                                Image(systemName: "drop.fill")
-                                    .foregroundStyle(RunBarColor.vermillon)
-                                Text("Buy me a gel")
-                            }
-                        }
-                        .controlSize(.small)
-                        .buttonStyle(PressableButtonStyle())
-
-                        Spacer()
-                    }
-
-                    HStack {
-                        Button {
                             // Bump a token that OnboardingView observes via
                             // @AppStorage. Without this, the SwiftUI Window
                             // scene reuses the existing OnboardingView
@@ -1118,8 +1102,59 @@ public struct SettingsView: View {
                 }
             }
 
+            // Dedicated support card — Ko-fi orange #ff4400, mug icon,
+            // "Buy Me a Gel" label. Made prominent enough to actually be
+            // seen (the previous version was a small row inside the
+            // Actions list and was invisible at a glance).
+            supportCard
+
             colophon("MIT · 2026 · Made with care")
         }
+    }
+
+    private var supportCard: some View {
+        let kofiOrange = Color(red: 0xFF / 255, green: 0x44 / 255, blue: 0x00 / 255)
+        return HStack(alignment: .center, spacing: 18) {
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Free, MIT-licensed.")
+                    .font(.system(size: 14, weight: .medium, design: .serif))
+                    .italic()
+                    .foregroundStyle(.primary)
+                Text("If RunBar moves your week — fuel the runner.")
+                    .font(.system(size: 12.5))
+                    .foregroundStyle(.secondary)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            Spacer(minLength: 8)
+            Button {
+                NSWorkspace.shared.open(URL(string: "https://ko-fi.com/V7V11Z3VNE")!)
+            } label: {
+                HStack(spacing: 8) {
+                    Image(systemName: "cup.and.saucer.fill")
+                        .font(.system(size: 13, weight: .semibold))
+                    Text("Buy Me a Gel")
+                        .font(.system(size: 13, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 14)
+                .padding(.vertical, 9)
+                .background(
+                    RoundedRectangle(cornerRadius: 7)
+                        .fill(kofiOrange)
+                )
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(kofiOrange.opacity(0.08))
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(kofiOrange.opacity(0.25), lineWidth: 0.5)
+        )
     }
 
     // MARK: - Tiny helpers

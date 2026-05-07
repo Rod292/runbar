@@ -44,6 +44,11 @@ public struct RunnerView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // Victory: layer a vertical bounce on top of the frame cycle so the
+        // figure reads as airborne. The static sprite frames (victory-1...6)
+        // alone don't sell the jump — same fix we applied to the website's
+        // RunnerSprite.tsx (CSS `runner-jump` keyframe overlay).
+        .offset(y: victoryJumpOffset)
         .onAppear { startAnimation() }
         .onDisappear { animationTask?.cancel() }
         .onChange(of: state) { _, _ in
@@ -51,6 +56,23 @@ public struct RunnerView: View {
             startAnimation()
         }
         .id(state)
+    }
+
+    /// Vertical offset applied only while `state == .victory`. Driven by the
+    /// same `frameIndex` that drives the frame cycle, so the jump phase stays
+    /// in lockstep with the sprite. `sin(phase * π)` traces 0 → 1 → 0 across
+    /// one cycle, giving a single clean up-and-down per loop. Amplitude is
+    /// kept proportional to the rendered size by tying it to the .frame()
+    /// minimum the call sites use (around 16–96pt) — 8% of the parent works
+    /// at every size. The `.offset()` doesn't affect layout, only visuals.
+    private var victoryJumpOffset: CGFloat {
+        guard state == .victory, animated else { return 0 }
+        let total = max(RunnerSprite.frameCount(for: .victory), 1)
+        let phase = Double(frameIndex % total) / Double(total)
+        // 6 points of amplitude reads at 22pt (menu-bar parametric callers
+        // already render flat from RunnerBitmap, so they're unaffected) and
+        // still feels lively at 96pt without breaking out of the frame.
+        return -CGFloat(sin(phase * .pi)) * 6
     }
 
     @ViewBuilder

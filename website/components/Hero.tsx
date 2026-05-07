@@ -71,7 +71,7 @@ export function Hero() {
             <dl className="flex flex-wrap items-baseline gap-x-6 gap-y-1.5 font-mono text-[10.5px] uppercase tracking-[0.14em] text-ink-mute">
               <div className="flex items-baseline gap-1.5">
                 <dt className="text-ink-mute/70">Build</dt>
-                <dd className="text-ink-soft">v0.1.22 · 2.4 MB DMG</dd>
+                <dd className="text-ink-soft">v0.1.23 · 2.4 MB DMG</dd>
               </div>
               <div className="flex items-baseline gap-1.5">
                 <dt className="text-ink-mute/70">Arch</dt>

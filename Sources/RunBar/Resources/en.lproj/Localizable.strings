@@ -203,7 +203,7 @@
 "settings.display.preview" = "Preview";
 "settings.sources.providers" = "Other sources";
 "settings.sources.strava.label" = "Strava";
-"settings.sources.strava.blurb" = "RunBar's shared Strava app is queued for quota approval. In the meantime, you connect your own personal Strava API client — it stays under your account, only sees your data, and skips the queue entirely.";
+"settings.sources.strava.blurb" = "RunBar's shared Strava app is queued for Strava's Extended Access review. In the meantime you can connect your own personal Strava API client — it stays under your account and only sees your data. Note: since June 2026 Strava requires an active subscription to use a personal API client.";
 "settings.about.actions" = "Actions";
 
 /* Onboarding — race step (added 2026-05-04) */
@@ -214,8 +214,8 @@
 "onboarding.race.skippable" = "Optional. You can always add one later in Settings → Goals.";
 
 /* Onboarding — Bring-Your-Own Strava connect step (added 2026-05-05) */
-"onboarding.connect.byo.subtitle" = "Strava limits new shared apps to one connected athlete. Create your own free Strava developer app — it takes 2 minutes.";
-"onboarding.connect.byo.intro" = "RunBar's shared OAuth app is still queued for Strava approval. In the meantime, you'll register your own personal Strava API client — it stays under your account, only sees your data, and skips the queue entirely.";
+"onboarding.connect.byo.subtitle" = "Strava limits new shared apps to a handful of athletes until they're approved. You can register your own personal Strava developer app instead — about 2 minutes. Heads up: since June 2026 this needs an active Strava subscription.";
+"onboarding.connect.byo.intro" = "RunBar's shared OAuth app is still queued for Strava's Extended Access review. In the meantime you'll register your own personal Strava API client — it stays under your account and only sees your data. Since June 2026, Strava requires an active subscription to use a personal API client.";
 "onboarding.connect.byo.step1" = "Sign in to Strava and open the developer page (link below).";
 "onboarding.connect.byo.step2" = "Create an app — any name works. Authorization Callback Domain → localhost.";
 "onboarding.connect.byo.step3" = "Upload any 124×124 icon, accept the API agreement.";
@@ -230,14 +230,14 @@
 
 /* Settings — Bring-Your-Own Strava app (added 2026-05-05) */
 "settings.sources.byo.label" = "Use my own Strava app";
-"settings.sources.byo.blurb" = "Strava limits new shared apps to one connected athlete until they're approved. Register a personal Strava API app and plug your own credentials in to bypass the queue.";
+"settings.sources.byo.blurb" = "Strava limits new shared apps to a handful of athletes until they're approved. Register a personal Strava API app and plug your own credentials in to bypass the queue. Requires an active Strava subscription (Strava's rule since June 2026).";
 "settings.sources.byo.status.active" = "Using your own Strava app";
 "settings.sources.byo.status.inactive" = "Using shared RunBar app";
 "settings.sources.byo.configure" = "Configure";
 "settings.sources.byo.manage" = "Manage";
 "settings.sources.byo.sheet.eyebrow" = "Personal Strava API client";
 "settings.sources.byo.sheet.title" = "Bring your own.";
-"settings.sources.byo.sheet.intro" = "Create your own Strava OAuth app — it stays under your account, talks only to your data, and is not subject to RunBar's shared quota.";
+"settings.sources.byo.sheet.intro" = "Create your own Strava OAuth app — it stays under your account, talks only to your data, and is not subject to RunBar's shared quota. Since June 2026, Strava requires an active subscription to use a personal API client.";
 "settings.sources.byo.sheet.step1" = "Open https://www.strava.com/settings/api and click \"Create & Manage Your App\".";
 "settings.sources.byo.sheet.step2" = "Name it (e.g. \"RunBar — personal\"), category Data Importer, set the website to https://runbar.app.";
 "settings.sources.byo.sheet.step3" = "Authorization Callback Domain → localhost (no scheme, no path).";

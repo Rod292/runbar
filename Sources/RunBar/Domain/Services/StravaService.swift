@@ -14,6 +14,16 @@ public actor StravaService: StravaServiceProtocol {
 
     private let connectedKey = "runbar.strava.connected"
 
+    /// Base de l'API data Strava. Strava migre vers `https://www.api-v3.strava.com`
+    /// (obligatoire à partir du 2026-06-01 selon l'annonce, cutover technique
+    /// 2027-06-01). Ce host n'est pas encore résolvable (vérifié 2026-06-02), donc
+    /// on reste sur la base actuelle — il suffira de basculer cette seule constante
+    /// (et de retirer le segment `/api/v3` absorbé par le nouveau host) le jour J.
+    /// Surchargable via env pour tester le nouveau host sans recompiler.
+    private static let apiBase =
+        ProcessInfo.processInfo.environment["RUNBAR_STRAVA_API_BASE"]
+        ?? "https://www.strava.com/api/v3"
+
     /// Refresh token (durée de vie longue). Stocké en Keychain.
     private var refreshToken: String? {
         get { Keychain.get(account: "refresh_token") }
@@ -74,6 +84,14 @@ public actor StravaService: StravaServiceProtocol {
     }
 
     public func disconnect() async {
+        // Best-effort : on demande à Strava d'invalider le grant côté serveur
+        // AVANT d'effacer notre copie locale (conformité §5.4 — révoquer l'accès
+        // sur déconnexion). Utilise `oauth/revoke`, le seul endpoint supporté
+        // après le 2027-06-01 (`oauth/deauthorize` est retiré). Non bloquant :
+        // on efface toujours les tokens locaux même si l'appel réseau échoue.
+        if let token = accessToken ?? refreshToken {
+            await revokeToken(token)
+        }
         self.refreshToken = nil
         self.accessToken = nil
         self.accessTokenExpiry = nil
@@ -91,7 +109,7 @@ public actor StravaService: StravaServiceProtocol {
         // de requêtes pour le backfill initial (3 000 activités = ~15 reqs).
         let perPage = 200
         while true {
-            var components = URLComponents(string: "https://www.strava.com/api/v3/athlete/activities")!
+            var components = URLComponents(string: "\(Self.apiBase)/athlete/activities")!
             components.queryItems = [
                 URLQueryItem(name: "after", value: String(Int(since.timeIntervalSince1970))),
                 URLQueryItem(name: "per_page", value: String(perPage)),
@@ -243,6 +261,67 @@ public actor StravaService: StravaServiceProtocol {
             throw StravaError.httpStatus(code)
         }
         return try JSONDecoder().decode(TokenResponse.self, from: data)
+    }
+
+    // MARK: - Revoke
+
+    /// Révoque le grant côté Strava. En mode "Bring Your Own App" on a le
+    /// `client_secret` localement → appel direct. Sinon c'est le backend (qui
+    /// détient le secret) qui révoque. Toujours best-effort : les erreurs sont
+    /// loggées mais jamais propagées (la déconnexion locale doit aboutir).
+    private func revokeToken(_ token: String) async {
+        do {
+            if let secret = Secrets.stravaClientSecret {
+                try await directStravaRevoke(
+                    token: token,
+                    clientID: Secrets.stravaClientID,
+                    clientSecret: secret
+                )
+            } else {
+                try await backendRevoke(token: token)
+            }
+            RunBarLog.strava.info("Strava grant revoked on disconnect.")
+        } catch {
+            RunBarLog.strava.notice(
+                "token revoke failed (non-fatal): \(error.localizedDescription)"
+            )
+        }
+    }
+
+    /// Mode BYO : POST `https://www.strava.com/oauth/revoke` avec Basic Auth
+    /// `client_id:client_secret` et le `token` en form param, comme documenté.
+    private func directStravaRevoke(token: String, clientID: String, clientSecret: String) async throws {
+        let url = URL(string: "https://www.strava.com/oauth/revoke")!
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        let basic = Data("\(clientID):\(clientSecret)".utf8).base64EncodedString()
+        req.setValue("Basic \(basic)", forHTTPHeaderField: "Authorization")
+        req.setValue("application/x-www-form-urlencoded", forHTTPHeaderField: "Content-Type")
+        var components = URLComponents()
+        components.queryItems = [URLQueryItem(name: "token", value: token)]
+        req.httpBody = Data((components.percentEncodedQuery ?? "").utf8)
+
+        let (_, resp) = try await URLSession.shared.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw StravaError.httpStatus((resp as? HTTPURLResponse)?.statusCode ?? 0)
+        }
+    }
+
+    /// Mode app partagée : le backend détient le `client_secret` et fait le
+    /// Basic Auth vers Strava. On lui transmet juste le token à révoquer.
+    private func backendRevoke(token: String) async throws {
+        guard let url = URL(string: Secrets.backendBaseURL + "/api/strava/revoke") else {
+            throw StravaError.missingConfiguration
+        }
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["token": token], options: [])
+
+        let (_, resp) = try await URLSession.shared.data(for: req)
+        guard let http = resp as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+            throw StravaError.httpStatus((resp as? HTTPURLResponse)?.statusCode ?? 0)
+        }
     }
 }
 

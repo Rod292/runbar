@@ -6,20 +6,16 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.23</title>
-            <pubDate>Thu, 07 May 2026 08:16:30 +0000</pubDate>
-            <sparkle:version>24</sparkle:version>
-            <sparkle:shortVersionString>0.1.23</sparkle:shortVersionString>
+            <title>Version 0.1.24</title>
+            <pubDate>Wed, 01 Jul 2026 20:43:30 +0000</pubDate>
+            <sparkle:version>25</sparkle:version>
+            <sparkle:shortVersionString>0.1.24</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[RunBar 0.1.23 — Buy Me a Gel button now actually looks like one.
-
-The 0.1.22 version was too restrained on both surfaces. Settings → About now has a dedicated support card with the Ko-fi orange #ff4400 button, an italic serif pitch line, and a tinted background — impossible to miss. The website footer button drops the in-house vermillon for the brand orange too, so visitors who already know Ko-fi spot the signal instantly.
-
-Same link, same Ko-fi page, same "Buy Me a Gel" label everywhere. RunBar stays free and MIT.]]></description>
+            <description><![CDATA[Browse your past 52 weeks from the popover (arrows or tap the sparkline). Sturdier Strava sync with automatic retry on rate limits. The AI coach is paused while data comes from Strava, per Strava's June 2026 API policy — it returns with a non-Strava source. Goal changes no longer rewrite past weeks' history.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.23.dmg"
-                sparkle:edSignature="v0o8PyG8enirWNmsfqgmBNGbA2qAR3wGnrcMhy3+CLckPeo3slyzzpt9acvulp90s1HYv8JhreWiU1Fc5Hj9AA=="
-                length="2515179"
+                url="https://runbar.run/download/RunBar-0.1.24.dmg"
+                sparkle:edSignature="pm0zqYZUou04C7ySrpEanSRAcZ1KvzdlLSdvPxmPk9OwZx26wnqmLDWDiauua6qMhHNY8wDBE3g35altDvvLAw=="
+                length="2570880"
                 type="application/octet-stream" />
         </item>
     </channel>

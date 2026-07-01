@@ -6,3 +6,6 @@ out
 .DS_Store
 next-env.d.ts
 .vercel
+tsconfig.tsbuildinfo
+.next/
+node_modules/

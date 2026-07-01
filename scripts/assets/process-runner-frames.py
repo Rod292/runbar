@@ -17,8 +17,11 @@ and kept white for the paper sprite.
 from pathlib import Path
 from PIL import Image
 
+import os
+
 ROOT = Path(__file__).resolve().parents[2]
-SRC_DIR = Path("/Users/rod/Downloads/Runbar animation")
+# Dossier des PNG source exportés depuis Procreate — pas dans le repo.
+SRC_DIR = Path(os.environ.get("RUNBAR_FRAMES_SRC", str(Path.home() / "Downloads/Runbar animation")))
 OUT_FRAMES = ROOT / "Sources/RunBar/Resources/RunnerFrames"
 OUT_WEB = ROOT / "website/public/runner"
 

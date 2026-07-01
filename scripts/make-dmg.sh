@@ -15,6 +15,23 @@ if ! command -v create-dmg >/dev/null 2>&1; then
     exit 1
 fi
 
+# Le DMG est l'artefact PUBLIC : une signature ad-hoc produirait un
+# "Unidentified Developer" chez tous les utilisateurs. On exige une vraie
+# identité Developer ID, sauf opt-out explicite pour tester en local.
+if [ -z "${RUNBAR_CODESIGN_IDENTITY:-}" ] || [ "${RUNBAR_CODESIGN_IDENTITY:-}" = "-" ]; then
+    if [ "${RUNBAR_ALLOW_ADHOC:-0}" != "1" ]; then
+        cat >&2 <<'EOF'
+ERROR: RUNBAR_CODESIGN_IDENTITY manquant — le DMG serait signé ad-hoc.
+Pour une release publique :
+  RUNBAR_CODESIGN_IDENTITY="Developer ID Application: …" scripts/make-dmg.sh
+Pour un DMG local de test uniquement :
+  RUNBAR_ALLOW_ADHOC=1 scripts/make-dmg.sh
+EOF
+        exit 1
+    fi
+    echo "==> WARNING: DMG ad-hoc (RUNBAR_ALLOW_ADHOC=1) — ne pas distribuer."
+fi
+
 "$ROOT/scripts/package-app.sh"
 
 if [ ! -f "$DMG_BACKGROUND" ]; then

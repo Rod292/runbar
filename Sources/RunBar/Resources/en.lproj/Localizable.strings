@@ -64,15 +64,24 @@
 "settings.coach.test" = "Test";
 "settings.coach.remove" = "Remove key";
 "settings.coach.get_key" = "Get a key →";
-"settings.coach.privacy_disclaimer" = "When the coach is enabled, RunBar sends derived weekly aggregates to the chosen provider: distance, run count, elevation, target, progress %, days left in the week, last four weeks of distance totals, goal streak, and (if set) race name and days until race. No activity names, no timestamps, no GPS data, no personal identifiers. The API key is stored in your macOS Keychain.\n\nStrava data note: per the Strava API Agreement, RunBar must not share Strava Data with third parties or use it for AI model training. The values above are derived aggregates (sums and ratios computed locally), not raw Strava records. We recommend a paid Gemini API tier — Google's free tier may use your prompts to improve their models, paid tiers do not.";
+"settings.coach.privacy_disclaimer" = "When the coach runs, RunBar sends derived weekly aggregates to the chosen provider: distance, run count, elevation, target, progress %, days left in the week, last four weeks of distance totals, goal streak, and (if set) race name and days until race. No activity names, no timestamps, no GPS data, no personal identifiers. The API key is stored in your macOS Keychain. The \"Test\" button sends sample numbers only — never your data.\n\nWe recommend a paid Gemini API tier — Google's free tier may use your prompts to improve their models, paid tiers do not.";
+"settings.coach.policy_paused_title" = "Paused while your data comes from Strava";
+"settings.coach.policy_paused_body" = "Strava's API policy (June 2026) forbids feeding Strava data into AI tools, so the coach stays off while RunBar syncs from Strava. Your key and settings are kept — the coach will come back with a non-Strava source such as Apple Health.";
 
 /* ── Onboarding — Coach step ────────────────── */
 "onboarding.coach.title" = "Optional · AI coach";
 "onboarding.coach.subtitle" = "Bring your own key. Skip if you don't want it.";
 "onboarding.coach.provider_label" = "Default provider";
 "onboarding.coach.get_key" = "Get a Gemini key →";
-"onboarding.coach.privacy" = "RunBar sends derived weekly aggregates only (distance, runs, target, progress, race countdown). No activity names, timestamps, or GPS data. The Strava API Agreement forbids sharing raw Strava data with third parties — these aggregates are computed locally. Key stored in macOS Keychain. We recommend a paid Gemini tier (free tier may use prompts for model improvement).";
+"onboarding.coach.privacy" = "When it runs, RunBar sends derived weekly aggregates only (distance, runs, target, progress, race countdown). No activity names, timestamps, or GPS data. Key stored in macOS Keychain. We recommend a paid Gemini tier (free tier may use prompts for model improvement).";
+"onboarding.coach.policy_note" = "Heads up: Strava's API policy (June 2026) forbids feeding Strava data into AI tools, so the coach stays paused while your runs sync from Strava. You can still save a key now — it will activate with a non-Strava source such as Apple Health.";
 "onboarding.coach.skip" = "Skip";
+
+/* ── Popover — past weeks (added 2026-07-01) ── */
+"popover.pastweek.reached" = "Goal reached";
+"popover.pastweek.short" = "Short";
+"popover.pastweek.no_data" = "No runs recorded that week.";
+"popover.pastweek.note" = "Run-by-run details are kept for 7 days only, per Strava's data policy. Past weeks keep their weekly totals.";
 
 /* ── Runner state labels ────────────────────── */
 "runner.state.idle" = "Warming up";

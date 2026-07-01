@@ -21,15 +21,17 @@ const QUESTIONS: { q: string; a: React.ReactNode }[] = [
     ),
   },
   {
-    q: "Why is the AI coach bring-your-own-key?",
+    q: "What happened to the AI coach?",
     a: (
       <>
-        Two reasons. First, RunBar is free and I&rsquo;m a solo dev — fronting
-        an OpenAI / Anthropic bill that scales with users is a fast way to
-        run out of money. Second, I refuse to charge $5 / month for what is
-        literally one API call per week. Bring-your-own-key adds 60 seconds
-        of setup; the free tier of Google Gemini covers the entire daily
-        budget indefinitely. Worth the trade.
+        It&rsquo;s paused — honestly and deliberately. Strava&rsquo;s API
+        policy update of June 2026 forbids feeding Strava data into AI
+        tools, so while your runs sync from Strava, RunBar sends nothing to
+        any AI provider (this is enforced in code, not just promised). The
+        coach returns with a non-Strava source — Apple Health is next on
+        the roadmap. It will stay bring-your-own-key: RunBar is free, I&rsquo;m
+        a solo dev, and I refuse to charge $5&nbsp;/&nbsp;month for one API
+        call per week.
       </>
     ),
   },
@@ -55,9 +57,10 @@ const QUESTIONS: { q: string; a: React.ReactNode }[] = [
         locally for at most seven days (rolling cache, per Strava&rsquo;s API
         Agreement); only weekly aggregates persist beyond that.{" "}
         <strong>(3)</strong> Zero telemetry. RunBar phones home for exactly
-        three things: Strava (auth + sync), Sparkle (update manifest), and
-        your AI provider — only if you turned the coach on, only weekly
-        aggregates, never activity names / timestamps / GPS.
+        two things today: Strava (auth + sync) and Sparkle (update
+        manifest). No Strava data ever reaches an AI provider — the coach
+        is disabled while your data comes from Strava, per their June 2026
+        API policy.
       </>
     ),
   },

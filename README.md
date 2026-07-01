@@ -23,7 +23,7 @@ An animated runner lives in your menu bar and reflects your weekly running progr
 
 - **Live state in the menu bar.** Five runner states — idle, jogging, sprinting after a fresh upload, falling behind mid-week, victory when you cross the line.
 - **Smart weekly target.** RunBar reads your last four weeks and proposes a weekly goal that grows with you (capped at +20%, suggests a more honest target if you're consistently below). Adjust it on the fly from the popover with ±2 / ±5 km shortcuts.
-- **Optional AI coach.** Bring your own API key (Gemini 2.5 Flash Lite by default — free tier covers daily use). Two-to-four lines of grounded coaching at the start and end of each week. Strict no-hallucination prompt — only the facts in your week. Disabled until you connect it.
+- **Optional AI coach (paused).** Bring your own API key (Gemini 2.5 Flash Lite by default). Two-to-four lines of grounded coaching, strict no-hallucination prompt. Currently paused: Strava's June 2026 API policy forbids feeding Strava data into AI tools, so the coach stays off while your runs sync from Strava — it returns with a non-Strava source (Apple Health is on the roadmap). Enforced in code, not just promised.
 - **Race countdown.** Set a race date and the popover shows a live D-X banner; the coach weaves it in as the date approaches.
 - **Streaks, history, sunday recap.** Eight-week sparkline, goal-completion streak badge, optional sunday evening summary notification.
 - **Strava-synced, privacy-respecting.** OAuth + 30-min background sync. Your Strava tokens and (optional) AI coach key live in macOS Keychain. The AI coach only sees weekly aggregates — never activity names, timestamps, or GPS data.
@@ -45,7 +45,7 @@ Sparkle ships in-app updates. Right-click the menu bar icon → *Check for updat
 ## Privacy
 
 - **Strava data** stays local. SwiftData store at `~/Library/Application Support/RunBar/store.sqlite`. Tokens in Keychain.
-- **AI coach** is opt-in. When enabled, RunBar sends only weekly aggregates to your chosen provider: distance, run count, elevation, target, progress %, days left in the week, the last four weeks of distance totals, your goal streak, and (if set) your race name and days until race. **No activity names. No timestamps. No GPS data. No personal identifiers.** Your API key is stored in Keychain.
+- **AI coach** is opt-in and currently paused while data comes from Strava (per Strava's June 2026 API policy — no Strava data ever reaches an AI provider). When it runs, RunBar sends only weekly aggregates to your chosen provider: distance, run count, elevation, target, progress %, days left in the week, the last four weeks of distance totals, your goal streak, and (if set) your race name and days until race. **No activity names. No timestamps. No GPS data. No personal identifiers.** Your API key is stored in Keychain.
 - **No analytics, no telemetry.** RunBar does not phone home. The only outbound calls are: Strava (auth + sync), Sparkle (update check), and your AI provider (only if you enabled it).
 
 ## Build from source

@@ -19,6 +19,12 @@ public enum RunnerBitmap {
     private static var cache: [Key: NSImage] = [:]
     private static let lock = NSLock()
 
+    /// Plafond du cache : 5 états × ~24 sub-frames × quelques pointSizes
+    /// tiennent largement dedans. Si on le dépasse (pointSize qui varie au
+    /// fil de la session), on repart de zéro — régénérer une pose coûte
+    /// moins cher que de laisser grossir la mémoire sans borne.
+    private static let cacheLimit = 600
+
     private struct Key: Hashable {
         let state: RunnerState
         let subframe: Int
@@ -56,6 +62,7 @@ public enum RunnerBitmap {
         image.isTemplate = true
 
         lock.lock()
+        if cache.count >= cacheLimit { cache.removeAll(keepingCapacity: true) }
         cache[key] = image
         lock.unlock()
         return image

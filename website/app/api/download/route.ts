@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const LATEST_DMG = "/download/RunBar-0.1.23.dmg";
+// Pointeur stable : release-update.sh remplace le contenu de RunBar.dmg à
+// chaque release. Ne pas re-versionner cette URL — un lien versionné casse
+// entre le bump et la publication du DMG notarisé.
+const LATEST_DMG = "/download/RunBar.dmg";
 
 export const dynamic = "force-dynamic";
 
@@ -16,7 +19,7 @@ export async function GET(request: NextRequest) {
   console.log(
     JSON.stringify({
       event: "download",
-      version: "0.1.23",
+      version: "0.1.24",
       utm_source: utmSource,
       utm_medium: utmMedium,
       utm_campaign: utmCampaign,

@@ -12,7 +12,7 @@ export default function PrivacyPage() {
       eyebrow="§ Legal · 01"
       italicWord="Privacy"
       title="policy."
-      lastUpdated="May 5, 2026"
+      lastUpdated="July 1, 2026"
     >
       <p>
         RunBar is a local-first macOS menu-bar app. We do not run servers,
@@ -81,21 +81,49 @@ export default function PrivacyPage() {
           identifier beyond a generic User-Agent.
         </li>
         <li>
-          <strong>AI coach (opt-in only).</strong> If — and only if — you
-          enable the coach and provide an API key, RunBar sends a small
-          JSON payload of weekly aggregates to the chosen provider
-          (default: Google Gemini). Specifically:
+          <strong>RunBar OAuth backend (shared connection only).</strong>{" "}
+          When you use the shared one-tap Strava connection, the OAuth
+          code/token exchange is proxied through minimal serverless
+          routes on <code>runbar.run</code> (they hold the app&rsquo;s
+          client secret so it never ships in the binary). Tokens pass
+          through these routes and are returned to your Mac;{" "}
+          <strong>nothing is stored server-side</strong> — no database, no
+          logs of tokens. If you bring your own Strava API app instead,
+          RunBar talks to Strava directly and these routes are never
+          called.
+        </li>
+        <li>
+          <strong>AI coach (opt-in, currently paused).</strong> Since
+          Strava&rsquo;s API policy update of June 2026 forbids feeding
+          Strava data into AI tools, the coach does not run while your
+          runs sync from Strava — no data is sent to any AI provider,
+          even if you saved a key. When the coach runs (with a future
+          non-Strava source such as Apple Health), it sends a small JSON
+          payload of weekly aggregates to the chosen provider (default:
+          Google Gemini):
           <em>
             {" "}
             distance, run count, elevation, target, progress %, days left
             in the week, the last four weeks of distance totals, your goal
             streak, and (if set) your race name and days until race.
           </em>{" "}
-          We never send activity names, timestamps, GPS data, or personal
+          Never activity names, timestamps, GPS data, or personal
           identifiers. Your API key is sent over HTTPS to authenticate the
           request and is never stored on any server we control.
         </li>
       </ol>
+
+      <h2>Website waitlist</h2>
+      <p>
+        If you join the waitlist on <code>runbar.run</code>, we store your
+        email address, the signup timestamp, and your coarse country code
+        (for send-time scheduling) in a managed key-value store (Vercel
+        KV / Upstash). This data is used for exactly one launch
+        announcement, then the list is deleted. No sharing, no profiling,
+        no recurring newsletter. You can request erasure at any time via
+        the <a href="/contact">contact page</a> — removals are processed
+        within 30 days.
+      </p>
 
       <h2>Strava data &amp; third parties</h2>
       <p>
@@ -106,12 +134,12 @@ export default function PrivacyPage() {
           rel="noopener noreferrer"
         >
           Strava API Agreement
-        </a>
-        , RunBar may not share Strava Data with third parties or use it for
-        AI / ML model training. The values transmitted to your AI provider
-        are derived aggregates (sums and ratios computed locally on your
-        Mac), not raw Strava records — a constraint we built into the
-        product to honour that agreement.
+        </a>{" "}
+        and API Policy (updated June 2026), RunBar may not share Strava
+        Data with third parties and may not use it in connection with any
+        AI application. RunBar enforces this in code: the AI coach is
+        disabled whenever the local store contains Strava-sourced
+        activities.
       </p>
       <p>
         We recommend the paid Gemini API tier when using the AI coach.
@@ -129,10 +157,10 @@ export default function PrivacyPage() {
 
       <h2>What we don&rsquo;t do</h2>
       <ul>
-        <li>No analytics or telemetry.</li>
+        <li>No analytics or telemetry in the app.</li>
         <li>No advertising of any kind.</li>
         <li>No data sold, rented, leased, or otherwise shared.</li>
-        <li>No tracking cookies (the marketing site is static).</li>
+        <li>No tracking cookies on the website.</li>
       </ul>
 
       <h2>Your rights</h2>
@@ -194,8 +222,10 @@ export default function PrivacyPage() {
       <h2>Security</h2>
       <p>
         All outbound traffic uses HTTPS. Tokens and API keys live in the
-        macOS Keychain with device-only access. Because there is no RunBar
-        backend, there is no remote attack surface for your data.
+        macOS Keychain with device-only access. The only server-side
+        surface is a set of stateless OAuth proxy routes and the waitlist
+        endpoint described above — neither stores activity data or
+        tokens.
       </p>
 
       <h2>Children</h2>

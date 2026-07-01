@@ -50,8 +50,18 @@ if [ ! -f "$ICON_SRC" ]; then
 fi
 cp "$ICON_SRC" "$RES/AppIcon.icns"
 
-# 4. Info.plist
-cat > "$CONTENTS/Info.plist" <<'PLIST'
+# 4. Info.plist — la version vient du fichier VERSION à la racine (ligne 1 =
+# semver, ligne 2 = build number monotone pour <sparkle:version>). Source de
+# vérité unique : scripts/bump-version.sh la propage au site.
+VERSION_FILE="$ROOT/VERSION"
+SHORT_VERSION="$(sed -n '1p' "$VERSION_FILE")"
+BUILD_NUMBER="$(sed -n '2p' "$VERSION_FILE")"
+if [ -z "$SHORT_VERSION" ] || [ -z "$BUILD_NUMBER" ]; then
+    echo "ERROR: VERSION file malformé ($VERSION_FILE) — attendu: semver ligne 1, build ligne 2." >&2
+    exit 1
+fi
+
+cat > "$CONTENTS/Info.plist" <<PLIST
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -69,9 +79,9 @@ cat > "$CONTENTS/Info.plist" <<'PLIST'
     <key>LSApplicationCategoryType</key>
     <string>public.app-category.healthcare-fitness</string>
     <key>CFBundleShortVersionString</key>
-    <string>0.1.23</string>
+    <string>$SHORT_VERSION</string>
     <key>CFBundleVersion</key>
-    <string>24</string>
+    <string>$BUILD_NUMBER</string>
     <key>CFBundlePackageType</key>
     <string>APPL</string>
     <key>LSMinimumSystemVersion</key>

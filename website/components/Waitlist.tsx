@@ -149,7 +149,8 @@ export function Waitlist() {
                 )}
 
                 <p className="mt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-ink-mute/80">
-                  One email. No spam. Unsubscribe anytime.
+                  One email, then the list is deleted. Erasure anytime via
+                  contact@runbar.run.
                 </p>
               </form>
             )}

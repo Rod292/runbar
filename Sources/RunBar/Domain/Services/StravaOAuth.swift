@@ -52,7 +52,9 @@ final class StravaOAuthCoordinator {
                     handler.handle(connection: conn)
                 }
                 listener.start(queue: .global(qos: .userInitiated))
-                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 120) {
+                // 5 min : l'utilisateur peut devoir se loguer à Strava (2FA,
+                // mot de passe oublié…) — 120 s expirait pendant qu'il tapait.
+                DispatchQueue.global(qos: .userInitiated).asyncAfter(deadline: .now() + 300) {
                     handler.timeout()
                 }
             } catch {

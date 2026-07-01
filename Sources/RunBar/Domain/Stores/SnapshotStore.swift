@@ -8,8 +8,11 @@ public final class SnapshotStore: ObservableObject {
     @Published public private(set) var snapshots: [WeeklySnapshot] = []
 
     private let key = "runbar.weeklySnapshots.v1"
+    private let defaults: UserDefaults
 
-    public init() {
+    /// `defaults` injectable pour les tests — production reste sur `.standard`.
+    public init(defaults: UserDefaults = .standard) {
+        self.defaults = defaults
         load()
     }
 
@@ -24,6 +27,11 @@ public final class SnapshotStore: ObservableObject {
         }
         snapshots.sort(by: { $0.weekStart > $1.weekStart })
         save()
+    }
+
+    /// Snapshot existant pour la semaine commençant à `weekStart`, s'il y en a un.
+    public func snapshot(for weekStart: Date) -> WeeklySnapshot? {
+        snapshots.first(where: { Calendar.iso8601Monday.isDate($0.weekStart, inSameDayAs: weekStart) })
     }
 
     public var currentStreak: Int {
@@ -42,11 +50,11 @@ public final class SnapshotStore: ObservableObject {
     /// new account was connected and returned no runs.
     public func clear() {
         snapshots = []
-        UserDefaults.standard.removeObject(forKey: key)
+        defaults.removeObject(forKey: key)
     }
 
     private func load() {
-        guard let data = UserDefaults.standard.data(forKey: key) else { return }
+        guard let data = defaults.data(forKey: key) else { return }
         if let decoded = try? JSONDecoder().decode([WeeklySnapshot].self, from: data) {
             snapshots = decoded.sorted(by: { $0.weekStart > $1.weekStart })
         }
@@ -54,7 +62,7 @@ public final class SnapshotStore: ObservableObject {
 
     private func save() {
         if let data = try? JSONEncoder().encode(snapshots) {
-            UserDefaults.standard.set(data, forKey: key)
+            defaults.set(data, forKey: key)
         }
     }
 }

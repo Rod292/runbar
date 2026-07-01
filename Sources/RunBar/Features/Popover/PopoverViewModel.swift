@@ -22,6 +22,12 @@ public final class PopoverViewModel: ObservableObject {
     @Published public var coachMessage: CoachMessage? = nil
     @Published public var coachIsFetching: Bool = false
 
+    /// Décalage de la semaine affichée : 0 = semaine courante, -1 = la
+    /// précédente, etc. Les semaines passées sont servies par les
+    /// `WeeklySnapshot` (agrégats dérivés) — les activités détaillées
+    /// n'existent que sur la fenêtre de cache de 7 jours (Strava § 7.1).
+    @Published public var weekOffset: Int = 0
+
     public var settingsCoordinator: SettingsCoordinator? {
         didSet {
             settingsCancellable = settingsCoordinator?.objectWillChange.sink { [weak self] _ in
@@ -88,8 +94,55 @@ public final class PopoverViewModel: ObservableObject {
         return streak
     }
 
+    /// Snapshots de la métrique courante uniquement — la sparkline trace
+    /// `achieved` sur une échelle commune avec `goal.target` : mélanger des
+    /// km avec des comptes de sorties rendrait l'axe Y absurde. Les semaines
+    /// enregistrées sous une autre métrique apparaissent comme des trous.
     public var recentSnapshots: [WeeklySnapshot] {
-        snapshots?.recent(limit: 8) ?? []
+        (snapshots?.recent(limit: 26) ?? [])
+            .filter { $0.metric == goal.metric }
+            .prefix(8)
+            .map { $0 }
+    }
+
+    // MARK: Navigation des semaines
+
+    /// Lundi de la semaine actuellement affichée.
+    public var displayedWeekStart: Date {
+        let thisMonday = Date.now.startOfWeek(weekday: goal.resetWeekday)
+        return Calendar.iso8601Monday.date(byAdding: .day, value: 7 * weekOffset, to: thisMonday) ?? thisMonday
+    }
+
+    /// Snapshot de la semaine affichée (nil si aucune donnée enregistrée —
+    /// semaine sans sortie ou antérieure à l'installation).
+    public var displayedSnapshot: WeeklySnapshot? {
+        snapshots?.snapshot(for: displayedWeekStart)
+    }
+
+    /// On peut reculer tant qu'il reste au moins un snapshot plus ancien que
+    /// la semaine affichée (borné à 52 semaines par le store).
+    public var canGoToPreviousWeek: Bool {
+        guard let all = snapshots?.snapshots, !all.isEmpty else { return false }
+        let displayed = displayedWeekStart
+        return all.contains { $0.weekStart < displayed }
+    }
+
+    public var canGoToNextWeek: Bool { weekOffset < 0 }
+
+    public var isViewingCurrentWeek: Bool { weekOffset == 0 }
+
+    public func goToPreviousWeek() {
+        guard canGoToPreviousWeek else { return }
+        weekOffset -= 1
+    }
+
+    public func goToNextWeek() {
+        guard canGoToNextWeek else { return }
+        weekOffset += 1
+    }
+
+    public func returnToCurrentWeek() {
+        weekOffset = 0
     }
 
     /// Record progression de la semaine en cours dans le store de snapshots.
@@ -138,8 +191,28 @@ public final class PopoverViewModel: ObservableObject {
             else { continue }
             let weekActivities = store.activities.filter { $0.startDate >= start && $0.startDate < end }
             guard !weekActivities.isEmpty else { continue }
-            let value = calculator.currentValue(activities: weekActivities, goal: goal)
-            snapshots.record(weekStart: start, metric: goal.metric, target: goal.target, achieved: value)
+            if let existing = snapshots.snapshot(for: start) {
+                // Semaine déjà snapshotée : elle garde la métrique et la cible
+                // d'époque (les réécrire avec la config actuelle réécrirait
+                // l'histoire — streak faux après un changement d'objectif).
+                // On ne rafraîchit `achieved` qu'à la hausse : une sortie qui
+                // se synchronise après le passage de semaine doit compter,
+                // mais un recalcul partiel (les premières sorties de la
+                // semaine ont pu être purgées du cache 7 jours) ne doit
+                // jamais écraser le total enregistré en direct.
+                var epochGoal = goal
+                epochGoal.metric = existing.metric
+                epochGoal.target = existing.target
+                let value = calculator.currentValue(activities: weekActivities, goal: epochGoal)
+                if value > existing.achieved {
+                    snapshots.record(weekStart: start, metric: existing.metric,
+                                     target: existing.target, achieved: value)
+                }
+            } else {
+                let value = calculator.currentValue(activities: weekActivities, goal: goal)
+                snapshots.record(weekStart: start, metric: goal.metric,
+                                 target: goal.target, achieved: value)
+            }
         }
     }
 
@@ -366,6 +439,9 @@ public final class PopoverViewModel: ObservableObject {
     }
 
     public func close() {
+        // À la réouverture on veut retomber sur la semaine courante, pas sur
+        // une semaine passée consultée la veille.
+        returnToCurrentWeek()
         NotificationCenter.default.post(name: .runbarClosePopover, object: nil)
     }
 

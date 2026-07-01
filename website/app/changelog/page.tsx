@@ -19,6 +19,74 @@ type Release = {
 // the top.
 const RELEASES: Release[] = [
   {
+    version: "0.1.24",
+    date: "2026-07-01",
+    title: "Browse past weeks + Strava AI-policy compliance",
+    bullets: [
+      <>
+        <strong>Past weeks, at last.</strong> Chevrons in the popover header
+        (or a tap on any sparkline bar) walk you through up to 52 weeks of
+        history — total, target, goal reached or shortfall. Run-by-run
+        details stay for 7 days only, per Strava&rsquo;s data policy; past
+        weeks keep their totals.
+      </>,
+      <>
+        <strong>AI coach paused for compliance.</strong> Strava&rsquo;s June
+        2026 API policy forbids feeding Strava data into AI tools. RunBar
+        now enforces this in code: while your runs sync from Strava,
+        nothing is ever sent to an AI provider. Your key stays saved — the
+        coach returns with a non-Strava source (Apple Health is next).
+      </>,
+      <>
+        <strong>Sturdier sync.</strong> Rate-limit (HTTP 429) and server
+        errors now retry with exponential backoff honouring Strava&rsquo;s{" "}
+        <code>Retry-After</code>; the OAuth window allows 5 minutes for
+        2FA logins; Keychain and database write failures are surfaced
+        instead of swallowed.
+      </>,
+      <>
+        <strong>History integrity.</strong> Changing your goal or metric
+        no longer rewrites past weeks&rsquo; snapshots — streaks and the
+        sparkline stay truthful. A run that syncs after Monday still
+        counts toward last week.
+      </>,
+      <>
+        The coach (when it runs) now speaks your unit — miles users no
+        longer get km numbers — and testing an API key sends sample
+        figures only, never your data.
+      </>,
+    ],
+  },
+  {
+    version: "0.1.23",
+    date: "2026-05-07",
+    title: "Buy Me a Gel button now actually looks like one",
+    bullets: [
+      <>
+        Settings → About gets a dedicated support card with the Ko-fi
+        orange button, and the website footer button adopts the same brand
+        orange. Same link, same &quot;Buy Me a Gel&quot; label everywhere.
+        RunBar stays free and MIT.
+      </>,
+    ],
+  },
+  {
+    version: "0.1.22",
+    date: "2026-05-07",
+    title: "Victory bounce + Buy me a gel",
+    bullets: [
+      <>
+        The native runner now mirrors the website&rsquo;s victory jump when
+        you cross the weekly line — arms up, small bounce, confetti as
+        before.
+      </>,
+      <>
+        First appearance of the Ko-fi &quot;Buy me a gel&quot; support link
+        (site footer + Settings → About).
+      </>,
+    ],
+  },
+  {
     version: "0.1.21",
     date: "2026-05-06",
     title: "Restart onboarding actually restarts",

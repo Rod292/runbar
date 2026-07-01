@@ -8,6 +8,7 @@ public struct CoachContextBuilder {
         activities: [Activity],
         goal: WeeklyGoal,
         streakWeeks: Int,
+        unit: DistanceUnit = UnitPreferences.current,
         now: Date = .now
     ) -> CoachContext {
         let cal = Calendar.iso8601Monday
@@ -42,14 +43,17 @@ public struct CoachContextBuilder {
             raceCtx = CoachContext.RaceContext(name: name, daysUntil: days)
         }
 
+        // Le coach parle dans l'unité de l'UI : un utilisateur en miles ne
+        // doit pas lire "52 km" quand son popover affiche "32 mi".
         return CoachContext(
-            weekKm: weekKm.rounded(toPlaces: 1),
+            unit: unit.rawValue,
+            weekDistance: unit.valueFromKilometers(weekKm).rounded(toPlaces: 1),
             weekRuns: weekRuns,
             weekElevationM: weekElev.rounded(),
-            targetKm: goal.target,
+            targetDistance: unit.valueFromKilometers(goal.target).rounded(toPlaces: 1),
             progressPct: pct,
             daysLeftInWeek: daysLeft,
-            last4WeeksKm: last4.map { $0.rounded(toPlaces: 1) },
+            last4WeeksDistance: last4.map { unit.valueFromKilometers($0).rounded(toPlaces: 1) },
             streakWeeks: streakWeeks,
             race: raceCtx
         )

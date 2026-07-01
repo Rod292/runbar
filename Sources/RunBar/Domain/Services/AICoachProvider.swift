@@ -17,6 +17,7 @@ public enum CoachProviderError: Error, LocalizedError {
     case http(status: Int, body: String?)
     case decoding(String)
     case empty
+    case timeout
 
     public var errorDescription: String? {
         switch self {
@@ -28,6 +29,8 @@ public enum CoachProviderError: Error, LocalizedError {
             return "Bad response: \(detail)"
         case .empty:
             return "Provider returned an empty message."
+        case .timeout:
+            return "The coach took too long to answer. Try again later."
         }
     }
 }
@@ -39,7 +42,7 @@ public enum CoachPrompt {
     You are a running coach embedded in Runbar, a macOS menubar app.
     Tone: factual, warm, concise. Never sappy, never generic.
     Reply in 2 to 4 short lines. No emoji. No headings. No lists.
-    Use the same units as the JSON (km).
+    All distances in the JSON are in the unit given by its "unit" field ("km" or "mi") — use that unit in your reply.
     Strict rule: only mention facts present in the JSON. Never invent paces, splits, dates, or activity names.
     If the week is empty, encourage starting; if the goal is reached, congratulate; if a race is < 30 days, weave it in briefly.
     """

@@ -873,6 +873,28 @@ public struct SettingsView: View {
         VStack(alignment: .leading, spacing: 22) {
             paneHeader(.coach, italicWord: "Your AI coach.")
 
+            if coachService.blockedByStravaPolicy {
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "pause.circle.fill")
+                        .font(.system(size: 14, weight: .semibold))
+                        .foregroundStyle(RunBarColor.gold)
+                        .padding(.top, 1)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("settings.coach.policy_paused_title", bundle: .runBarResources)
+                            .font(.system(size: 12.5, weight: .semibold))
+                        Text("settings.coach.policy_paused_body", bundle: .runBarResources)
+                            .font(.system(size: 11.5))
+                            .foregroundStyle(.secondary)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                }
+                .padding(12)
+                .background(
+                    RoundedRectangle(cornerRadius: 10)
+                        .fill(RunBarColor.gold.opacity(0.10))
+                )
+            }
+
             PaneSection("settings.coach.section_provider", figure: "fig. a") {
                 row {
                     Text("settings.coach.enabled", bundle: .runBarResources)

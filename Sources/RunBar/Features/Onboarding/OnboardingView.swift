@@ -1310,6 +1310,22 @@ private struct CoachStep: View {
             )
 
             VStack(alignment: .leading, spacing: 14) {
+                // Conformité Strava API Policy §5.3 : le coach reste en pause
+                // tant que les données viennent de Strava. On l'annonce dès
+                // l'onboarding pour ne pas vendre une feature inactive.
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "pause.circle.fill")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(RunBarColor.gold)
+                        .padding(.top, 1)
+                    Text("onboarding.coach.policy_note", bundle: .runBarResources)
+                        .font(.system(size: 11))
+                        .foregroundStyle(RunBarColor.mutedInk(dark: false))
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Rectangle().fill(RunBarColor.faintInk(dark: false)).frame(height: 1)
+
                 Text("onboarding.coach.provider_label", bundle: .runBarResources)
                     .font(.system(size: 10, design: .monospaced))
                     .tracking(1.6)

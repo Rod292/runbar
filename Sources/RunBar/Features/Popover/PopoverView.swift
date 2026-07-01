@@ -32,22 +32,31 @@ public struct PopoverView: View {
 
         VStack(spacing: 0) {
             header()
-            onboardingResumeBanner
-            statusBanner
-            suggestionBanner
-            coachBanner
-            if let days = goal.daysUntilRace(), days >= 0 {
-                raceCountdownBanner(
-                    days: days,
-                    name: goal.raceName ?? String(localized: "settings.goals.race_section", bundle: .runBarResources),
-                    accent: accent
-                )
+            if viewModel.isViewingCurrentWeek {
+                onboardingResumeBanner
+                statusBanner
+                suggestionBanner
+                coachBanner
+                if let days = goal.daysUntilRace(), days >= 0 {
+                    raceCountdownBanner(
+                        days: days,
+                        name: goal.raceName ?? String(localized: "settings.goals.race_section", bundle: .runBarResources),
+                        accent: accent
+                    )
+                }
+                statsBlock(value: value, goal: goal, pctLabel: pctLabel, mode: mode, accent: accent)
+                progressRibbon(pct: pct, mode: mode, accent: accent)
+                historyBlock(accent: accent)
+                divider
+                sortiesList(runs: runs, mode: mode, accent: accent)
+            } else {
+                // Semaine passée : agrégats dérivés uniquement — les activités
+                // détaillées sont purgées après 7 jours (Strava § 7.1).
+                pastWeekBlock
+                historyBlock(accent: accent)
+                divider
+                pastWeekArchiveNote
             }
-            statsBlock(value: value, goal: goal, pctLabel: pctLabel, mode: mode, accent: accent)
-            progressRibbon(pct: pct, mode: mode, accent: accent)
-            historyBlock(accent: accent)
-            divider
-            sortiesList(runs: runs, mode: mode, accent: accent)
             footer(accent: accent)
         }
         .frame(width: 320)
@@ -70,29 +79,59 @@ public struct PopoverView: View {
 
     @ViewBuilder
     private func header() -> some View {
-        let weekNumber = Date().isoWeekOfYear()
-        let dateLabel = DateFormatter.editorialMonthDay.string(from: Date()).uppercased()
+        let viewingCurrent = viewModel.isViewingCurrentWeek
+        let refDate = viewingCurrent ? Date() : viewModel.displayedWeekStart
+        let weekNumber = refDate.isoWeekOfYear()
+        let year = Calendar.iso8601Monday.component(.yearForWeekOfYear, from: refDate)
+        let dateLabel = DateFormatter.editorialMonthDay.string(from: refDate).uppercased()
 
         VStack(alignment: .leading, spacing: 4) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(dateLabel) — 2026 · WK \(weekNumber)")
+                    Text("\(dateLabel) — \(String(year)) · WK \(weekNumber)")
                         .eyebrowStyle(dark: isDark)
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text("This")
+                        Text(viewingCurrent ? "This" : "That")
                             .font(.system(size: 22, weight: .regular, design: .serif).italic())
                             .foregroundStyle(RunBarColor.ink(dark: isDark))
                         Text("week.")
                             .font(.system(size: 22, weight: .medium))
                             .foregroundStyle(RunBarColor.ink(dark: isDark))
-                        if viewModel.currentStreak >= 2 {
+                        if viewingCurrent, viewModel.currentStreak >= 2 {
                             StreakBadge(count: viewModel.currentStreak, dark: isDark)
                                 .padding(.leading, 4)
+                        }
+                        if !viewingCurrent {
+                            Button(action: { viewModel.returnToCurrentWeek() }) {
+                                Text("NOW")
+                                    .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
+                                    .tracking(0.8)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .overlay(
+                                        Capsule().strokeBorder(RunBarColor.vermillon.opacity(0.45), lineWidth: 0.7)
+                                    )
+                                    .foregroundStyle(RunBarColor.vermillon)
+                            }
+                            .buttonStyle(.plain)
+                            .padding(.leading, 4)
                         }
                     }
                 }
                 Spacer()
                 HStack(spacing: 4) {
+                    if viewModel.canGoToPreviousWeek || !viewingCurrent {
+                        headerIcon(
+                            systemName: "chevron.left",
+                            disabled: !viewModel.canGoToPreviousWeek,
+                            action: { viewModel.goToPreviousWeek() }
+                        )
+                        headerIcon(
+                            systemName: "chevron.right",
+                            disabled: !viewModel.canGoToNextWeek,
+                            action: { viewModel.goToNextWeek() }
+                        )
+                    }
                     headerIcon(systemName: "gearshape", action: {
                         viewModel.openSettings()
                         openSettings()
@@ -113,15 +152,17 @@ public struct PopoverView: View {
     }
 
     @ViewBuilder
-    private func headerIcon(systemName: String, action: @escaping () -> Void) -> some View {
+    private func headerIcon(systemName: String, disabled: Bool = false, action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Image(systemName: systemName)
                 .font(.system(size: 11, weight: .medium))
                 .frame(width: 22, height: 22)
                 .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                .opacity(disabled ? 0.35 : 1)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .disabled(disabled)
     }
 
     // MARK: Status banner
@@ -596,6 +637,115 @@ public struct PopoverView: View {
         .padding(.bottom, 4)
     }
 
+    // MARK: Past week (agrégats dérivés — les activités sont purgées à 7 jours)
+
+    @ViewBuilder
+    private var pastWeekBlock: some View {
+        if let snap = viewModel.displayedSnapshot {
+            let isDistance = snap.metric == .distance
+            let displayValue = isDistance ? unit.valueFromKilometers(snap.achieved) : snap.achieved
+            let displayTarget = isDistance ? unit.valueFromKilometers(snap.target) : snap.target
+            let unitLabel = isDistance ? unit.symbol : snap.metric.unit
+            let digits = isDistance ? 1 : 0
+            let pct = Int((snap.progress * 100).rounded())
+            let shortfall = max(0, displayTarget - displayValue)
+
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(DistanceFormatter.number(displayValue, fractionDigits: digits))
+                        .font(.system(size: 36, weight: .semibold).monospacedDigit())
+                        .tracking(-1.2)
+                        .foregroundStyle(RunBarColor.ink(dark: isDark))
+
+                    HStack(alignment: .firstTextBaseline, spacing: 4) {
+                        Text("of")
+                            .font(.system(size: 14, weight: .regular, design: .serif).italic())
+                            .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                        Text("\(Int(displayTarget.rounded())) \(unitLabel)")
+                            .font(.system(size: 14).monospacedDigit())
+                            .foregroundStyle(RunBarColor.inkSoft(dark: isDark))
+                    }
+                    .padding(.leading, 8)
+
+                    Spacer()
+
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text("\(pct)%")
+                            .font(.system(size: 18, weight: .semibold).monospacedDigit())
+                            .tracking(-0.4)
+                            .foregroundStyle(snap.completed ? RunBarColor.vermillonDeep : RunBarColor.inkSoft(dark: isDark))
+                        Text(snap.completed
+                             ? String(localized: "popover.pastweek.reached", bundle: .runBarResources)
+                             : String(localized: "popover.pastweek.short", bundle: .runBarResources))
+                            .font(.system(size: 9, weight: .medium, design: .monospaced))
+                            .tracking(0.9)
+                            .textCase(.uppercase)
+                            .foregroundStyle(snap.completed ? RunBarColor.vermillon : RunBarColor.mutedInk(dark: isDark))
+                    }
+                }
+
+                Text(pastWeekDataline(completed: snap.completed,
+                                      shortfall: shortfall,
+                                      digits: digits,
+                                      unitLabel: unitLabel))
+                    .font(.system(size: 9.5, weight: .medium, design: .monospaced))
+                    .tracking(0.9)
+                    .textCase(.uppercase)
+                    .foregroundStyle(RunBarColor.mutedInk(dark: isDark))
+                    .lineLimit(1)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+        } else {
+            VStack(spacing: 6) {
+                Text("Quiet.")
+                    .font(.system(size: 22, weight: .regular, design: .serif).italic())
+                    .foregroundStyle(RunBarColor.ink(dark: isDark))
+                Text("popover.pastweek.no_data", bundle: .runBarResources)
+                    .font(.system(size: 11))
+                    .multilineTextAlignment(.center)
+                    .foregroundStyle(RunBarColor.inkSoft(dark: isDark))
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 20)
+        }
+    }
+
+    private func pastWeekDataline(completed: Bool, shortfall: Double,
+                                  digits: Int, unitLabel: String) -> String {
+        let cal = Calendar.iso8601Monday
+        let start = viewModel.displayedWeekStart
+        let end = cal.date(byAdding: .day, value: 6, to: start) ?? start
+        let f = DateFormatter.editorialMonthDay
+        let range = "\(f.string(from: start)) — \(f.string(from: end))".uppercased()
+        if completed {
+            let kicker = String(localized: "week.status.complete", bundle: .runBarResources)
+            return "\(kicker) · \(range)"
+        }
+        let missing = "\(DistanceFormatter.number(shortfall, fractionDigits: digits)) \(unitLabel) SHORT"
+        return "\(missing) · \(range)"
+    }
+
+    @ViewBuilder
+    private var pastWeekArchiveNote: some View {
+        VStack(spacing: 6) {
+            Text("Archive.")
+                .font(.system(size: 22, weight: .regular, design: .serif).italic())
+                .foregroundStyle(RunBarColor.ink(dark: isDark))
+            Text("popover.pastweek.note", bundle: .runBarResources)
+                .font(.system(size: 11))
+                .multilineTextAlignment(.center)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(RunBarColor.inkSoft(dark: isDark))
+                .frame(maxWidth: 260)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 16)
+    }
+
     // MARK: History block (8 weeks with Y-axis + goal line)
 
     @ViewBuilder
@@ -603,7 +753,11 @@ public struct PopoverView: View {
         WeeklyHistoryStrip(
             snapshots: viewModel.recentSnapshots,
             goal: viewModel.goal,
-            dark: isDark
+            dark: isDark,
+            selectedOffset: viewModel.weekOffset,
+            onSelectWeek: { offset in
+                viewModel.weekOffset = max(-52, min(0, offset))
+            }
         )
         .padding(.horizontal, 16)
         .padding(.bottom, 10)
@@ -757,6 +911,11 @@ private struct WeeklyHistoryStrip: View {
     let snapshots: [WeeklySnapshot]
     let goal: WeeklyGoal
     let dark: Bool
+    /// Décalage de la semaine affichée dans le popover (0 = courante) —
+    /// la barre correspondante est surlignée.
+    var selectedOffset: Int = 0
+    /// Tap sur une barre → navigation vers cette semaine (offset ≤ 0).
+    var onSelectWeek: ((Int) -> Void)? = nil
 
     @AppStorage("runbar.unit") private var unitRaw: String = DistanceUnit.systemDefault.rawValue
     @State private var hoveredIndex: Int? = nil
@@ -910,19 +1069,20 @@ private struct WeeklyHistoryStrip: View {
                         .frame(height: 0.8)
                         .frame(maxWidth: .infinity, alignment: .bottomLeading)
 
-                    // Bars — each slot is a full-column hit area for hover.
+                    // Bars — each slot is a full-column hit area for hover + tap.
                     HStack(spacing: 0) {
                         ForEach(Array(barSlots().enumerated()), id: \.offset) { idx, snap in
+                            let isSelected = (idx - 7) == selectedOffset
                             ZStack(alignment: .bottom) {
                                 Rectangle()
-                                    .fill(hoveredIndex == idx
+                                    .fill(hoveredIndex == idx || isSelected
                                           ? RunBarColor.hairline(dark: dark).opacity(0.5)
                                           : Color.clear)
                                     .frame(maxHeight: .infinity)
                                 barView(
                                     snap: snap,
                                     isCurrent: idx == 7,
-                                    isHovered: hoveredIndex == idx,
+                                    isHovered: hoveredIndex == idx || isSelected,
                                     scale: scale,
                                     height: chartH
                                 )
@@ -932,6 +1092,7 @@ private struct WeeklyHistoryStrip: View {
                             .onHover { hovering in
                                 hoveredIndex = hovering ? idx : (hoveredIndex == idx ? nil : hoveredIndex)
                             }
+                            .onTapGesture { onSelectWeek?(idx - 7) }
                         }
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)

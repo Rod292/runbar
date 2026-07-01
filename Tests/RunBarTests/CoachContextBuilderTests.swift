@@ -12,13 +12,14 @@ final class CoachContextBuilderTests: XCTestCase {
 
     func test_empty_week_produces_zeros() {
         let goal = WeeklyGoal(metric: .distance, target: 40)
-        let ctx = builder.build(activities: [], goal: goal, streakWeeks: 0, now: now)
-        XCTAssertEqual(ctx.weekKm, 0)
+        let ctx = builder.build(activities: [], goal: goal, streakWeeks: 0, unit: .km, now: now)
+        XCTAssertEqual(ctx.unit, "km")
+        XCTAssertEqual(ctx.weekDistance, 0)
         XCTAssertEqual(ctx.weekRuns, 0)
-        XCTAssertEqual(ctx.targetKm, 40)
+        XCTAssertEqual(ctx.targetDistance, 40)
         XCTAssertEqual(ctx.progressPct, 0)
-        XCTAssertEqual(ctx.last4WeeksKm.count, 4)
-        XCTAssertEqual(ctx.last4WeeksKm, [0, 0, 0, 0])
+        XCTAssertEqual(ctx.last4WeeksDistance.count, 4)
+        XCTAssertEqual(ctx.last4WeeksDistance, [0, 0, 0, 0])
         XCTAssertNil(ctx.race)
     }
 
@@ -33,11 +34,24 @@ final class CoachContextBuilderTests: XCTestCase {
             seedActivity(km: 50, at: lastWeek), // ne doit pas compter
         ]
         let goal = WeeklyGoal(metric: .distance, target: 40)
-        let ctx = builder.build(activities: acts, goal: goal, streakWeeks: 3, now: now)
-        XCTAssertEqual(ctx.weekKm, 20)
+        let ctx = builder.build(activities: acts, goal: goal, streakWeeks: 3, unit: .km, now: now)
+        XCTAssertEqual(ctx.weekDistance, 20)
         XCTAssertEqual(ctx.weekRuns, 2)
         XCTAssertEqual(ctx.progressPct, 50)
         XCTAssertEqual(ctx.streakWeeks, 3)
+    }
+
+    func test_miles_unit_converts_distances_but_not_progress() {
+        let monday = now.startOfWeek()
+        let inThisWeek = Calendar.iso8601Monday.date(byAdding: .hour, value: 30, to: monday)!
+        let acts = [seedActivity(km: 20, at: inThisWeek)]
+        let goal = WeeklyGoal(metric: .distance, target: 40)
+        let ctx = builder.build(activities: acts, goal: goal, streakWeeks: 0, unit: .mi, now: now)
+        XCTAssertEqual(ctx.unit, "mi")
+        XCTAssertEqual(ctx.weekDistance, 12.4, accuracy: 0.01)   // 20 km
+        XCTAssertEqual(ctx.targetDistance, 24.9, accuracy: 0.01) // 40 km
+        // La progression reste calculée en km : 20/40 = 50 %.
+        XCTAssertEqual(ctx.progressPct, 50)
     }
 
     func test_race_context_when_within_30_days() {
@@ -45,7 +59,7 @@ final class CoachContextBuilderTests: XCTestCase {
         var goal = WeeklyGoal(metric: .distance, target: 40)
         goal.raceDate = raceDate
         goal.raceName = "London"
-        let ctx = builder.build(activities: [], goal: goal, streakWeeks: 0, now: now)
+        let ctx = builder.build(activities: [], goal: goal, streakWeeks: 0, unit: .km, now: now)
         XCTAssertEqual(ctx.race?.name, "London")
         XCTAssertEqual(ctx.race?.daysUntil, 14)
     }
@@ -54,7 +68,7 @@ final class CoachContextBuilderTests: XCTestCase {
         let raceDate = Calendar.iso8601Monday.date(byAdding: .day, value: -5, to: now)!
         var goal = WeeklyGoal(metric: .distance, target: 40)
         goal.raceDate = raceDate
-        let ctx = builder.build(activities: [], goal: goal, streakWeeks: 0, now: now)
+        let ctx = builder.build(activities: [], goal: goal, streakWeeks: 0, unit: .km, now: now)
         XCTAssertNil(ctx.race)
     }
 

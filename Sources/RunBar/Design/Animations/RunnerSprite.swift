@@ -96,6 +96,9 @@ public enum RunnerSprite {
     // MARK: - Cache
 
     private static var cache: [Key: NSImage] = [:]
+    /// Même politique que `RunnerBitmap` : borne dure + purge complète,
+    /// une frame inclinée se recalcule en une passe de dessin.
+    private static let cacheLimit = 600
     private struct Key: Hashable {
         let state: RunnerState
         let frame: Int
@@ -117,6 +120,7 @@ public enum RunnerSprite {
         let leaned = leaned(frames[safe], degrees: leanDegrees(for: state), pointSize: pointSize)
         guard !leaned.representations.isEmpty, leaned.size.width > 0, leaned.size.height > 0 else { return nil }
         leaned.isTemplate = true
+        if cache.count >= cacheLimit { cache.removeAll(keepingCapacity: true) }
         cache[key] = leaned
         return leaned
     }

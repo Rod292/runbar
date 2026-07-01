@@ -2,14 +2,18 @@ import Foundation
 
 /// Faits transmis au LLM. Volontairement minimal : agrégats hebdo, pas de noms
 /// de séances ni d'horodatages précis. Sérialisé en JSON dans le prompt.
+/// Les distances sont exprimées dans l'unité préférée de l'utilisateur
+/// (`unit` : "km" ou "mi") pour que le coach parle la même langue que l'UI.
 public struct CoachContext: Codable, Equatable, Sendable {
-    public let weekKm: Double
+    /// "km" ou "mi" — l'unité de toutes les distances du contexte.
+    public let unit: String
+    public let weekDistance: Double
     public let weekRuns: Int
     public let weekElevationM: Double
-    public let targetKm: Double
+    public let targetDistance: Double
     public let progressPct: Int
     public let daysLeftInWeek: Int
-    public let last4WeeksKm: [Double]
+    public let last4WeeksDistance: [Double]
     public let streakWeeks: Int
     public let race: RaceContext?
 
@@ -24,23 +28,25 @@ public struct CoachContext: Codable, Equatable, Sendable {
     }
 
     public init(
-        weekKm: Double,
+        unit: String,
+        weekDistance: Double,
         weekRuns: Int,
         weekElevationM: Double,
-        targetKm: Double,
+        targetDistance: Double,
         progressPct: Int,
         daysLeftInWeek: Int,
-        last4WeeksKm: [Double],
+        last4WeeksDistance: [Double],
         streakWeeks: Int,
         race: RaceContext?
     ) {
-        self.weekKm = weekKm
+        self.unit = unit
+        self.weekDistance = weekDistance
         self.weekRuns = weekRuns
         self.weekElevationM = weekElevationM
-        self.targetKm = targetKm
+        self.targetDistance = targetDistance
         self.progressPct = progressPct
         self.daysLeftInWeek = daysLeftInWeek
-        self.last4WeeksKm = last4WeeksKm
+        self.last4WeeksDistance = last4WeeksDistance
         self.streakWeeks = streakWeeks
         self.race = race
     }

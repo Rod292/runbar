@@ -41,9 +41,26 @@ public final class CoachService: ObservableObject {
         self.current = loadCached()
     }
 
+    /// Conformité Strava API Policy §5.3 (effective 2026-06-01) : les données
+    /// issues de l'API Strava ne peuvent alimenter aucune "AI Application",
+    /// directement ou indirectement — et la review Extended Access refuse
+    /// explicitement les apps exposant des données athlète à des outils IA
+    /// tiers. Le coach ne génère donc que si AUCUNE activité du store ne
+    /// provient de Strava. Il se réactivera avec une source conforme
+    /// (Apple Health prévu) sans changement de code ici.
+    public var blockedByStravaPolicy: Bool {
+        store.activities.contains { $0.source == .strava }
+    }
+
     /// Doit être appelée après chaque sync. Décide si on régénère.
     public func refreshIfDue(now: Date = .now) {
         guard configuration.enabled, configuration.hasKey else { return }
+        guard !blockedByStravaPolicy else {
+            // On efface aussi le message en cache : il a été dérivé de
+            // données Strava et ne doit pas continuer à s'afficher.
+            if current != nil { setCurrent(nil) }
+            return
+        }
         let ctx = currentContext(now: now)
         let hash = Self.hash(of: ctx)
 
@@ -56,6 +73,7 @@ public final class CoachService: ObservableObject {
     /// Force une régénération (bouton refresh dans le popover).
     public func forceRefresh(now: Date = .now) {
         guard configuration.enabled, configuration.hasKey else { return }
+        guard !blockedByStravaPolicy else { return }
         let ctx = currentContext(now: now)
         let hash = Self.hash(of: ctx)
         generate(context: ctx, hash: hash, now: now)
@@ -67,12 +85,32 @@ public final class CoachService: ObservableObject {
     }
 
     /// Test de bout en bout pour la connexion (Settings/onboarding).
+    /// Utilise un contexte d'exemple, jamais les vraies données : valider une
+    /// clé ne doit envoyer aucune donnée d'activité au provider (et doit
+    /// marcher aussi quand le coach est bloqué par la policy Strava).
     public func test(apiKey: String, now: Date = .now) async throws -> String {
-        let ctx = currentContext(now: now)
-        return try await provider.generate(context: ctx, apiKey: apiKey)
+        try await provider.generate(context: Self.sampleContext, apiKey: apiKey)
     }
 
+    static let sampleContext = CoachContext(
+        unit: UnitPreferences.current.rawValue,
+        weekDistance: 23.4,
+        weekRuns: 3,
+        weekElevationM: 240,
+        targetDistance: 35,
+        progressPct: 67,
+        daysLeftInWeek: 3,
+        last4WeeksDistance: [28.0, 31.5, 25.0, 33.2],
+        streakWeeks: 2,
+        race: nil
+    )
+
     // MARK: Private
+
+    /// Deadline dure au-delà du timeout réseau du provider : si la réponse
+    /// arrive au goutte-à-goutte, `timeoutInterval` ne suffit pas et le
+    /// spinner du popover tournerait indéfiniment.
+    private static let generationDeadline: TimeInterval = 30
 
     private func generate(context: CoachContext, hash: String, now: Date) {
         guard let key = configuration.currentKey() else { return }
@@ -81,7 +119,18 @@ public final class CoachService: ObservableObject {
         lastError = nil
         Task { [weak self] in
             do {
-                let text = try await provider.generate(context: context, apiKey: key)
+                let text = try await withThrowingTaskGroup(of: String.self) { group in
+                    group.addTask {
+                        try await provider.generate(context: context, apiKey: key)
+                    }
+                    group.addTask {
+                        try await Task.sleep(nanoseconds: UInt64(Self.generationDeadline * 1_000_000_000))
+                        throw CoachProviderError.timeout
+                    }
+                    guard let first = try await group.next() else { throw CoachProviderError.empty }
+                    group.cancelAll()
+                    return first
+                }
                 await MainActor.run { [weak self] in
                     guard let self else { return }
                     let msg = CoachMessage(

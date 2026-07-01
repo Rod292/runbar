@@ -47,6 +47,14 @@ public final class ActivityStore: ObservableObject {
         #endif
     }
 
+    /// Sauvegarde le contexte en loggant l'échec au lieu de l'avaler : un
+    /// disque plein ou une base corrompue doit laisser une trace exploitable
+    /// (`log stream --predicate 'subsystem CONTAINS "runbar"'`).
+    private func save(_ context: ModelContext, operation: String) {
+        do { try context.save() }
+        catch { RunBarLog.app.error("SwiftData save failed (\(operation)): \(error)") }
+    }
+
     /// Insère ou met à jour des activités depuis des DTO, dédup par id.
     public func upsert(_ incoming: [ActivityDTO]) {
         let context = container.mainContext
@@ -70,7 +78,7 @@ public final class ActivityStore: ObservableObject {
                 context.insert(model)
             }
         }
-        try? context.save()
+        save(context, operation: "upsert")
         loadActivities()
     }
 
@@ -92,14 +100,14 @@ public final class ActivityStore: ObservableObject {
         for activity in existing where !ids.contains(activity.id) {
             context.delete(activity)
         }
-        try? context.save()
+        save(context, operation: "reconcile")
         loadActivities()
     }
 
     public func clear() {
         let context = container.mainContext
         try? context.delete(model: Activity.self)
-        try? context.save()
+        save(context, operation: "clear")
         loadActivities()
     }
 
@@ -115,7 +123,7 @@ public final class ActivityStore: ObservableObject {
         )
         let existing = (try? context.fetch(descriptor)) ?? []
         for activity in existing { context.delete(activity) }
-        try? context.save()
+        save(context, operation: "clear(source:)")
         loadActivities()
     }
 
@@ -131,7 +139,7 @@ public final class ActivityStore: ObservableObject {
         let existing = (try? context.fetch(descriptor)) ?? []
         guard !existing.isEmpty else { return }
         for activity in existing { context.delete(activity) }
-        try? context.save()
+        save(context, operation: "deleteStravaActivity")
         loadActivities()
     }
 
@@ -149,7 +157,7 @@ public final class ActivityStore: ObservableObject {
         let existing = (try? context.fetch(descriptor)) ?? []
         guard !existing.isEmpty else { return }
         for activity in existing { context.delete(activity) }
-        try? context.save()
+        save(context, operation: "purge")
         loadActivities()
     }
 

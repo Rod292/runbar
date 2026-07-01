@@ -81,10 +81,23 @@ Cette identité doit exister dans Trousseau d'accès. Pour un usage quotidien,
 copie ensuite `build/RunBar.app` vers `/Applications/RunBar.app` et lance cette
 copie stable.
 
-## Créer le DMG
+## Versionner une release
+
+La version vit dans le fichier `VERSION` à la racine (semver ligne 1, build
+number ligne 2). `scripts/package-app.sh` la lit pour l'Info.plist, et le
+bump propage aussi les stamps du site :
 
 ```sh
-scripts/make-dmg.sh
+scripts/bump-version.sh 0.1.24
+```
+
+## Créer le DMG
+
+`make-dmg.sh` refuse désormais la signature ad-hoc (le DMG est l'artefact
+public). Pour un DMG local de test : `RUNBAR_ALLOW_ADHOC=1 scripts/make-dmg.sh`.
+
+```sh
+RUNBAR_CODESIGN_IDENTITY="Developer ID Application: …" scripts/make-dmg.sh
 ```
 
 Le DMG contient `RunBar.app` et un raccourci vers `/Applications`. Il est aussi

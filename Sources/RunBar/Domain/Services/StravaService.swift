@@ -140,8 +140,9 @@ public actor StravaService: StravaServiceProtocol {
             req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
             let (data, http) = try await send(req, context: "activities page \(page)")
             guard http.statusCode == 200 else {
-                RunBarLog.strava.error("activities fetch failed: HTTP \(http.statusCode)")
-                throw StravaError.httpStatus(http.statusCode)
+                let body = String(data: data, encoding: .utf8) ?? ""
+                RunBarLog.strava.error("activities fetch failed: HTTP \(http.statusCode) — \(body)")
+                throw Self.decodeAPIError(status: http.statusCode, body: data)
             }
             let decoder = JSONDecoder()
             decoder.dateDecodingStrategy = .iso8601
@@ -174,6 +175,30 @@ public actor StravaService: StravaServiceProtocol {
     }
 
     // MARK: - Réseau
+
+    /// Transforme le payload d'erreur Strava (`{"message","errors":[{resource,
+    /// field,code}]}`) en erreur actionnable. Le cas vécu le 2026-07-07 :
+    /// l'application API entière désactivée par Strava (échéance abonnement du
+    /// programme développeur 2026) se présentait comme un "Server error
+    /// (HTTP 403)" opaque alors que Strava disait précisément
+    /// `Application/Status/Inactive`.
+    static func decodeAPIError(status: Int, body: Data) -> StravaError {
+        struct APIError: Decodable {
+            struct Item: Decodable { let resource: String?; let field: String?; let code: String? }
+            let message: String?
+            let errors: [Item]?
+        }
+        guard let parsed = try? JSONDecoder().decode(APIError.self, from: body) else {
+            return .httpStatus(status)
+        }
+        if parsed.errors?.contains(where: { $0.resource == "Application" && $0.code == "Inactive" }) == true {
+            return .applicationInactive
+        }
+        if status == 401 || parsed.errors?.contains(where: { $0.field == "access_token" }) == true {
+            return .notAuthenticated
+        }
+        return .httpStatus(status)
+    }
 
     /// Nombre total de tentatives pour un même appel (1 + 2 retries).
     private static let maxAttempts = 3
@@ -423,6 +448,7 @@ public enum StravaError: Error, LocalizedError {
     case oauthTimeout
     case invalidOAuthState
     case keychainWriteFailed
+    case applicationInactive
     case httpStatus(Int)
 
     public var errorDescription: String? {
@@ -436,6 +462,8 @@ public enum StravaError: Error, LocalizedError {
         case .invalidOAuthState: return "Invalid OAuth response."
         case .keychainWriteFailed:
             return "Connected to Strava, but the token could not be saved to the Keychain. Unlock your keychain and try again."
+        case .applicationInactive:
+            return "Strava has deactivated this API application (developer-program requirement). The app owner must reactivate it at strava.com/settings/api — reconnecting won't help until then."
         case .httpStatus(let c):
             return c == 429
                 ? "Strava rate limit reached. RunBar will retry on the next sync."

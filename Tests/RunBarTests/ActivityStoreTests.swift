@@ -43,3 +43,28 @@ final class ActivityStoreTests: XCTestCase {
         XCTAssertEqual(Set(store.activities.map(\.id)), ["keep", "manual"])
     }
 }
+
+// MARK: - Décodage des erreurs API Strava
+
+final class StravaAPIErrorDecodingTests: XCTestCase {
+    func test_application_inactive_is_surfaced() {
+        let body = Data(#"{"message":"Forbidden","errors":[{"resource":"Application","field":"Status","code":"Inactive"}]}"#.utf8)
+        guard case .applicationInactive = StravaService.decodeAPIError(status: 403, body: body) else {
+            return XCTFail("expected .applicationInactive")
+        }
+    }
+
+    func test_unknown_error_falls_back_to_status() {
+        let body = Data(#"{"message":"Weird"}"#.utf8)
+        guard case .httpStatus(503) = StravaService.decodeAPIError(status: 503, body: body) else {
+            return XCTFail("expected .httpStatus(503)")
+        }
+    }
+
+    func test_invalid_token_maps_to_not_authenticated() {
+        let body = Data(#"{"message":"Authorization Error","errors":[{"resource":"Athlete","field":"access_token","code":"invalid"}]}"#.utf8)
+        guard case .notAuthenticated = StravaService.decodeAPIError(status: 401, body: body) else {
+            return XCTFail("expected .notAuthenticated")
+        }
+    }
+}

@@ -63,7 +63,7 @@ public final class PopoverViewModel: ObservableObject {
     /// Streak "goal completion" — semaines consécutives où la cible (km/runs/D+)
     /// est atteinte. Strict, aspirationnel — affiché dans le badge popover.
     public var currentStreak: Int {
-        snapshots?.currentStreak ?? 0
+        snapshots?.currentStreak(weekStartingOn: goal.resetWeekday) ?? 0
     }
 
     /// Streak "activité" — semaines consécutives avec au moins 1 sortie,
@@ -117,6 +117,11 @@ public final class PopoverViewModel: ObservableObject {
     /// semaine sans sortie ou antérieure à l'installation).
     public var displayedSnapshot: WeeklySnapshot? {
         snapshots?.snapshot(for: displayedWeekStart)
+    }
+
+    /// Accès direct pour la vue (delta semaine-vs-semaine de la carte passée).
+    public func snapshotFor(weekStart: Date) -> WeeklySnapshot? {
+        snapshots?.snapshot(for: weekStart)
     }
 
     /// On peut reculer tant qu'il reste au moins un snapshot plus ancien que
@@ -308,11 +313,37 @@ public final class PopoverViewModel: ObservableObject {
 
     public var runnerState: RunnerState {
         let recency: TimeInterval? = activitiesThisWeek.last.map { Date.now.timeIntervalSince($0.startDate) }
-        return calculator.runnerState(
+        let base = calculator.runnerState(
             progress: progress,
             dayOfWeek: Date.now.dayOfWeek(),
             lastSyncRecency: recency
         )
+        // Récupération : après une semaine exceptionnelle, un début de
+        // semaine calme est un repos mérité — pas de l'oisiveté (idle) ni
+        // du retard (tired).
+        if (base == .idle || base == .tired), isRecoveryWeek { return .recovery }
+        return base
+    }
+
+    /// Vrai si la semaine passée a largement dépassé sa cible (≥ 140 %) et
+    /// que la semaine courante démarre doucement (< 50 %). L'avatar passe
+    /// alors en mode récupération.
+    public var isRecoveryWeek: Bool {
+        guard progress < 0.5, let snapshots else { return false }
+        let thisStart = Date.now.startOfWeek(weekday: goal.resetWeekday)
+        guard
+            let lastStart = Calendar.iso8601Monday.date(byAdding: .day, value: -7, to: thisStart),
+            let last = snapshots.snapshot(for: lastStart),
+            last.target > 0
+        else { return false }
+        return last.achieved >= 1.4 * last.target
+    }
+
+    /// Progression réelle, non plafonnée — une semaine à 147 % mérite
+    /// d'afficher 147 %, pas 100 %. (La barre de progression, elle, reste
+    /// bornée à 100 % via `progress`.)
+    public var progressUncapped: Double {
+        goal.target > 0 ? currentValue / goal.target : 0
     }
 
     public var mode: PopoverMode {

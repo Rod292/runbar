@@ -156,7 +156,7 @@ public final class CoachService: ObservableObject {
         builder.build(
             activities: store.activities,
             goal: store.goal,
-            streakWeeks: snapshots?.currentStreak ?? 0,
+            streakWeeks: snapshots?.currentStreak(weekStartingOn: store.goal.resetWeekday) ?? 0,
             now: now
         )
     }

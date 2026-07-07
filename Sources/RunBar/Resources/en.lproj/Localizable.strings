@@ -89,6 +89,10 @@
 "runner.state.sprinting" = "Sprinting";
 "runner.state.tired" = "Falling behind";
 "runner.state.victory" = "Goal reached";
+"runner.state.recovery" = "Recovery week";
+
+/* Popover — recovery empty state (added 2026-07-02) */
+"popover.recovery_subtitle" = "Big week behind you. Rest is training too — the runner will wait.";
 
 /* ── Week status ────────────────────────────── */
 "week.status.start" = "GET GOING";

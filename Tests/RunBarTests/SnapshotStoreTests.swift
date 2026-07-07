@@ -52,7 +52,22 @@ final class SnapshotStoreTests: XCTestCase {
         store.record(weekStart: monday(weeksAgo: 2), metric: .distance, target: 40, achieved: 41)
         store.record(weekStart: monday(weeksAgo: 1), metric: .count, target: 3, achieved: 3)
         store.record(weekStart: monday(weeksAgo: 0), metric: .count, target: 3, achieved: 1)
-        XCTAssertEqual(store.currentStreak, 3)
+        XCTAssertEqual(store.currentStreak(weekStartingOn: 2), 3)
+    }
+
+    /// Semaine commençant le dimanche : le streak doit matcher des snapshots
+    /// calés sur dimanche (le calcul lundi en dur renvoyait toujours 0).
+    func test_streak_with_sunday_week_start() {
+        let cal = Calendar.iso8601Monday
+        let thisSunday = Date.now.startOfWeek(weekday: 1)
+        for weeksAgo in 1...2 {
+            let start = cal.date(byAdding: .day, value: -7 * weeksAgo, to: thisSunday)!
+            store.record(weekStart: start, metric: .distance, target: 40, achieved: 45)
+        }
+        store.record(weekStart: thisSunday, metric: .distance, target: 40, achieved: 5)
+        XCTAssertEqual(store.currentStreak(weekStartingOn: 1), 2)
+        XCTAssertEqual(store.currentStreak(weekStartingOn: 2), 0,
+                       "un calcul lundi ne doit matcher aucune semaine-dimanche")
     }
 
     func test_clear_wipes_storage() {

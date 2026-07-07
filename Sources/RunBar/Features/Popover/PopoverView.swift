@@ -26,7 +26,9 @@ public struct PopoverView: View {
         let goal = viewModel.goal
         let value = viewModel.currentValue
         let pct = viewModel.progress
-        let pctLabel = Int(round(pct * 100))
+        // Le gros chiffre affiche la progression réelle (147 % après une
+        // grosse semaine) ; la barre, elle, reste bornée à 100 %.
+        let pctLabel = Int(round(viewModel.progressUncapped * 100))
         let runner = viewModel.runnerState
         let accent = RunBarColor.accent(for: runner)
 
@@ -81,7 +83,7 @@ public struct PopoverView: View {
     private func header() -> some View {
         let viewingCurrent = viewModel.isViewingCurrentWeek
         let refDate = viewingCurrent ? Date() : viewModel.displayedWeekStart
-        let weekNumber = refDate.isoWeekOfYear()
+        let weekNumber = refDate.weekNumber(weekday: viewModel.goal.resetWeekday)
         let year = Calendar.iso8601Monday.component(.yearForWeekOfYear, from: refDate)
         let dateLabel = DateFormatter.editorialMonthDay.string(from: refDate).uppercased()
 
@@ -91,34 +93,59 @@ public struct PopoverView: View {
                     Text("\(dateLabel) — \(String(year)) · WK \(weekNumber)")
                         .eyebrowStyle(dark: isDark)
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
-                        Text(viewingCurrent ? "This" : "That")
-                            .font(.system(size: 22, weight: .regular, design: .serif).italic())
-                            .foregroundStyle(RunBarColor.ink(dark: isDark))
-                        Text("week.")
-                            .font(.system(size: 22, weight: .medium))
-                            .foregroundStyle(RunBarColor.ink(dark: isDark))
+                        // Titre : "This week." / "Last week." / "Week 24."
+                        // — chaque semaine passée est nommée sans ambiguïté
+                        // (l'ancien "That week." + pastille NOW se lisait
+                        // comme un seul libellé "That week NOW").
+                        if viewingCurrent {
+                            Text("This")
+                                .font(.system(size: 22, weight: .regular, design: .serif).italic())
+                                .foregroundStyle(RunBarColor.ink(dark: isDark))
+                            Text("week.")
+                                .font(.system(size: 22, weight: .medium))
+                                .foregroundStyle(RunBarColor.ink(dark: isDark))
+                        } else if viewModel.weekOffset == -1 {
+                            Text("Last")
+                                .font(.system(size: 22, weight: .regular, design: .serif).italic())
+                                .foregroundStyle(RunBarColor.ink(dark: isDark))
+                            Text("week.")
+                                .font(.system(size: 22, weight: .medium))
+                                .foregroundStyle(RunBarColor.ink(dark: isDark))
+                        } else {
+                            Text("Week")
+                                .font(.system(size: 22, weight: .regular, design: .serif).italic())
+                                .foregroundStyle(RunBarColor.ink(dark: isDark))
+                            Text("\(weekNumber).")
+                                .font(.system(size: 22, weight: .medium).monospacedDigit())
+                                .foregroundStyle(RunBarColor.ink(dark: isDark))
+                        }
                         if viewingCurrent, viewModel.currentStreak >= 2 {
                             StreakBadge(count: viewModel.currentStreak, dark: isDark)
                                 .padding(.leading, 4)
                         }
                         if !viewingCurrent {
+                            Spacer(minLength: 12)
                             Button(action: { viewModel.returnToCurrentWeek() }) {
-                                Text("NOW")
-                                    .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
-                                    .tracking(0.8)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .overlay(
-                                        Capsule().strokeBorder(RunBarColor.vermillon.opacity(0.45), lineWidth: 0.7)
-                                    )
-                                    .foregroundStyle(RunBarColor.vermillon)
+                                HStack(spacing: 4) {
+                                    Image(systemName: "arrow.uturn.backward")
+                                        .font(.system(size: 8, weight: .semibold))
+                                    Text("BACK TO NOW")
+                                        .font(.system(size: 8.5, weight: .semibold, design: .monospaced))
+                                        .tracking(0.8)
+                                }
+                                .padding(.horizontal, 7)
+                                .padding(.vertical, 3.5)
+                                .background(Capsule().fill(RunBarColor.vermillon.opacity(isDark ? 0.18 : 0.10)))
+                                .overlay(
+                                    Capsule().strokeBorder(RunBarColor.vermillon.opacity(0.45), lineWidth: 0.7)
+                                )
+                                .foregroundStyle(RunBarColor.vermillon)
                             }
                             .buttonStyle(.plain)
-                            .padding(.leading, 4)
                         }
                     }
                 }
-                Spacer()
+                if viewingCurrent { Spacer() }
                 HStack(spacing: 4) {
                     if viewModel.canGoToPreviousWeek || !viewingCurrent {
                         headerIcon(
@@ -576,15 +603,22 @@ public struct PopoverView: View {
         }
         let runText  = "\(DistanceFormatter.number(value)) \(unit.symbol) RUN"
         let leftText = "\(DistanceFormatter.number(remaining)) \(unit.symbol) TO GO"
-        let daysText = daysLeft == 1 ? "1 DAY LEFT" : "\(daysLeft) DAYS LEFT"
+        // "LAST DAY" est plus mobilisateur qu'un "0 DAYS LEFT" comptable.
+        let daysText: String
+        switch daysLeft {
+        case 0:  daysText = "LAST DAY"
+        case 1:  daysText = "1 DAY LEFT"
+        default: daysText = "\(daysLeft) DAYS LEFT"
+        }
         return "\(kicker) · \(runText) · \(leftText) · \(daysText)"
     }
 
     private func daysLeftInWeek() -> Int {
-        let cal = Calendar.iso8601Monday
-        let weekday = cal.component(.weekday, from: Date()) // 1=Sun..7=Sat
-        let mondayWeekday = (weekday + 5) % 7 // 0=Mon..6=Sun
-        return max(0, 6 - mondayWeekday)
+        // Basé sur le début de semaine de l'utilisateur (lundi OU dimanche),
+        // pas sur un calcul lundi en dur.
+        let start = Date.now.startOfWeek(weekday: viewModel.goal.resetWeekday)
+        let elapsed = Calendar.iso8601Monday.dateComponents([.day], from: start, to: Date.now).day ?? 0
+        return max(0, 6 - elapsed)
     }
 
     // MARK: Progress ribbon — hairline + ticks + runner
@@ -647,7 +681,9 @@ public struct PopoverView: View {
             let displayTarget = isDistance ? unit.valueFromKilometers(snap.target) : snap.target
             let unitLabel = isDistance ? unit.symbol : snap.metric.unit
             let digits = isDistance ? 1 : 0
-            let pct = Int((snap.progress * 100).rounded())
+            // % réel (non plafonné) — cohérent avec le gros chiffre de la
+            // semaine courante.
+            let pct = snap.target > 0 ? Int((snap.achieved / snap.target * 100).rounded()) : 0
             let shortfall = max(0, displayTarget - displayValue)
 
             VStack(alignment: .leading, spacing: 6) {
@@ -684,7 +720,7 @@ public struct PopoverView: View {
                     }
                 }
 
-                Text(pastWeekDataline(completed: snap.completed,
+                Text(pastWeekDataline(snap: snap,
                                       shortfall: shortfall,
                                       digits: digits,
                                       unitLabel: unitLabel))
@@ -712,19 +748,34 @@ public struct PopoverView: View {
         }
     }
 
-    private func pastWeekDataline(completed: Bool, shortfall: Double,
+    private func pastWeekDataline(snap: WeeklySnapshot, shortfall: Double,
                                   digits: Int, unitLabel: String) -> String {
         let cal = Calendar.iso8601Monday
         let start = viewModel.displayedWeekStart
         let end = cal.date(byAdding: .day, value: 6, to: start) ?? start
         let f = DateFormatter.editorialMonthDay
         let range = "\(f.string(from: start)) — \(f.string(from: end))".uppercased()
-        if completed {
-            let kicker = String(localized: "week.status.complete", bundle: .runBarResources)
-            return "\(kicker) · \(range)"
+
+        let status: String
+        if snap.completed {
+            status = String(localized: "week.status.complete", bundle: .runBarResources)
+        } else {
+            status = "\(DistanceFormatter.number(shortfall, fractionDigits: digits)) \(unitLabel) SHORT"
         }
-        let missing = "\(DistanceFormatter.number(shortfall, fractionDigits: digits)) \(unitLabel) SHORT"
-        return "\(missing) · \(range)"
+
+        // Delta vs la semaine précédente (même métrique uniquement) — une
+        // ligne qui donne la trajectoire sans ouvrir un dashboard.
+        var delta = ""
+        if let prevStart = cal.date(byAdding: .day, value: -7, to: start),
+           let prev = viewModel.snapshotFor(weekStart: prevStart),
+           prev.metric == snap.metric {
+            let diff = snap.achieved - prev.achieved
+            let displayDiff = snap.metric == .distance ? unit.valueFromKilometers(abs(diff)) : abs(diff)
+            let sign = diff >= 0 ? "+" : "−"
+            let prevWeek = prevStart.weekNumber(weekday: viewModel.goal.resetWeekday)
+            delta = " · \(sign)\(DistanceFormatter.number(displayDiff, fractionDigits: digits)) \(unitLabel) VS W\(prevWeek)"
+        }
+        return "\(status) · \(range)\(delta)"
     }
 
     @ViewBuilder
@@ -828,7 +879,7 @@ public struct PopoverView: View {
     @ViewBuilder
     private var emptyState: some View {
         VStack(spacing: 6) {
-            Text("Waiting.")
+            Text(viewModel.runnerState == .recovery ? "Recovering." : "Waiting.")
                 .font(.system(size: 22, weight: .regular, design: .serif).italic())
                 .foregroundStyle(RunBarColor.ink(dark: isDark))
 
@@ -852,6 +903,9 @@ public struct PopoverView: View {
     private var emptySubtitleKey: LocalizedStringKey {
         if !viewModel.stravaConnected {
             return LocalizedStringKey("popover.connect_strava_cta")
+        }
+        if viewModel.runnerState == .recovery {
+            return LocalizedStringKey("popover.recovery_subtitle")
         }
         if viewModel.statusKind == .noActivities {
             return LocalizedStringKey("popover.no_strava_activities_subtitle")
@@ -1011,7 +1065,7 @@ private struct WeeklyHistoryStrip: View {
 
     private func hoverDetail(_ snap: WeeklySnapshot) -> String {
         let cal = Calendar.iso8601Monday
-        let week = cal.component(.weekOfYear, from: snap.weekStart)
+        let week = snap.weekStart.weekNumber(weekday: goal.resetWeekday)
         let weekEnd = cal.date(byAdding: .day, value: 6, to: snap.weekStart) ?? snap.weekStart
         let f = DateFormatter()
         f.dateFormat = "MMM d"
@@ -1043,7 +1097,8 @@ private struct WeeklyHistoryStrip: View {
             ZStack(alignment: .topLeading) {
                 // Bars area (left portion)
                 ZStack(alignment: .bottomLeading) {
-                    // Goal line — pointillé hairline
+                    // Goal line — pointillé hairline, avec un label "GOAL"
+                    // discret à droite pour que la ligne se lise sans légende.
                     if scale > 0 {
                         let goalY = chartH * (1 - CGFloat(goal.target / scale))
                         DashedLine()
@@ -1051,6 +1106,11 @@ private struct WeeklyHistoryStrip: View {
                             .frame(height: 0.8)
                             .offset(y: goalY)
                             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                        Text("GOAL")
+                            .font(.system(size: 6.5, weight: .semibold, design: .monospaced))
+                            .tracking(0.6)
+                            .foregroundStyle(RunBarColor.vermillon.opacity(0.75))
+                            .position(x: chartW - 14, y: max(5, goalY - 5))
                     }
 
                     // Half-goal subtle hairline
@@ -1169,13 +1229,16 @@ private struct WeeklyHistoryStrip: View {
     }
 
     /// Toujours 8 slots — pad avec nil les semaines manquantes en début.
+    /// Les slots sont calés sur `goal.resetWeekday` : les snapshots d'un
+    /// utilisateur en semaine-dimanche démarrent le dimanche, un calage
+    /// lundi ne matcherait aucun d'entre eux (sparkline vide).
     private func barSlots() -> [WeeklySnapshot?] {
         let cal = Calendar.iso8601Monday
-        let thisMonday = Date.now.startOfWeek()
+        let thisWeekStart = Date.now.startOfWeek(weekday: goal.resetWeekday)
         var result: [WeeklySnapshot?] = Array(repeating: nil, count: 8)
         for i in 0..<8 {
             let offset = -7 * (7 - i)
-            guard let weekStart = cal.date(byAdding: .day, value: offset, to: thisMonday) else { continue }
+            guard let weekStart = cal.date(byAdding: .day, value: offset, to: thisWeekStart) else { continue }
             result[i] = ordered.first(where: { Calendar.iso8601Monday.isDate($0.weekStart, inSameDayAs: weekStart) })
         }
         return result
@@ -1200,8 +1263,7 @@ private struct WeeklyHistoryStrip: View {
     }
 
     private func shortWeek(_ date: Date) -> String {
-        let week = Calendar.iso8601Monday.component(.weekOfYear, from: date)
-        return "W\(week)"
+        "W\(date.weekNumber(weekday: goal.resetWeekday))"
     }
 }
 

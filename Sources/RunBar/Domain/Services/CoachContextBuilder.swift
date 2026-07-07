@@ -22,7 +22,7 @@ public struct CoachContextBuilder {
 
         let progress = goal.target > 0 ? min(1.0, weekKm / goal.target) : 0
         let pct = Int((progress * 100).rounded())
-        let daysLeft = Self.daysLeftInWeek(now: now)
+        let daysLeft = Self.daysLeft(now: now, weekStart: thisMonday)
 
         var last4: [Double] = []
         for i in 1...4 {
@@ -59,11 +59,11 @@ public struct CoachContextBuilder {
         )
     }
 
-    private static func daysLeftInWeek(now: Date) -> Int {
-        let cal = Calendar.iso8601Monday
-        let weekday = cal.component(.weekday, from: now) // 1=Sun..7=Sat
-        let mondayWeekday = (weekday + 5) % 7 // 0=Mon..6=Sun
-        return max(0, 6 - mondayWeekday)
+    /// Jours restants relatifs au début de semaine de l'utilisateur — le
+    /// calcul lundi en dur donnait un jour de trop aux semaines-dimanche.
+    private static func daysLeft(now: Date, weekStart: Date) -> Int {
+        let elapsed = Calendar.iso8601Monday.dateComponents([.day], from: weekStart, to: now).day ?? 0
+        return max(0, 6 - elapsed)
     }
 }
 

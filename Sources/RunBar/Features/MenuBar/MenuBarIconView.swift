@@ -37,6 +37,8 @@ public struct MenuBarIconView: View {
             return ["figure.walk", "figure.walk.motion"][frame % 2]
         case .victory:
             return ["figure.run", "trophy.fill"][frame % 2]
+        case .recovery:
+            return ["figure.stand", "figure.cooldown"][frame % 2]
         }
     }
 

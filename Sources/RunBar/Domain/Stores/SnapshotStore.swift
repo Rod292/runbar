@@ -34,8 +34,9 @@ public final class SnapshotStore: ObservableObject {
         snapshots.first(where: { Calendar.iso8601Monday.isDate($0.weekStart, inSameDayAs: weekStart) })
     }
 
-    public var currentStreak: Int {
-        StreakCalculator.current(snapshots: snapshots)
+    /// Streak courant. `weekStartingOn` = `goal.resetWeekday` de l'appelant.
+    public func currentStreak(weekStartingOn weekday: Int = 2) -> Int {
+        StreakCalculator.current(snapshots: snapshots, weekStartingOn: weekday)
     }
 
     public func recent(limit: Int = 8) -> [WeeklySnapshot] {

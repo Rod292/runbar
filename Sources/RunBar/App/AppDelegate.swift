@@ -79,7 +79,15 @@ public final class AppDelegate: NSObject, NSApplicationDelegate {
 
     private func startBackgroundWork() {
         configureAutoSync()
-        Task { await sync.syncNow() }
+        Task {
+            await sync.syncNow()
+            // Auto-réparation de l'historique (throttlée à 24 h) : le backfill
+            // de sync ne voit que le cache 7 jours — les semaines où le Mac
+            // était éteint restaient définitivement trouées ou figées sur un
+            // total partiel. Le rebuild refetch la fenêtre complète en mémoire
+            // et corrige les agrégats dérivés.
+            await settings.rebuildHistoryIfStale()
+        }
         // Déclenche une sync immédiate dès qu'OAuth Strava réussit, pour ne pas
         // attendre le timer auto-sync (30 min) après la première connexion.
         NotificationCenter.default.addObserver(

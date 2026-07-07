@@ -6,16 +6,16 @@
         <description>RunBar updates</description>
         <language>en</language>
         <item>
-            <title>Version 0.1.24</title>
-            <pubDate>Wed, 01 Jul 2026 20:43:30 +0000</pubDate>
-            <sparkle:version>25</sparkle:version>
-            <sparkle:shortVersionString>0.1.24</sparkle:shortVersionString>
+            <title>Version 0.1.25</title>
+            <pubDate>Tue, 07 Jul 2026 08:19:47 +0000</pubDate>
+            <sparkle:version>26</sparkle:version>
+            <sparkle:shortVersionString>0.1.25</sparkle:shortVersionString>
             <sparkle:minimumSystemVersion>14.0</sparkle:minimumSystemVersion>
-            <description><![CDATA[Browse your past 52 weeks from the popover (arrows or tap the sparkline). Sturdier Strava sync with automatic retry on rate limits. The AI coach is paused while data comes from Strava, per Strava's June 2026 API policy — it returns with a non-Strava source. Goal changes no longer rewrite past weeks' history.]]></description>
+            <description><![CDATA[Self-healing history: RunBar now refetches the last 12 weeks from Strava daily and repairs every weekly total — weeks where your Mac was off no longer leave holes, and totals stuck on partial sums are corrected. Sunday-start weeks are respected everywhere (sparkline, streak, week numbers). New recovery mode: after a big week the runner takes an earned breather. Past weeks read better, honest percentages above 100%.]]></description>
             <enclosure
-                url="https://runbar.run/download/RunBar-0.1.24.dmg"
-                sparkle:edSignature="pm0zqYZUou04C7ySrpEanSRAcZ1KvzdlLSdvPxmPk9OwZx26wnqmLDWDiauua6qMhHNY8wDBE3g35altDvvLAw=="
-                length="2570880"
+                url="https://runbar.run/download/RunBar-0.1.25.dmg"
+                sparkle:edSignature="46IAJYMjjDz/j9xRqhvAUdaphRly9c99fBwwtW2+fwMTqor6Xr5NWB7ee7O0mUsPacqsY9y+ju5SDfJqHYs4BQ=="
+                length="2583672"
                 type="application/octet-stream" />
         </item>
     </channel>

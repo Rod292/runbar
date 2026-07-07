@@ -108,40 +108,84 @@ public final class SettingsCoordinator: ObservableObject {
         daysBack: Int = 28,
         defaultTarget: Double = 40
     ) async -> Double? {
+        await rebuildHistory(weeksBack: max(1, daysBack / 7), defaultTarget: defaultTarget)
+    }
+
+    /// Reconstruit les snapshots hebdo depuis Strava, semaine par semaine.
+    ///
+    /// Contrairement au backfill de sync (limité au cache roulant de 7 jours,
+    /// donc aveugle aux semaines où l'app était éteinte), ce fetch couvre la
+    /// fenêtre complète — il est AUTORITAIRE : `achieved` est corrigé dans les
+    /// deux sens. La métrique et la cible d'époque d'un snapshot existant sont
+    /// préservées (réécrire l'histoire avec la config actuelle fausserait le
+    /// streak) ; les semaines manquantes sont créées sous la config courante.
+    /// Les bornes de semaine respectent `goal.resetWeekday` (lundi OU dimanche).
+    @discardableResult
+    public func rebuildHistory(weeksBack: Int = 12, defaultTarget: Double? = nil) async -> Double? {
+        let goal = store?.goal ?? .default
+        let weekday = goal.resetWeekday
         let cal = Calendar.iso8601Monday
         let now = Date.now
-        guard let cutoff = cal.date(byAdding: .day, value: -daysBack, to: now),
-              let currentWeekStart = cal.dateInterval(of: .weekOfYear, for: now)?.start
+        let currentWeekStart = now.startOfWeek(weekday: weekday)
+        guard let cutoff = cal.date(byAdding: .day, value: -7 * weeksBack, to: currentWeekStart)
         else { return nil }
         do {
+            // In-memory uniquement — seuls les agrégats dérivés sont persistés
+            // (§ 7.1 : le cache 7 jours ne concerne que la Strava Data brute).
             let dtos = try await strava.fetchActivities(since: cutoff)
-            var byWeek: [Date: Double] = [:]
+            var byWeek: [Date: [ActivityDTO]] = [:]
             for dto in dtos {
-                guard let weekStart = cal.dateInterval(of: .weekOfYear, for: dto.startDate)?.start else { continue }
-                byWeek[weekStart, default: 0] += dto.distance / 1000.0
+                byWeek[dto.startDate.startOfWeek(weekday: weekday), default: []].append(dto)
             }
-            // Persist derived snapshots for every week we touched (including
-            // the current one — the popover sparkline benefits from it).
-            for (weekStart, km) in byWeek {
-                snapshots?.record(
-                    weekStart: weekStart,
-                    metric: .distance,
-                    target: defaultTarget,
-                    achieved: km
-                )
+            var kmByWeek: [Date: Double] = [:]
+            var corrected = 0
+            for (weekStart, weekDtos) in byWeek {
+                kmByWeek[weekStart] = Self.aggregate(weekDtos, metric: .distance)
+                if let existing = snapshots?.snapshot(for: weekStart) {
+                    let value = Self.aggregate(weekDtos, metric: existing.metric)
+                    if abs(value - existing.achieved) > 0.05 {
+                        snapshots?.record(weekStart: weekStart, metric: existing.metric,
+                                          target: existing.target, achieved: value)
+                        corrected += 1
+                    }
+                } else {
+                    let value = Self.aggregate(weekDtos, metric: goal.metric)
+                    snapshots?.record(weekStart: weekStart, metric: goal.metric,
+                                      target: defaultTarget ?? goal.target, achieved: value)
+                    corrected += 1
+                }
             }
             // Average is computed over completed weeks only — the current
             // week is partial and would bias the seed downward.
-            let completed = byWeek.filter { $0.key < currentWeekStart }
-            guard !completed.isEmpty else { return nil }
-            let avg = completed.values.reduce(0, +) / Double(completed.count)
+            let completed = kmByWeek.filter { $0.key < currentWeekStart }
             RunBarLog.sync.notice(
-                "Historical seed: \(completed.count) completed weeks, avg \(String(format: "%.1f", avg)) km"
+                "History rebuild: \(byWeek.count) weeks fetched, \(corrected) snapshot(s) created/corrected"
             )
-            return avg
+            guard !completed.isEmpty else { return nil }
+            return completed.values.reduce(0, +) / Double(completed.count)
         } catch {
-            RunBarLog.sync.error("Historical seed failed: \(error.localizedDescription)")
+            RunBarLog.sync.error("History rebuild failed: \(error.localizedDescription)")
             return nil
+        }
+    }
+
+    /// Auto-réparation au lancement : reconstruit l'historique au plus une
+    /// fois par 24 h (1 à 2 requêtes API). Rattrape les semaines où l'app
+    /// était éteinte et les snapshots figés sur un cache partiel.
+    public func rebuildHistoryIfStale() async {
+        guard await strava.isAuthenticated() else { return }
+        let key = "runbar.history.lastRebuild"
+        let last = UserDefaults.standard.double(forKey: key)
+        guard Date.now.timeIntervalSince1970 - last > 24 * 3600 else { return }
+        UserDefaults.standard.set(Date.now.timeIntervalSince1970, forKey: key)
+        await rebuildHistory(weeksBack: 12)
+    }
+
+    private static func aggregate(_ dtos: [ActivityDTO], metric: GoalMetric) -> Double {
+        switch metric {
+        case .distance:  return dtos.reduce(0) { $0 + $1.distance / 1000.0 }
+        case .count:     return Double(dtos.count)
+        case .elevation: return dtos.reduce(0) { $0 + $1.elevationGain }
         }
     }
 
@@ -908,13 +952,21 @@ public struct SettingsView: View {
                     Text("settings.coach.provider", bundle: .runBarResources)
                         .font(.system(size: 13))
                     Spacer()
-                    Picker("", selection: $coachConfig.provider) {
-                        ForEach(CoachConfiguration.Provider.allCases, id: \.self) { p in
-                            Text(p.displayName).tag(p)
+                    // Un picker à option unique est un faux choix — on affiche
+                    // le provider en texte tant qu'il n'y en a qu'un.
+                    if CoachConfiguration.Provider.allCases.count > 1 {
+                        Picker("", selection: $coachConfig.provider) {
+                            ForEach(CoachConfiguration.Provider.allCases, id: \.self) { p in
+                                Text(p.displayName).tag(p)
+                            }
                         }
+                        .labelsHidden()
+                        .frame(maxWidth: 220)
+                    } else {
+                        Text(coachConfig.provider.displayName)
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
                     }
-                    .labelsHidden()
-                    .frame(maxWidth: 220)
                 }
             }
 

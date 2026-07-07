@@ -74,12 +74,14 @@ enum RunBarColor {
         dark ? Color(white: 1, opacity: 0.03) : Color(white: 0, opacity: 0.025)
     }
 
-    /// Accent éditorial — vermillon par défaut, terra pour fatigue, deep pour victory.
+    /// Accent éditorial — vermillon par défaut, terra pour fatigue, deep pour
+    /// victory, mousse apaisée pour la récupération.
     static func accent(for state: RunnerState) -> Color {
         switch state {
-        case .victory: return vermillonDeep
-        case .tired:   return Color(red: 0xC7 / 255, green: 0x5D / 255, blue: 0x2C / 255)
-        default:       return vermillon
+        case .victory:  return vermillonDeep
+        case .tired:    return Color(red: 0xC7 / 255, green: 0x5D / 255, blue: 0x2C / 255)
+        case .recovery: return mossDeep
+        default:        return vermillon
         }
     }
 }

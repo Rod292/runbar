@@ -19,6 +19,42 @@ type Release = {
 // the top.
 const RELEASES: Release[] = [
   {
+    version: "0.1.25",
+    date: "2026-07-02",
+    title: "Your history heals itself + recovery mode",
+    bullets: [
+      <>
+        <strong>Self-healing history.</strong> Weeks where your Mac was off
+        used to leave permanent holes in the sparkline, and past-week totals
+        could get stuck on partial sums. RunBar now refetches the last 12
+        weeks from Strava daily (in memory only — still 7-day-cache
+        compliant) and corrects every weekly total, both ways.
+      </>,
+      <>
+        <strong>Sunday weeks, fixed everywhere.</strong> If your week starts
+        on Sunday, the sparkline matched nothing and your streak always read
+        zero — week boundaries now follow your setting in the chart, streak,
+        week numbers and &quot;days left&quot;.
+      </>,
+      <>
+        <strong>Recovery mode.</strong> After a big week (≥ 140 % of
+        target), a quiet start isn&apos;t laziness — the runner now takes an
+        earned breather instead of looking idle or guilt-tripping you.
+      </>,
+      <>
+        <strong>Past weeks read better.</strong> &quot;Last week.&quot; /
+        &quot;Week 24.&quot; titles with a clear &quot;back to now&quot;
+        button (no more cryptic &quot;That week NOW&quot;), plus a
+        week-over-week delta on every past-week card.
+      </>,
+      <>
+        Honest percentages: a 147 % week now says 147 %, not 100 %. Small
+        touches: &quot;LAST DAY&quot; instead of &quot;0 days left&quot;, a
+        GOAL tag on the chart&apos;s dashed line.
+      </>,
+    ],
+  },
+  {
     version: "0.1.24",
     date: "2026-07-01",
     title: "Browse past weeks + Strava AI-policy compliance",

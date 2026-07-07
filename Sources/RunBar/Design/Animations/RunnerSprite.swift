@@ -37,7 +37,7 @@ public enum RunnerSprite {
     private static func cycle(for state: RunnerState) -> [NSImage] {
         switch state {
         case .jogging, .sprinting: return joggingFrames
-        case .idle:                return idleFrames
+        case .idle, .recovery:     return idleFrames
         case .tired:               return tiredFrames
         case .victory:             return victoryFrames
         }
@@ -45,9 +45,9 @@ public enum RunnerSprite {
 
     private static func leanDegrees(for state: RunnerState) -> CGFloat {
         switch state {
-        case .jogging:                return runningLeanDegrees
-        case .sprinting:              return sprintLeanDegrees
-        case .idle, .tired, .victory: return 0
+        case .jogging:                           return runningLeanDegrees
+        case .sprinting:                         return sprintLeanDegrees
+        case .idle, .tired, .victory, .recovery: return 0
         }
     }
 

@@ -21,6 +21,17 @@ public extension Date {
         calendar.component(.weekOfYear, from: self)
     }
 
+    /// Numéro de semaine aligné sur le jour de reset de l'utilisateur.
+    /// Avec `weekday: 1` (dimanche), le dimanche 28/06 est bien étiqueté
+    /// comme la semaine qu'il OUVRE — `isoWeekOfYear` (lundi) l'aurait
+    /// rattaché à la semaine précédente.
+    func weekNumber(weekday firstWeekday: Int = 2, calendar: Calendar = .iso8601Monday) -> Int {
+        var cal = calendar
+        cal.firstWeekday = firstWeekday
+        cal.timeZone = .current
+        return cal.component(.weekOfYear, from: self)
+    }
+
     /// 1 = lundi ... 7 = dimanche (convention plan).
     func dayOfWeek(calendar: Calendar = .iso8601Monday) -> Int {
         let raw = calendar.component(.weekday, from: self) // 1=Sun ... 7=Sat

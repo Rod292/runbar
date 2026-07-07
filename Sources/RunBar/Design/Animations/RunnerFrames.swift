@@ -39,6 +39,7 @@ enum RunnerFrames {
         case .sprinting: return sprintingCycle
         case .tired:     return tiredCycle
         case .victory:   return victoryCycle
+        case .recovery:  return idleCycle
         }
     }
 

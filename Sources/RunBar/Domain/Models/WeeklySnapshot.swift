@@ -26,11 +26,13 @@ public struct WeeklySnapshot: Codable, Equatable, Sendable {
 public enum StreakCalculator {
     /// Streak courant : nombre de semaines consécutives à 100%, terminant
     /// soit à la semaine en cours (si elle est complétée), soit à la semaine
-    /// dernière sinon.
-    public static func current(snapshots: [WeeklySnapshot], now: Date = .now) -> Int {
+    /// dernière sinon. `weekStartingOn` doit refléter `goal.resetWeekday` —
+    /// avec des snapshots calés sur dimanche, un calcul lundi ne matche
+    /// aucune semaine et renvoie toujours 0.
+    public static func current(snapshots: [WeeklySnapshot], now: Date = .now, weekStartingOn weekday: Int = 2) -> Int {
         let sorted = snapshots.sorted(by: { $0.weekStart > $1.weekStart })
         let cal = Calendar.iso8601Monday
-        let thisMonday = now.startOfWeek()
+        let thisMonday = now.startOfWeek(weekday: weekday)
         var streak = 0
         var expected = thisMonday
         // Si la semaine en cours n'est pas encore complétée on remonte d'une semaine.

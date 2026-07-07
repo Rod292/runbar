@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
   console.log(
     JSON.stringify({
       event: "download",
-      version: "0.1.25",
+      version: "0.1.26",
       utm_source: utmSource,
       utm_medium: utmMedium,
       utm_campaign: utmCampaign,

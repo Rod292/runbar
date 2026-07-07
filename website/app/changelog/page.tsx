@@ -19,6 +19,25 @@ type Release = {
 // the top.
 const RELEASES: Release[] = [
   {
+    version: "0.1.26",
+    date: "2026-07-07",
+    title: "Clear words when Strava says no",
+    bullets: [
+      <>
+        When Strava deactivates an API application (as happened during the
+        June 2026 developer-program enforcement), RunBar used to show a
+        cryptic &quot;Server error (HTTP 403)&quot;. It now reads
+        Strava&apos;s actual answer and says what&apos;s wrong and who can
+        fix it — and that reconnecting won&apos;t help.
+      </>,
+      <>
+        Invalid or revoked tokens now surface as &quot;Not connected to
+        Strava&quot; instead of a server error, and sync failures log the
+        full API response for diagnostics.
+      </>,
+    ],
+  },
+  {
     version: "0.1.25",
     date: "2026-07-02",
     title: "Your history heals itself + recovery mode",
